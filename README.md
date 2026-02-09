@@ -62,3 +62,9 @@ python manage.py startapp traceability apps/traceability
 python manage.py startapp sustainability apps/sustainability
 python manage.py startapp community apps/community
 ```
+
+Then ran migrations:
+*powershell*
+```powershell
+python manage.py runserver
+```
