@@ -21,7 +21,10 @@ UFCFTR-30-3 - Distributed and enterprise software development
 install-command
 ```
 
-
+## Admin Credentials
+Username: Admin
+Email: Admin@Admin.com
+Password: AdminPass1
 
 
 ## Notes on DIR Setup - Harrison
