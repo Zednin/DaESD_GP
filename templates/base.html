@@ -6,6 +6,7 @@
   <meta charset="utf-8">
   <title>GroupProject</title>
   <link rel="stylesheet" href="{% static 'css/navbar.css' %}">
+  <link rel="stylesheet" href="{% static 'css/footer.css' %}">
 </head>
 <body>
   <h3>Nav bar below: </h3>
@@ -13,5 +14,7 @@
   <h2>Base Template Here. Content Below:</h2>
   <hr>
   {% block content %}{% endblock %}
+
+  {% include "partials/footer.html" %}
 </body>
 </html>
