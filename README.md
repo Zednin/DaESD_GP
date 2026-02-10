@@ -14,7 +14,9 @@ UFCFTR-30-3 - Distributed and enterprise software development
 
 
 ## Dependencies
-- 
+- django-environ
+- mysqlclient
+
 
 ## Installation
 ```bash
