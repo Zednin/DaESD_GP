@@ -1,0 +1,3 @@
+-- base.sql
+-- Put baseline data here
+-- Keep schema in Django migrations
