@@ -3,9 +3,9 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# System deps for mysqlclient
+# System deps for Postgres driver build - psycopg2-binary works as well
 RUN apt-get update && apt-get install -y \
-    default-libmysqlclient-dev \
+    libpq-dev \
     gcc \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
