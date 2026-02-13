@@ -2,6 +2,7 @@
 UFCFTR-30-3 - Distributed and enterprise software development
 
 
+
 ## Group Members
 | Name | Student ID | Email |
 |-------|-------|-------|
@@ -13,8 +14,10 @@ UFCFTR-30-3 - Distributed and enterprise software development
 
 
 
+
 ## Dependencies
-- 
+- django-environ
+
 
 ## Installation
 ```bash
@@ -25,6 +28,12 @@ install-command
 Username: Admin
 Email: Admin@Admin.com
 Password: AdminPass1
+
+
+
+
+
+
 
 
 ## Notes on DIR Setup - Harrison
