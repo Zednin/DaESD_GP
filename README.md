@@ -15,7 +15,6 @@ UFCFTR-30-3 - Distributed and enterprise software development
 
 ## Dependencies
 - django-environ
-- mysqlclient
 
 
 ## Installation
@@ -27,6 +26,12 @@ install-command
 Username: Admin
 Email: Admin@Admin.com
 Password: AdminPass1
+
+
+
+
+
+
 
 
 ## Notes on DIR Setup - Harrison
