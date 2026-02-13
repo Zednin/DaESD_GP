@@ -1,5 +1,5 @@
 DC=docker compose
-MYSQL_CONTAINER=django-mysql
+PG_CONTAINER=django-postgres
 
 # Load environment variables from .env if it exists, and export them for use in Makefile commands
 ifneq (,$(wildcard .env))
@@ -8,7 +8,7 @@ export
 endif
 
 
-# start mysql + Django containers in background
+# start Postgres + Django containers in background
 up:
 	$(DC) up -d
 
@@ -16,22 +16,23 @@ up:
 down:
 	$(DC) down
 
-# View MySQL container
+# View DB container logs
 logs:
 	$(DC) logs -f db
 
-# Open MySQL shell inside the running container
-mysql:
-	docker exec -it $(MYSQL_CONTAINER) mysql -u$${DB_USER} -p$${DB_PASSWORD} $${DB_NAME}
+# Open Postgres shell
+psql:
+	docker exec -it $(PG_CONTAINER) psql -U $${DB_USER} -d $${DB_NAME}
 
-# reset the database: drops and recreates the DB, runs migrations, and seeds with base.sql
+# reset the database base.sql doesnt exist yet - replace with actual seed data when ready
 reset-db:
-	docker exec -i $(MYSQL_CONTAINER) mysql -uroot -p$${DB_ROOT_PASSWORD} -e "DROP DATABASE IF EXISTS \`$${DB_NAME}\`; CREATE DATABASE \`$${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-	python manage.py migrate
-	docker exec -i $(MYSQL_CONTAINER) mysql -u$${DB_USER} -p$${DB_PASSWORD} $${DB_NAME} < db/seed/base.sql
+	docker exec -i $(PG_CONTAINER) psql -U $${DB_USER} -d postgres -c "DROP DATABASE IF EXISTS \"$${DB_NAME}\";"
+	docker exec -i $(PG_CONTAINER) psql -U $${DB_USER} -d postgres -c "CREATE DATABASE \"$${DB_NAME}\";"
+	$(DC) exec web python manage.py migrate
+	docker exec -i $(PG_CONTAINER) psql -U $${DB_USER} -d $${DB_NAME} < db/seed/base.sql
 	@echo "DB reset complete."
 
-# Completely remove DB container, its volume, and all data 
+# Completely remove DB container, its volume, and all data
 nuke-db:
 	$(DC) down -v
 	@echo "DB volume removed. KABOOM"
