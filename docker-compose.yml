@@ -1,36 +1,39 @@
 services:
   db:
     image: postgres:16-alpine
-    container_name: django-postgres
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "5433:5432"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # If init SQL/scripts, add:
-      #- ./db/init:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+    ports:
+      - "5432:5432"
 
-  web:
-    build: .
-    container_name: django-web
-    command: python manage.py runserver 0.0.0.0:8000
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    env_file:
+      - .env
     volumes:
       - .:/app
     ports:
       - "8000:8000"
-    env_file:
-      - .env
     depends_on:
-      db:
-        condition: service_healthy
+      - db
+
+  web:
+    image: node:20-alpine
+    working_dir: /web
+    volumes:
+      - ./frontend:/web
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    ports:
+      - "5173:5173"
+    depends_on:
+      - app
+
 volumes:
   postgres_data:
