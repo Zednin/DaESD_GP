@@ -1,22 +1,21 @@
 FROM python:3.11-slim
- 
+
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# System deps for Postgres driver build - psycopg2-binary works as well
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+WORKDIR /app/backend
 
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Copy project code
-COPY . .
+# Copy backend code into /app/backend
+COPY backend/ .
 
 EXPOSE 8000
 
