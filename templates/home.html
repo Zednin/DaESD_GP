@@ -1,6 +1,22 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <h1>Group Project</h1>
-  <p>Home Page Here</p>
+  <h1>Group Project Test</h1>
+
+  <div id="root"></div>
+
+  <!-- Vite HMR client -->
+  <script type="module" src="http://localhost:5173/@vite/client"></script>
+
+  <!-- React Refresh preamble (required when not using Vite's HTML) -->
+  <script type="module">
+    import RefreshRuntime from "http://localhost:5173/@react-refresh";
+    RefreshRuntime.injectIntoGlobalHook(window);
+    window.$RefreshReg$ = () => {};
+    window.$RefreshSig$ = () => (type) => type;
+    window.__vite_plugin_react_preamble_installed__ = true;
+  </script>
+
+  <!-- Your React entry -->
+  <script type="module" src="http://localhost:5173/src/main.jsx"></script>
 {% endblock %}
