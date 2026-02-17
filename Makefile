@@ -12,6 +12,10 @@ endif
 up:
 	$(DC) up -d
 
+# Start containers WITH rebuild
+up-build:
+	$(DC) up --build -d
+
 # stop and remove containers, but keep volumes (preserves DB data)
 down:
 	$(DC) down
@@ -19,6 +23,17 @@ down:
 # View DB container logs
 logs:
 	$(DC) logs -f db
+
+
+makemigrations:
+
+# Apply migrations
+migrate:
+	$(DC) exec $(WEB_CONTAINER) python manage.py migrate
+
+
+
+
 
 # Open Postgres shell
 psql:
