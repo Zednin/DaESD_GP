@@ -20,11 +20,14 @@ services:
       retries: 10
 
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: django-web
+    working_dir: /app/backend
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - .:/app
+      - ./backend:/app/backend
     ports:
       - "8000:8000"
     env_file:
@@ -32,5 +35,17 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    container_name: react
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - web
+      
 volumes:
   postgres_data:
