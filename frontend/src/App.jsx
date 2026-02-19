@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
 
-export default function Home() {
+//BrowserRouter - Enables navigation through app
+//Routes - Container to hold pages
+//Route - URL path to page
+//useNavigate - lets you go to different page
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import Signup from "./signup";
+
+function Home() {
   const [health, setHealth] = useState(null);
+  const navigate = useNavigate(); 
 
   useEffect(() => {
     fetch("http://localhost:8000/api/")
@@ -19,7 +27,7 @@ export default function Home() {
       <p style={{ fontSize: 18, marginTop: 12, lineHeight: 1.5 }}>
         Welcome to BRFN
       </p>
-
+      <button onClick={() => navigate('/signup')}>Signup</button>
       <section style={{ marginTop: 24 }}>
         <h2 style={{ marginBottom: 8 }}>Backend Status</h2>
         <div
@@ -60,6 +68,18 @@ export default function Home() {
         <Card title="Track" text="View order status and traceability info." />
       </section>
     </main>
+  );
+}
+
+//
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/signup" element={<Signup />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
