@@ -1,3 +1,7 @@
 from django.contrib import admin
+from .models import Producer
 
-# Register your models here.
+# Register Producer with columns to display
+@admin.register(Producer)
+class ProducerAdmin(admin.ModelAdmin):
+    list_display = ['id', 'company_name', 'user', 'created_at']  # Columns in admin list
