@@ -4,4 +4,4 @@ from .models import Producer
 # Register Producer with columns to display
 @admin.register(Producer)
 class ProducerAdmin(admin.ModelAdmin):
-    list_display = ['id', 'company_name', 'user', 'created_at']  # Columns in admin list
+    list_display = ['id', 'company_name', 'account', 'business_address']  # Columns in admin list
