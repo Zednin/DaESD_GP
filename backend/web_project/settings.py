@@ -48,6 +48,11 @@ INSTALLED_APPS = [
     "apps.catalog",
     "apps.api",
     "apps.accounts",
+    "apps.producers",
+    "apps.addresses",
+    "apps.orders",
+    "apps.traceability",
+    "apps.cart",
 ]
 
 #Custom account model to specify extended columns (phone_number, account_type)
