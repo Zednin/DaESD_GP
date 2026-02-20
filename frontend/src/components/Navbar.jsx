@@ -1,6 +1,7 @@
 import {MdOutlineShoppingCart} from "react-icons/md";
 import styles from "./Navbar.module.css";
 import SearchBar from "./SearchBar";
+import { Link } from "react-router-dom";
 
 const NavbarMenu = [
     {
@@ -11,12 +12,12 @@ const NavbarMenu = [
     {
         id: 2,
         title: "Products",
-        link: "#",
+        link: "/products",
     },
     {
         id: 3,
         title: "About Us",
-        link: "#",
+        link: "/about",
     },
     {
         id: 4,
@@ -38,17 +39,17 @@ export default function Navbar() {
         {/* LEFT SIDE */}
         <div className={styles.left}>
             {/* Logo */}
-          <a href="/" className={styles.logoText}>
+          <Link className={styles.logoText} to="/">
             BRFN
-          </a>
+          </Link>
           
           {/* Menu */}
           <ul className={styles.menu}>
             {NavbarMenu.map((menu) => (
               <li key={menu.id}>
-                <a className={styles.link} href={menu.link}>
+                <Link className={styles.link} to={menu.link}>
                   {menu.title}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
