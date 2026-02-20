@@ -26,8 +26,8 @@ const NavbarMenu = [
     },
     {
         id: 5,
-        title: "Link 5",
-        link: "#",
+        title: "Sign In",
+        link: "/login",
     },
 ]
 
