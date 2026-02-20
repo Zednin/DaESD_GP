@@ -2,15 +2,10 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react({ fastRefresh: false })],
   server: {
-    host: true,
     port: 5173,
-    proxy: {
-      "/api": {
-        target: "http://web:8000",
-        changeOrigin: true,
-      },
-    },
+    strictPort: true,
+    cors: true,
   },
 });
