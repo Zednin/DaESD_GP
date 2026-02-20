@@ -14,7 +14,7 @@ export default function Home() {
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px" }}>
       <h1 style={{ fontSize: 48, margin: 0 }}>Welcome</h1>
       <p style={{ fontSize: 18, marginTop: 12, lineHeight: 1.5 }}>
-        Welcome to BRFN
+        Welcome to BRFN iytdfi
       </p>
 
       <section style={{ marginTop: 24 }}>
