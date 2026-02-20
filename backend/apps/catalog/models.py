@@ -28,7 +28,7 @@ class Product(models.Model):
     # on_delete=CASCADE means if Producer is deleted, delete their Products too
     producer = models.ForeignKey(Producer, on_delete=models.CASCADE, related_name='products')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
-    name = models.CharField(max_length=255)                        
+    name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)            
     price = models.DecimalField(max_digits=10, decimal_places=2)     
     unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default='unit')
