@@ -1,3 +1,8 @@
-from django.shortcuts import render
+from rest_framework.viewsets import ModelViewSet
+from .models import Producer
+from .serializers import ProducerSerializer
 
-# Create your views here.
+
+class ProducerViewSet(ModelViewSet):
+    queryset = Producer.objects.all()
+    serializer_class = ProducerSerializer
