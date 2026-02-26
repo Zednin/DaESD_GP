@@ -1,3 +1,8 @@
-from django.shortcuts import render
+from rest_framework.viewsets import ModelViewSet
+from .models import Allergen
+from .serializers import AllergenSerializer
 
-# Create your views here.
+
+class AllergenViewSet(ModelViewSet):
+    queryset = Allergen.objects.all()
+    serializer_class = AllergenSerializer
