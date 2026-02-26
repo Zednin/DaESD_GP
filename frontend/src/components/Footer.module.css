@@ -1,0 +1,57 @@
+.footer {
+    display: flex;
+    flex-direction: row;
+    padding: 16px 24px;
+    margin: 20px;
+    text-align: center;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Scroll to top button */
+.backToTop {
+    margin-bottom: 16px;
+}
+
+.backToTopBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: none;
+    border-radius: 9999px;
+    padding: 12px 24px;
+    font-weight: 600;
+    background: var(--primary);
+    color: #fff;
+    transition: transform 300ms ease;
+}
+
+.backToTopBtn:hover {
+    transform: scale(1.07);
+}
+
+/* Social Media Icons */
+.socialIcons {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+}
+
+.socialLink {
+    color: #9ca3af;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 2rem;
+    transition: color 0.3s ease;
+}
+
+.socialLink:hover {
+    color: var(--primary);
+}
+
+/* Copyright */
+
+.copyright {
+    color: #9ca3af;
+    font-size: 0.875rem;
+}

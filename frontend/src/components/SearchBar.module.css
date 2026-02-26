@@ -1,0 +1,61 @@
+/* Hidden on small screens */
+.wrap {
+  position: relative;
+  display: none;
+  height: 34px;
+  min-width: 44px;
+}
+
+@media (min-width: 640px) {
+  .wrap {
+    display: block;
+  }
+}
+
+/* Input starts collapsed */
+.input {
+  width: 0;
+  opacity: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  background: transparent;
+
+  transition:
+    width 300ms ease,
+    opacity 200ms ease,
+    padding 200ms ease,
+    border-color 200ms ease,
+    background-color 200ms ease;
+
+  outline: none;
+}
+
+/* Expand on hover */
+/* Also keep expanded while typing */
+.wrap:hover .input,
+.wrap:focus-within .input {
+  width: 300px;
+  opacity: 1;
+  padding: 6px 12px;
+  border-color: #6b7280;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Search icon position + hover color change */
+.icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  font-size: 20px;
+  color: #4b5563;
+  transition: color 200ms ease;
+  pointer-events: none;
+}
+
+.wrap:hover .icon,
+.wrap:focus-within .icon {
+  color: var(--primary);
+}

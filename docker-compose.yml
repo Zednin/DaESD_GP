@@ -46,6 +46,13 @@ services:
       - "5173:5173"
     depends_on:
       - web
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend/src
+          target: /app/src
+        - action: rebuild
+          path: ./frontend/package.json
       
 volumes:
   postgres_data:
