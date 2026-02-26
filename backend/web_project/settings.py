@@ -47,9 +47,20 @@ INSTALLED_APPS = [
     "corsheaders",
     "apps.catalog",
     "apps.api",
+    "apps.accounts",
+    "apps.producers",
+    "apps.addresses",
+    "apps.orders",
+    "apps.traceability",
+    "apps.cart",
 ]
 
+#Custom account model to specify extended columns (phone_number, account_type)
+AUTH_USER_MODEL = 'accounts.Account' 
+
+
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -57,7 +68,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = 'web_project.urls'

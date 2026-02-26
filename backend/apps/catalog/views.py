@@ -1,13 +1,10 @@
-from django.shortcuts import render
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from rest_framework.viewsets import ModelViewSet
+from .models import Product
+from .serializers import ProductSerializer
 
-def home(request):
-    return render(request, "home.html")
+class ProductViewSet(ModelViewSet):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
 
-@api_view(["GET"])
-def api_home(request):
-    return Response({
-        "message": "API is working",
-        "endpoints": ["/api/"]
-    })
+
+
