@@ -7,7 +7,7 @@ class AccountSerializer(serializers.ModelSerializer):
         model = Account
 
         # Which fields to include into JSON (not include password n dat)
-        fields = ['id', 'username', 'email', 'phone_number', 'account_type', 'is_staff']
+        fields = ['id', 'username', 'email', 'account_type']
         
         # Prevents frontend from changing 'id' value, assigned by DB
         read_only_fields = ['id']
