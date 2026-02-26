@@ -1,13 +1,21 @@
+import { useEffect, useState } from "react";
 import styles from "./Products.module.css";
 
-const dummyProducts = [
-  { id: 1, name: "Organic Apples", price: "£3.50" },
-  { id: 2, name: "Fresh Spinach", price: "£2.20" },
-  { id: 3, name: "Sourdough Bread", price: "£4.00" },
-  { id: 4, name: "Local Honey", price: "£6.50" },
-];
+
 
 export default function Products() {
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    async function loadProducts() {
+      const res = await fetch("/api/products/");
+      const data = await res.json();
+      setProducts(data);
+    }
+
+    loadProducts();
+  }, []);
+
   return (
     <main className={`container ${styles.page}`}>
       <header className={styles.header}>
@@ -16,13 +24,15 @@ export default function Products() {
       </header>
 
       <section className={styles.grid}>
-        {dummyProducts.map((product) => (
+        {products.map((product) => (
           <div key={product.id} className={styles.card}>
             <div className={styles.imagePlaceholder}></div>
 
             <div className={styles.cardBody}>
               <h3>{product.name}</h3>
-              <span className={styles.price}>{product.price}</span>
+              <span className={styles.price}>
+                £{Number(product.price).toFixed(2)} / {product.unit}
+              </span>
             </div>
           </div>
         ))}
