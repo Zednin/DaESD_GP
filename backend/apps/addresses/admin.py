@@ -4,5 +4,5 @@ from django.contrib import admin
 from .models import Address
 
 @admin.register(Address)
-class Address(admin.ModelAdmin):
-    list_display = ['id','account', 'postcode']
+class AddressAdmin(admin.ModelAdmin):
+    list_display = ['id','account', 'address_type', 'is_default', 'postcode']
