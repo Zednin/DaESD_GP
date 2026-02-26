@@ -1,0 +1,135 @@
+.section {
+  position: relative;
+  padding: 56px 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  align-items: center;
+  min-height: 650px;
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.textWrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .textWrap {
+    text-align: left;
+  }
+}
+
+.h1 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  line-height: 1.05;
+  font-size: 48px;
+  margin: 0;
+}
+
+@media (min-width: 1024px) {
+  .h1 {
+    font-size: 64px;
+  }
+}
+
+.highlight {
+  color: var(--secondary);
+}
+
+.p {
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+@media (prefers-color-scheme: dark) {
+  .p {
+    color: rgba(255, 255, 255, 0.7);
+  }
+}
+
+.btnRow {
+  display: flex;
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .btnRow {
+    justify-content: flex-start;
+  }
+}
+
+.primaryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  border-radius: 9999px;
+  padding: 12px 24px;
+  font-weight: 600;
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0px 10px 14px -7px rgba(222, 0, 41, 0.35);
+  transition: transform 300ms ease;
+}
+
+.primaryBtn:hover {
+  transform: scale(1.07);
+}
+
+.images {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.heroImg {
+  width: 350px;
+  filter: drop-shadow(-6px 8px 15px rgba(0, 0, 0, 0.2));
+}
+
+@media (min-width: 768px) {
+  .heroImg {
+    width: 550px;
+  }
+}
+
+.leafWrap {
+  position: absolute;
+  top: -56px;
+  right: 50%;
+  transform: translateX(50%) rotate(40deg);
+  opacity: 0.8;
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+@media (min-width: 768px) {
+  .leafWrap {
+    top: 0;
+    right: 0;
+    transform: rotate(40deg);
+  }
+}
+
+.leafImg {
+  width: 100%;
+  max-width: 300px;
+}
