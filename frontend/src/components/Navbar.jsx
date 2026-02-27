@@ -5,6 +5,7 @@ import styles from "./Navbar.module.css";
 import SearchBar from "./SearchBar";
 import { Link } from "react-router-dom";
 import { readCart, getCartCount, getCartSubtotal } from "../utils/cartStorage";
+import { useAuth } from "../auth/AuthContext";
 
 const NavbarMenu = [
     {
@@ -26,11 +27,6 @@ const NavbarMenu = [
         id: 4,
         title: "Reduced to Clear",
         link: "#",
-    },
-    {
-        id: 5,
-        title: "Sign In",
-        link: "/login",
     },
 ]
 
@@ -81,6 +77,7 @@ const badgeVariants = {
 };
 
 export default function Navbar() {
+  const { user, loading, logout } = useAuth();
   const [cartOpen, setCartOpen] = useState(false);
   const cartWrapRef = useRef(null);
 
@@ -140,6 +137,20 @@ export default function Navbar() {
         {/* RIGHT SIDE */}
         <div className={styles.right}>
           <SearchBar />
+
+          {/* Auth */}
+          {!loading && user ? (
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <span className={styles.authLink} style={{ cursor: "default"}}>
+                Hi, {user.username || user.email}
+              </span>
+              <button type="button" className={styles.authlink} onClick={logout}>
+                Logout
+              </button>
+            </div>
+          ) : (
+            !loading && <Link className={styles.link} to="/login">Sign In</Link>
+          )}
 
           {/* Cart */}
           <div className={styles.cartWrap} ref={cartWrapRef}>
