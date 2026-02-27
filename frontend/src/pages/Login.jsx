@@ -54,9 +54,15 @@ export default function Login() {
         </div>
 
         {/* Google Sign In - placeholder */}
-        <button className={styles.googleBtn} disabled>
+        <button className={styles.googleBtn}>
           <FaGoogle />
           Continue with Google
+        </button>
+
+        {/* Apple Sign In - placeholder */}
+        <button type="button" className={styles.appleBtn}>
+          <span className={styles.appleIcon}></span>
+          Continue with Apple
         </button>
 
         <p className={styles.register}>
