@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from .views import csrf
 
 from apps.catalog.views import ProductViewSet
 from apps.addresses.views import AddressViewSet
@@ -26,6 +27,7 @@ router.register(r'producers', ProducerViewSet, basename='producer')
 router.register(r'allergens', AllergenViewSet, basename='allergen')
 
 urlpatterns = [
+    path("auth/csrf/", csrf),
     path("", include(router.urls)),
 ]
 

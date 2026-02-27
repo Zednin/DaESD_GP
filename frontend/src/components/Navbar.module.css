@@ -317,3 +317,8 @@
   filter: brightness(0.96);
   transform: translateY(-1px);
 }
+
+.authLink {
+  color: #0b0f19;
+  font-weight: 600;
+}
