@@ -1,3 +1,7 @@
+function emitAuthUpdated() {
+  window.dispatchEvent(new Event("auth:updated"));
+}
+
 export function getCookie(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
@@ -11,6 +15,21 @@ export async function ensureCsrf() {
     method: "GET",
     credentials: "include",
   });
+}
+
+/**
+ * Returns the current logged-in user (session-based), or null if not logged in.
+ * dj-rest-auth provides this at GET /api/auth/user/
+ */
+export async function fetchMe() {
+  const res = await fetch("/api/auth/user/", {
+    method: "GET",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  });
+
+  if (!res.ok) return null;
+  return res.json();
 }
 
 export async function login(email, password) {
@@ -28,7 +47,10 @@ export async function login(email, password) {
   });
 
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.non_field_errors?.[0] || data?.detail || "Login failed");
+  if (!res.ok)
+    throw new Error(
+      data?.non_field_errors?.[0] || data?.detail || "Login failed"
+    );
 
   emitAuthUpdated();
   return data;
@@ -50,7 +72,8 @@ export async function signup({ username, email, password1, password2 }) {
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const firstFieldError = Object.values(data)?.flat()?.[0] || data?.detail || "Signup failed";
+    const firstFieldError =
+      Object.values(data)?.flat()?.[0] || data?.detail || "Signup failed";
     throw new Error(firstFieldError);
   }
 
