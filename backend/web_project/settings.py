@@ -34,7 +34,6 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "web"]
 
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -46,10 +45,11 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "dj_rest_auth",
-    "dj_rest_auth.registration",
+    "django.contrib.sites",
     "allauth",
     "allauth.account",
-    "allauth.socialaccount", 
+    "allauth.socialaccount",
+    "dj_rest_auth.registration",
     "corsheaders",
     "apps.catalog",
     "apps.api",
@@ -61,9 +61,20 @@ INSTALLED_APPS = [
     "apps.cart",
 ]
 
+SITE_ID = 1
+
 #Custom account model to specify extended columns (phone_number, account_type)
 AUTH_USER_MODEL = 'accounts.Account' 
 
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
+ACCOUNT_EMAIL_VERIFICATION = "none"   # no verify email required
+ACCOUNT_EMAIL_REQUIRED = True
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "no-reply@localhost"
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -72,6 +83,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    "allauth.account.middleware.AccountMiddleware",
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware'
