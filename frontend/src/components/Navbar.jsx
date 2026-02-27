@@ -3,9 +3,11 @@ import {MdOutlineShoppingCart} from "react-icons/md";
 import { AnimatePresence, motion } from "framer-motion";
 import styles from "./Navbar.module.css";
 import SearchBar from "./SearchBar";
+import AccountMenu from "./AccountMenu/AccountMenu";
 import { Link } from "react-router-dom";
 import { readCart, getCartCount, getCartSubtotal } from "../utils/cartStorage";
 import { useAuth } from "../auth/AuthContext";
+
 
 const NavbarMenu = [
     {
@@ -140,14 +142,7 @@ export default function Navbar() {
 
           {/* Auth */}
           {!loading && user ? (
-            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              <span className={styles.authLink} style={{ cursor: "default"}}>
-                Hi, {user.username || user.email}
-              </span>
-              <button type="button" className={styles.authlink} onClick={logout}>
-                Logout
-              </button>
-            </div>
+            <AccountMenu user={user} onLogout={logout} />
           ) : (
             !loading && <Link className={styles.link} to="/login">Sign In</Link>
           )}
