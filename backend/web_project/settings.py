@@ -70,6 +70,10 @@ AUTHENTICATION_BACKENDS = [
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
+ACCOUNT_EMAIL_VERIFICATION = "none"   # no verify email required
+ACCOUNT_EMAIL_REQUIRED = True
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "no-reply@localhost"
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
