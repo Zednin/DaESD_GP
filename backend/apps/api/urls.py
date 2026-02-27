@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from .views import csrf
 
 
 from apps.accounts.views import AccountsViewSet
@@ -30,6 +31,7 @@ router.register(r'producers', ProducerViewSet, basename='producer')
 router.register(r'allergens', AllergenViewSet, basename='allergen')
 
 urlpatterns = [
+    path("auth/csrf/", csrf),
     path("", include(router.urls)),
     path("auth/", include("dj_rest_auth.urls")),
     path("auth/registration/", include("dj_rest_auth.registration.urls")),
