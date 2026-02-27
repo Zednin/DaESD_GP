@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.base_user import BaseUserManager
+
 from django.conf import settings
 #'AbstractUser' Built in django class for users
 # contains username, password, email, firstname, lastname, user authentication, permissions, group 
@@ -17,13 +19,21 @@ class Account(AbstractUser):
         ('admin', 'Admin'),
     ]
     # Defaults to customer 
-    account_type = models.CharField(max_length=10, choices=ACCOUNT_TYPE_CHOICES, default='customer')
-    
+    account_type = models.CharField(max_length=10, 
+                                    choices=ACCOUNT_TYPE_CHOICES, 
+                                    default='customer',
+                                    db_index=True
+                                    )
     # Ensures email is unique
     email = models.EmailField(unique=True)
 
     # Auto add account created date
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = BaseUserManager.normalize_email(self.email).strip()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.username
@@ -33,7 +43,7 @@ class Customer(models.Model):
 
     # Account FK, enforces 1:1 relation
     account = models.OneToOneField(
-        Account, 
+        settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
         related_name='customer_profile',
         )
@@ -42,7 +52,8 @@ class Customer(models.Model):
     phone_number = models.CharField(
         max_length=15, 
         blank=True, 
-        default=""
+        default="",
+        db_index=True
         )
 
     # Default delivery address
@@ -78,7 +89,7 @@ class Organisation(models.Model):
 
     # Ensures that organisation is to a single customer account
     customer = models.OneToOneField(
-        Customer, 
+        settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
         related_name='organisation'
         )
