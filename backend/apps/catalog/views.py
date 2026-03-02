@@ -3,10 +3,15 @@ from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Product
 from .serializers import ProductSerializer
+from .filters import ProductFilter
 
 class ProductViewSet(ModelViewSet):
     queryset = Product.objects.all()
+    #queryset = Product.objects.filter(status="available") for future use when we want to show only available products
     serializer_class = ProductSerializer
+    filterset_class = ProductFilter
+    ordering_fields = ['name', 'price', 'created_at']
+    ordering = ['name']
 
     # Enable filtering + ordering
     filter_backends = [
