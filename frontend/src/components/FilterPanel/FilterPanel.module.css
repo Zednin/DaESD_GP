@@ -1,0 +1,212 @@
+.wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+/* ── Trigger ── */
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 200ms ease, background-color 200ms ease, box-shadow 200ms ease;
+}
+
+.trigger:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  background-color: rgba(255, 255, 255, 0.10);
+}
+
+.trigger:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(222, 44, 77, 0.18);
+}
+
+.triggerOpen {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(222, 44, 77, 0.18);
+}
+
+.icon {
+  font-size: 15px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.chevron {
+  display: flex;
+  align-items: center;
+  font-size: 15px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+/* ── Dropdown panel ── */
+.panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 200;
+  width: 340px;
+  padding: 22px;
+  background: #1a1f2e;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+  transform-origin: top right;
+}
+
+/* ── Section ── */
+.section {
+  margin-bottom: 22px;
+}
+
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 10px 2px;
+}
+
+/* Divider between sections */
+.section + .section {
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Chips ── */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+
+.chip:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.chipActive {
+  border-color: var(--primary);
+  background: rgba(222, 44, 77, 0.15);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.chipActive:hover {
+  background: rgba(222, 44, 77, 0.22);
+}
+
+/* ── Organic toggle ── */
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggleInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggleTrack {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  transition: background-color 200ms ease, border-color 200ms ease;
+}
+
+.toggleTrackOn {
+  background: rgba(222, 44, 77, 0.55);
+  border-color: var(--primary);
+}
+
+.toggleThumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 200ms ease;
+}
+
+.toggleTrackOn .toggleThumb {
+  transform: translateX(18px);
+}
+
+.toggleLabel {
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ── Clear button ── */
+.clearBtn {
+  width: 100%;
+  height: 38px;
+  margin-top: 20px;
+  border: 1px solid rgba(222, 44, 77, 0.45);
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.clearBtn:hover {
+  background: rgba(222, 44, 77, 0.12);
+  border-color: var(--primary);
+}
