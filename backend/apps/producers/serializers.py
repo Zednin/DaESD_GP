@@ -7,10 +7,11 @@ class ProducerSerializer(serializers.ModelSerializer):
         model = Producer
         fields = [
             "id",
-            "user",
+            "account",
             "company_name",
-            "business_description",
-            "producer_postcode",
+            "company_email",
+            "company_number",
+            "company_description",
             "lead_time_hours",
             "business_address",
             "created_at",
