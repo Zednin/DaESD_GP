@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Fuse from "fuse.js";
 import { AnimatePresence } from "framer-motion";
 import QuickAddModal from "../components/QuickAddModal/QuickAddModal";
 import FilterPanel from "../components/FilterPanel/FilterPanel";
@@ -8,7 +9,7 @@ import { addToCart, getCartSubtotal, readCart } from "../utils/cartStorage";
 
 
 export default function Products() {
-  const [products, setProducts] = useState([]);
+  const [rawProducts, setRawProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [producers, setProducers] = useState([]);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
@@ -43,18 +44,29 @@ export default function Products() {
       });
   }, []);
 
-  // Re-fetch from backend whenever filters or sort change
+  // Re-fetch from backend whenever server-side filters or sort change
+  // (search handled client-side by Fuse.js)
   useEffect(() => {
     const params = new URLSearchParams();
     if (selectedCategory) params.set("category__name", selectedCategory);
     if (selectedProducer) params.set("producer__company_name", selectedProducer);
     if (organicOnly) params.set("organic_certified", "true");
-    if (search.trim()) params.set("search", search.trim());
     params.set("ordering", sortBy);
     fetch(`/api/products/?${params}`)
       .then((r) => r.json())
-      .then(setProducts);
-  }, [selectedCategory, selectedProducer, organicOnly, search, sortBy]);
+      .then(setRawProducts);
+  }, [selectedCategory, selectedProducer, organicOnly, sortBy]);
+
+  // Fuzzy-match the search term over the backend-filtered results
+  const products = useMemo(() => {
+    const term = search.trim();
+    if (!term) return rawProducts;
+    const fuse = new Fuse(rawProducts, {
+      keys: ["name", "description"],
+      threshold: 0.4,
+    });
+    return fuse.search(term).map((r) => r.item);
+  }, [search, rawProducts]);
 
   const activeFilterCount =
     (selectedCategory ? 1 : 0) +
