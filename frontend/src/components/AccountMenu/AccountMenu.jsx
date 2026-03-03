@@ -2,45 +2,77 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { FiChevronRight, FiArrowLeft, FiLogOut, FiHelpCircle, FiMoon, FiSettings, FiUser } from "react-icons/fi";
 import styles from "./AccountMenu.module.css";
+import { useNavigate } from "react-router-dom";
 
 const panels = {
   root: {
     title: "Account",
-    items: ({ user }) => ([
-      {
-        type: "profile",
-        leftIcon: <FiUser />,
-        title: user?.username || user?.email || "Account",
-        subtitle: "See your profile",
-        onClick: () => console.log("go profile"),
-      },
-      { type: "divider" },
-      {
-        leftIcon: <FiSettings />,
-        title: "Settings & privacy",
-        rightIcon: <FiChevronRight />,
-        toPanel: "settings",
-      },
-      {
-        leftIcon: <FiHelpCircle />,
-        title: "Help & support",
-        rightIcon: <FiChevronRight />,
-        toPanel: "help",
-      },
-      {
-        leftIcon: <FiMoon />,
-        title: "Display & accessibility",
-        rightIcon: <FiChevronRight />,
-        toPanel: "display",
-      },
-      { type: "divider" },
-      {
-        leftIcon: <FiLogOut />,
-        title: "Log out",
-        danger: true,
-        action: "logout",
-      },
-    ]),
+    items: ({ user }) => {
+      const baseItems = [
+        user
+          ? {
+              type: "profile",
+              leftIcon: <FiUser />,
+              title: user?.username || user?.email || "Account",
+              subtitle: "See your profile",
+              onClick: () => console.log("go profile"),
+            }
+          : {
+              type: "profile",
+              leftIcon: <FiUser />,
+              title: "Sign in",
+              subtitle: "Sign in to your account",
+              action: "signin",
+            },
+
+        { type: "divider" },
+      ];
+
+      const authOnlyItems = user
+        ? [
+            {
+              leftIcon: <FiSettings />,
+              title: "Settings & privacy",
+              rightIcon: <FiChevronRight />,
+              toPanel: "settings",
+            },
+          ]
+        : [];
+
+      const sharedItems = [
+        {
+          leftIcon: <FiHelpCircle />,
+          title: "Help & support",
+          rightIcon: <FiChevronRight />,
+          toPanel: "help",
+        },
+        {
+          leftIcon: <FiMoon />,
+          title: "Display & accessibility",
+          rightIcon: <FiChevronRight />,
+          toPanel: "display",
+        },
+      ];
+
+      const logoutItem = user
+        ? [
+            { type: "divider" },
+            {
+              leftIcon: <FiLogOut />,
+              title: "Log out",
+              danger: true,
+              action: "logout",
+            },
+          ]
+        : [];
+
+      return [
+        ...baseItems,
+        ...authOnlyItems,
+        ...sharedItems,
+        ...logoutItem,
+      ];
+    },
   },
 
   settings: {
@@ -65,9 +97,12 @@ const panels = {
   display: {
     title: "Display & accessibility",
     items: () => ([
-      { leftIcon: <FiMoon />, title: "Dark mode", onClick: () => console.log("Dark mode") },
-      { leftIcon: <FiSettings />, title: "Compact mode", onClick: () => console.log("Compact") },
-      { leftIcon: <FiSettings />, title: "Keyboard", onClick: () => console.log("Keyboard") },
+      {
+        type: "darkmode",
+        title: "Dark mode",
+        subtitle:
+          "Adjust the appearance of BRFN to reduce glare and give your eyes a break.",
+      },
     ]),
   },
 };
@@ -82,10 +117,18 @@ export default function AccountMenu({ user, onLogout }) {
   const [open, setOpen] = useState(false);
   const [stack, setStack] = useState(["root"]);
   const wrapRef = useRef(null);
+  const [darkMode, setDarkMode] = useState("off"); // "off" | "on" | "auto" 
 
   const activeKey = stack[stack.length - 1];
   const activePanel = panels[activeKey];
   const canBack = stack.length > 1;
+
+  const navigate = useNavigate();
+
+  function handleSignIn() {
+    close();
+    navigate("/login");
+  }
 
   // Direction for slide animation
   const dir = useMemo(() => (stack.length > 1 ? 1 : 0), [stack.length]);
@@ -121,11 +164,19 @@ export default function AccountMenu({ user, onLogout }) {
 
   function handleItem(item) {
     if (item.toPanel) return go(item.toPanel);
+
+    if (item.action === "signin") {
+      close();
+      navigate("/login");
+      return;
+    }
+
     if (item.action === "logout") {
       onLogout?.();
       close();
       return;
     }
+
     item.onClick?.();
     close();
   }
@@ -144,7 +195,7 @@ export default function AccountMenu({ user, onLogout }) {
         title="Account"
       >
         <span className={styles.avatarCircle}>
-          {(user?.username?.[0] || user?.email?.[0] || "A").toUpperCase()}
+        {user ? (user.username?.[0] || user.email?.[0]).toUpperCase() : <FiUser />}
         </span>
       </button>
 
@@ -205,6 +256,53 @@ export default function AccountMenu({ user, onLogout }) {
                           </span>
                         </button>
                       );
+                    }
+
+                    if (item.type === "darkmode") {
+                    const options = [
+                        { key: "off", label: "Off" },
+                        { key: "on", label: "On" },
+                        { key: "auto", label: "Automatic", hint: "We’ll automatically adjust the display based on your device’s system settings." },
+                    ];
+
+                    return (
+                        <div key={`dm-${idx}`} className={styles.darkModeBlock}>
+                        {/* Title row with icon */}
+                        <div className={styles.darkModeHead}>
+                            <span className={styles.darkModeIconCircle}>
+                            <FiMoon />
+                            </span>
+                            <div className={styles.darkModeHeadText}>
+                            <div className={styles.darkModeTitle}>{item.title}</div>
+                            <div className={styles.darkModeSub}>{item.subtitle}</div>
+                            </div>
+                        </div>
+
+                        {/* Options */}
+                        <div className={styles.darkModeOptions}>
+                            {options.map((opt) => (
+                            <button
+                                key={opt.key}
+                                type="button"
+                                className={styles.darkModeRow}
+                                onClick={() => setDarkMode(opt.key)}
+                            >
+                                <div className={styles.darkModeRowText}>
+                                <div className={styles.darkModeRowLabel}>{opt.label}</div>
+                                {opt.hint && opt.key === "auto" && (
+                                    <div className={styles.darkModeHint}>{opt.hint}</div>
+                                )}
+                                </div>
+
+                                <span
+                                className={`${styles.radio} ${darkMode === opt.key ? styles.radioOn : ""}`}
+                                aria-hidden="true"
+                                />
+                            </button>
+                            ))}
+                        </div>
+                        </div>
+                    );
                     }
 
                     return (
