@@ -23,6 +23,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "availability_start",
             "availability_end",
             "status",
+            "organic_certified",
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
