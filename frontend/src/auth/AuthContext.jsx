@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { migrateLocalCartToServerIfNeeded, setCartAuthed, clearCartLocal } from "../utils/cartStorage";
 import { fetchMe, logout as apiLogout } from "../utils/auth";
 
 const AuthContext = createContext(null);
@@ -20,6 +21,7 @@ export function AuthProvider({ children }) {
   async function logout() {
     await apiLogout();
     await refresh();
+    await clearCartLocal();
   }
 
   useEffect(() => {
@@ -31,6 +33,20 @@ export function AuthProvider({ children }) {
     window.addEventListener("auth:updated", onAuthUpdated);
     return () => window.removeEventListener("auth:updated", onAuthUpdated);
   }, []);
+
+  useEffect(() => {
+    setCartAuthed(Boolean(user));
+
+    if (!user) return;
+
+    (async () => {
+      try {
+        await migrateLocalCartToServerIfNeeded(true); // force migration right after login
+      } catch (e) {
+        console.error("[auth] cart migration failed:", e);
+      }
+    })();
+  }, [user]);
 
   const value = useMemo(() => ({ user, loading, refresh, logout }), [user, loading]);
 

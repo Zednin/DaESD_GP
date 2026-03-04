@@ -38,8 +38,8 @@ export default function Products() {
   }
 
   // later this becomes a POST to /api/cart-items/
-  function handleAddToBasket(product, qty) {
-    addToCart(product, qty);
+  async function handleAddToBasket(product, qty) {
+    await addToCart(product, qty);
     setQuickAddOpen(false);
   }
 
