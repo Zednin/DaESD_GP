@@ -3,23 +3,14 @@
 
 /* THEME + GLOBALS */
 :root {
-  /* Theme colors */
+  /* Brand */
   --primary: #6E2332;
   --secondary: #fb923c;
 
-  /* Base colours */
-  --bg: #0b0f19;
-  --surface: rgba(255, 255, 255, 0.06);
-  --border: rgba(255, 255, 255, 0.12);
-
-  --text: #ffffff;
-  --muted: rgba(255, 255, 255, 0.70);
-
-  /* Fonts */
+  /* Text */
   --font-main: "Poppins", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   --font-heading: "Averia Serif Libre", serif;
 
-  /* Base type */
   font-family: var(--font-main);
   line-height: 1.5;
   font-weight: 400;
@@ -28,7 +19,77 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Theme tokens (LIGHT default) */
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f6f7f9;
+
+  --text: #0b0f19;
+  --muted: #6b7280;
+  --muted-2: #9ca3af;
+
+  --border: rgba(17, 24, 39, 0.10);
+  --border-strong: rgba(17, 24, 39, 0.18);
+
+  --shadow: 0 18px 60px rgba(0,0,0,0.12);
+
+  /* Controls */
+  --control-bg: rgba(17, 24, 39, 0.04);
+  --control-bg-hover: rgba(17, 24, 39, 0.06);
+
+  /* Focus ring */
+  --focus: 0 0 0 4px rgba(110, 35, 50, 0.18);
+
+  /* Global radius */
+  --radius: 16px;
 }
+
+/* Dark Mode */
+:root[data-theme="dark"] {
+  --bg: #18191a;
+  --surface: #242526;
+  --surface-2: #2d2e2f;
+
+  --text: #e4e6eb;
+  --muted: rgba(228,230,235,0.72);
+  --muted-2: rgba(228,230,235,0.55);
+
+  --border: rgba(255,255,255,0.10);
+  --border-strong: rgba(255,255,255,0.16);
+
+  --shadow: 0 18px 60px rgba(0,0,0,0.45);
+
+  --control-bg: rgba(255,255,255,0.08);
+  --control-bg-hover: rgba(255,255,255,0.12);
+
+  --focus: 0 0 0 4px rgba(251, 146, 60, 0.18);
+}
+
+/* Smooth theme transition */
+html.theme-animate,
+html.theme-animate * {
+  transition:
+    background-color 220ms ease,
+    color 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    fill 220ms ease,
+    stroke 220ms ease;
+}
+
+/* Avoid animating layout stuff */
+html.theme-animate * {
+  transition-property: background-color, color, border-color, box-shadow, fill, stroke;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-animate,
+  html.theme-animate * {
+    transition: none !important;
+  }
+}
+
 
 /* RESET */
 *,
