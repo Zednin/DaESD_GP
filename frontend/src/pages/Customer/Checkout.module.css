@@ -1,0 +1,103 @@
+.page {
+  padding: 2rem 0;
+}
+
+/* Layout */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+/* Cards */
+.formCard,
+.summaryCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.75rem;
+  backdrop-filter: blur(8px);
+}
+
+/* Headings */
+.formCard h2,
+.summaryCard h2 {
+  margin-bottom: 1.25rem;
+  font-size: 1.1rem;
+}
+
+/* Form */
+.form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.form input {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.form input::placeholder {
+  color: var(--muted);
+}
+
+.form input:focus {
+  outline: none;
+  border-color: var(--secondary);
+}
+
+/* Button */
+.payBtn {
+  margin-top: 1.2rem;
+  padding: 0.75rem;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.payBtn:hover {
+  opacity: 0.9;
+}
+
+/* Summary */
+.summaryList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.25rem 0;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+  margin-bottom: 0.6rem;
+  color: var(--muted);
+}
+
+.summaryRow span:last-child {
+  color: var(--text);
+}
+
+/* Totals */
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+  font-size: 1rem;
+}
+
+/* Mobile */
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}

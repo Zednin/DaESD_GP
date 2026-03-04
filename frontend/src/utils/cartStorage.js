@@ -1,4 +1,5 @@
 const CART_KEY = "brfn_cart_v1";
+import { syncCartItem } from "./auth";
 
 export function readCart() {
   try {
@@ -25,32 +26,31 @@ export function getCartCount(items) {
 
 export function addToCart(product, qty) {
   const items = readCart();
-
   const existing = items.find((i) => i.productId === product.id);
-  const price = Number(product.price); // snapshot at time of add
-  const unit = product.unit;
 
-  let next;
-  if (existing) {
-    next = items.map((i) =>
-      i.productId === product.id ? { ...i, qty: i.qty + qty } : i
-    );
-  } else {
-    next = [
-      ...items,
-      {
-        productId: product.id,
-        name: product.name,
-        unit,
-        price, // snapshot
-        qty,
-      },
-    ];
-  }
+  const next = existing
+    ? items.map((i) =>
+        i.productId === product.id ? { ...i, qty: i.qty + qty } : i
+      )
+    : [
+        ...items,
+        {
+          productId: product.id,
+          name: product.name,
+          unit: product.unit,
+          price: Number(product.price),
+          qty,
+        },
+      ];
 
   writeCart(next);
+
+  //  SYNC TO BACKEND
+  syncCartItem(product.id, qty);
+
   return next;
 }
+
 
 export function updateCartQty(productId, qty) {
   const items = readCart();
@@ -72,3 +72,4 @@ export function removeFromCart(productId) {
 export function clearCart() {
   writeCart([]);
 }
+
