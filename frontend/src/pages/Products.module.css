@@ -10,6 +10,7 @@
 .header h1 {
   font-size: 48px;
   margin-bottom: 8px;
+  color: var(--text);
 }
 
 .grid {
@@ -35,22 +36,23 @@
   position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   overflow: hidden;
   transition: transform 200ms ease, box-shadow 200ms ease;
 }
 
 .card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.14);
+  box-shadow: var(--shadow);
 }
 
+/* Image placeholder */
 .imagePlaceholder {
   height: 220px;
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.08),
-    rgba(255, 255, 255, 0.02)
+    var(--surface-2),
+    var(--surface)
   );
 }
 
@@ -64,15 +66,23 @@
 
   background: linear-gradient(
     to top,
+    rgba(0, 0, 0, 0.08),
+    transparent
+  );
+}
+
+:root[data-theme="dark"] .cardBody {
+  background: linear-gradient(
+    to top,
     rgba(0, 0, 0, 0.32),
-    rgba(0, 0, 0, 0)
+    transparent
   );
 }
 
 .cardBody h3 {
   margin: 0;
   font-weight: 800;
-  color: #0b0f19;
+  color: var(--text);
 }
 
 .price {
@@ -88,6 +98,7 @@
   right: 14px;
   bottom: 76px;
   height: 44px;
+
   border: none;
   border-radius: 9999px;
   font-weight: 800;
