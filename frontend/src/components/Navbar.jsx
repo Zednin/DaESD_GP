@@ -140,13 +140,6 @@ export default function Navbar() {
         <div className={styles.right}>
           <SearchBar />
 
-          {/* Auth */}
-          {!loading && user ? (
-            <AccountMenu user={user} onLogout={logout} />
-          ) : (
-            !loading && <Link className={styles.link} to="/login">Sign In</Link>
-          )}
-
           {/* Cart */}
           <div className={styles.cartWrap} ref={cartWrapRef}>
             <button
@@ -243,6 +236,10 @@ export default function Navbar() {
             )}
           </AnimatePresence>
           </div>
+
+          {/* Auth */}
+          {!loading && <AccountMenu user={user} onLogout={logout} />}
+
         </div>
       </div>
     </nav>
