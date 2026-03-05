@@ -14,7 +14,7 @@
 }
 
 .avatarBtn:hover {
-  background: rgba(0,0,0,0.05);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .avatarCircle {
@@ -26,7 +26,7 @@
   font-weight: 800;
   color: #0b0f19;
   background: #eef0f3;
-  border: 1px solid rgba(0,0,0,0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 /* Menu surface */
@@ -34,15 +34,15 @@
   position: absolute;
   top: calc(100% + 12px);
   right: 0;
-  width: 360px;
+  width: 380px;
   max-width: calc(100vw - 24px);
 
-  background: #242526; /* Facebook dark vibe */
+  background: #242526;
   color: #e4e6eb;
 
   border-radius: 14px;
-  box-shadow: 0 18px 60px rgba(0,0,0,0.45);
-  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   overflow: hidden;
   z-index: 80;
 }
@@ -52,7 +52,7 @@
   grid-template-columns: 40px 1fr 40px;
   align-items: center;
   padding: 10px 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .headerTitle {
@@ -67,7 +67,7 @@
   height: 34px;
   border-radius: 9999px;
   border: none;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   color: #e4e6eb;
   display: grid;
   place-items: center;
@@ -75,7 +75,7 @@
 }
 
 .headerIconBtn:hover {
-  background: rgba(255,255,255,0.12);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .headerSpacer {
@@ -89,11 +89,10 @@
 
 .divider {
   height: 1px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   margin: 8px 0;
 }
 
-/* Profile row (top card-like) */
 .profileRow {
   width: 100%;
   display: flex;
@@ -102,14 +101,15 @@
 
   padding: 10px 10px;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
   color: inherit;
   cursor: pointer;
+  text-align: left;
 }
 
 .profileRow:hover {
-  background: rgba(255,255,255,0.09);
+  background: rgba(255, 255, 255, 0.09);
 }
 
 .profileIcon {
@@ -118,7 +118,7 @@
   border-radius: 9999px;
   display: grid;
   place-items: center;
-  background: rgba(255,255,255,0.10);
+  background: rgba(255, 255, 255, 0.1);
   color: #e4e6eb;
   flex: 0 0 auto;
 }
@@ -127,7 +127,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  text-align: left;
+  min-width: 0;
 }
 
 .profileTitle {
@@ -136,11 +136,11 @@
 }
 
 .profileSub {
-  color: rgba(228,230,235,0.72);
+  color: rgba(228, 230, 235, 0.72);
   font-size: 13px;
 }
 
-/* Menu rows */
+/* Standard menu rows */
 .row {
   width: 100%;
   display: grid;
@@ -158,7 +158,7 @@
 }
 
 .row:hover {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .iconCircle {
@@ -167,7 +167,7 @@
   border-radius: 9999px;
   display: grid;
   place-items: center;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   color: #e4e6eb;
 }
 
@@ -179,9 +179,123 @@
 .rowRight {
   display: grid;
   place-items: center;
-  color: rgba(228,230,235,0.7);
+  color: rgba(228, 230, 235, 0.7);
 }
 
 .rowDanger .rowTitle {
   color: #ff6b6b;
+}
+
+.darkModeBlock {
+  padding: 8px 10px 10px;
+}
+
+.darkModeHead {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 10px 6px 12px;
+}
+
+.darkModeIconCircle {
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e4e6eb;
+}
+
+.darkModeHeadText {
+  min-width: 0;
+}
+
+.darkModeTitle {
+  font-size: 16px;
+  font-weight: 900;
+  margin: 2px 0 6px;
+}
+
+.darkModeSub {
+  font-size: 13px;
+  color: rgba(228, 230, 235, 0.72);
+  line-height: 1.25rem;
+  margin: 0;
+}
+
+/* Options list */
+.darkModeOptions {
+  display: flex;
+  flex-direction: column;
+  margin-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.darkModeRow {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+
+  padding: 14px 6px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 10px;
+}
+
+.darkModeRow + .darkModeRow {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.darkModeRow:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.darkModeRow:active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.darkModeRowText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 18px;
+}
+
+.darkModeRowLabel {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.darkModeHint {
+  font-size: 13px;
+  color: rgba(228, 230, 235, 0.72);
+  line-height: 1.15rem;
+}
+
+.radio {
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  border: 2px solid rgba(228, 230, 235, 0.45);
+  position: relative;
+  margin-top: 2px;
+}
+
+.radioOn {
+  border-color: rgba(228, 230, 235, 0.95);
+}
+
+.radioOn::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 9999px;
+  background: #e4e6eb;
 }
