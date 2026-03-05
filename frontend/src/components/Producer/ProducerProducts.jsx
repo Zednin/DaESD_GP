@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from '../../pages/Producer/ProducerDashboard.module.css';
 
-/* ── Mock data ───────────────────────────────────────────────────────── */
+/*  Mock data 
 const MOCK_PRODUCERS = [
   { id: 1, company_name: 'Green Valley Farm' },
   { id: 2, company_name: 'Sunny Meadows Organics' },
@@ -28,6 +28,8 @@ const mockProductStore = Object.fromEntries(
   Object.entries(MOCK_PRODUCTS).map(([k, v]) => [k, v.map((p) => ({ ...p }))])
 );
 
+*/
+
 const EMPTY_FORM = {
   name: '',
   description: '',
@@ -39,6 +41,13 @@ const EMPTY_FORM = {
   status: 'available',
   organic_certified: false,
 };
+
+// Cross-Site Request Forgery token
+function getCookie(name) {
+  return document.cookie.split('; ') 
+    .find(r => r.startsWith(name + '='))
+    ?.split('=')[1];
+}
 
 const UNIT_OPTIONS = ['kg', 'g', 'litre', 'ml', 'unit', 'dozen'];
 const STATUS_OPTIONS = ['available', 'unavailable'];
@@ -69,36 +78,56 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
     setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
   }
 
+  // Prepares form for api response on 'add product' / 'save changes'
   async function handleSubmit(e) {
     e.preventDefault();
+
+    // disable submit (turns to saving) when user clicks Submit
     setSaving(true);
     setError('');
-    try {
-      const payload = {
-        ...form,
-        producer: producerId,
-        price: parseFloat(form.price),
-        stock: parseInt(form.stock, 10),
-        category_name: null,
-      };
-      if (isEdit) {
-        const updated = { ...product, ...payload };
-        // persist to mock store
-        const list = mockProductStore[producerId] ?? [];
-        const idx = list.findIndex((p) => p.id === product.id);
-        if (idx !== -1) list[idx] = updated;
-        onSaved(updated, 'edit');
-      } else {
-        const created = { ...payload, id: nextId++ };
-        if (!mockProductStore[producerId]) mockProductStore[producerId] = [];
-        mockProductStore[producerId].push(created);
-        onSaved(created, 'add');
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSaving(false);
+    const payload = {
+      ...form,
+      producer: producerId,
+      price: parseFloat(form.price),
+      stock: parseInt(form.stock, 10),
+      category: null,
+      allergens: [],
+    };
+
+    // Edit existing products
+    if (isEdit) {
+
+      // PUT = Updating existing record, product_id goes to url
+      const res = await fetch(`/api/products/${product.id}/`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        
+        // Convert to JSON 
+        body: JSON.stringify(payload),
+      });
+
+      // Wait for django response and parse back into js object
+      const updated = await res.json();
+
+      // replace old row with updated one
+      onSaved(updated, 'edit');
+    } else {
+
+      // POST = create new record from scratch and generate id
+      const res = await fetch('/api/products/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body: JSON.stringify(payload),
+      });
+
+      // pass new object to django
+      const created = await res.json();
+
+      // add new product to list on screen
+      onSaved(created, 'add');
     }
+    // Re enable save buttone when form is submitted
+    setSaving(false);
   }
 
   return (
@@ -197,9 +226,14 @@ function DeleteModal({ product, onClose, onDeleted }) {
     setDeleting(true);
     setError('');
     try {
-      const list = mockProductStore[product.producer] ?? [];
-      const idx = list.findIndex((p) => p.id === product.id);
-      if (idx !== -1) list.splice(idx, 1);
+      
+      // Send delete request to backend
+      const res = await fetch(`/api/products/${product.id}/`, {
+        method: 'DELETE',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+      });
+
+      // Remove listed product from screen
       onDeleted(product.id);
     } catch (err) {
       setError(err.message);
@@ -229,7 +263,7 @@ function DeleteModal({ product, onClose, onDeleted }) {
 
 /* Main component  */
 export default function ProducerProducts() {
-  const [allProducers, setAllProducers] = useState(MOCK_PRODUCERS);
+  const [allProducers, setAllProducers] = useState([]);
   const [selectedProducerId, setSelectedProducerId] = useState('');
   const [producerName, setProducerName] = useState('');
 
@@ -240,6 +274,12 @@ export default function ProducerProducts() {
 
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/producers/')
+      .then(res => res.json())
+      .then(data => setAllProducers(data.results ?? data));
+  }, []);
 
   /* Load products when a producer is selected */
   function handleProducerSelect(e) {
@@ -255,7 +295,9 @@ export default function ProducerProducts() {
     const pidInt = parseInt(pid, 10);
     setProducerId(pidInt);
     setProducerName(chosen?.company_name ?? 'Producer');
-    setProducts([...(mockProductStore[pidInt] ?? [])].sort((a, b) => a.name.localeCompare(b.name)));
+    fetch(`/api/products/?producer=${pid}`)
+      .then(res => res.json())
+      .then(data => setProducts(data.results ?? data));
   }
 
   function handleSaved(product, mode) {
