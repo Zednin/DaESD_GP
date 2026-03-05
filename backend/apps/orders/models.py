@@ -1,10 +1,13 @@
 from django.db import models
+from django.utils import timezone
 
 # Create your models here.
 from apps.accounts.models import Account
+from apps.accounts.models import Organisation
 from apps.addresses.models import Address
 from apps.producers.models import Producer
 from apps.catalog.models import Product
+
 
 
 class Order(models.Model):
@@ -16,7 +19,8 @@ class Order(models.Model):
     ]
 
     account = models.ForeignKey(Account, on_delete=models.PROTECT, related_name="orders")
-    delivery_address = models.ForeignKey(Address, on_delete=models.PROTECT, related_name="delivery_orders")
+    delivery_address = models.ForeignKey(
+        Address, on_delete=models.PROTECT, related_name="delivery_orders")
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
 
@@ -76,3 +80,106 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name}"
+    
+    
+    
+class RecurringOrder(models.Model):
+    STATUS_CHOICES = [
+        ("active", "Active"),
+        ("paused", "Paused"),
+        ("cancelled", "Cancelled"),
+    ]
+    
+    FREQUENCY_CHOICES = [
+        ("daily", "Daily"),
+        ("weekly", "Weekly"),
+        ("monthly", "Monthly"),
+    ]
+    
+    organisation = models.ForeignKey(
+        Organisation, on_delete=models.PROTECT, related_name="recurring_orders"
+        )
+    delivery_address = models.ForeignKey(
+        Address, on_delete=models.PROTECT, related_name="recurring_orders"
+        )
+    name = models.CharField(max_length=100)
+    frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES)
+    interval = models.PositiveIntegerField(default=1)  # e.g., every 2 weeks
+    
+    # e.g. 0=Monday, 1=Tuesday, ..., 6=Sunday (only relevant for weekly)
+    weekday = models.PositiveSmallIntegerField(blank=True, null=True)
+    # e.g. 1-31 (only relevant for monthly)
+    monthday = models.PositiveSmallIntegerField(blank=True, null=True)
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
+    
+    next_run_at = models.DateTimeField(db_index=True)
+    starts_at = models.DateTimeField(default=timezone.now)
+    ends_at = models.DateTimeField(blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self) -> str:
+        return f"RecurringOrder {self.name} ID: {self.id} for {self.organisation.name}"
+    
+class RecurringOrderItem(models.Model):
+    recurring_order = models.ForeignKey(
+        RecurringOrder, on_delete=models.CASCADE, related_name="items"
+    )
+    product = models.ForeignKey(
+        Product, on_delete=models.PROTECT, related_name="recurring_order_items"
+    )
+    quantity = models.PositiveIntegerField(default=1)
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["recurring_order", "product"], name="uniq_recurringorder_product"
+            )
+        ]
+        
+    def __str__(self) -> str:
+        return f"{self.quantity} x {self.product.name} for {self.recurring_order.name}"
+    
+    
+class RecurringOrderEvent(models.Model):
+    STATUS_CHOICES = [
+        ("created", "Created"),
+        ("failed", "Failed"),
+        ("skipped", "Skipped"),
+    ]
+    
+    recurring_order = models.ForeignKey(
+        RecurringOrder, on_delete=models.CASCADE, related_name="events"
+    )
+    
+    scheduled_for = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="created")
+    
+    # If order creation is successful, link to the created order
+    # Note: This is a OneToOneField because each event should correspond to at most one order
+    order = models.OneToOneField(
+        Order, 
+        on_delete=models.SET_NULL, 
+        blank=True, 
+        null=True, 
+        related_name="recurring_order_event"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["recurring_order", "scheduled_for"], 
+                name="uniq_recurringorder_scheduledfor"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["recurring_order", "scheduled_for"]),
+            models.Index(fields=["scheduled_for"]), # for efficient querying of upcoming events
+        ]
+        
+    def __str__(self) -> str:
+        return f"RecurringOrderEvent for {self.recurring_order.name} ID: {self.id} scheduled at {self.scheduled_for} - Status: {self.status}"
