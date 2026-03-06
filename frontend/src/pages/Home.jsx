@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import Hero from "../components/Hero/Hero";
+import FeaturedProducts from "../components/FeaturedProducts/FeaturedProducts";
+import Banner from "../components/Banners/Banner";
 
 export default function Home() {
   const [health, setHealth] = useState(null);
@@ -14,6 +16,8 @@ export default function Home() {
   return (
     <main>
       <Hero />
+      <FeaturedProducts />
+      <Banner />
 
       {/* keep the backend status section below if you want */}
             <p style={{ fontSize: 18, marginTop: 12, lineHeight: 1.5 }}>
