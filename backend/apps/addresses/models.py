@@ -53,6 +53,8 @@ class Address(models.Model):
 
     # Allow only PRODUCERS to create a business address
     def clean(self):
+
+        # Checks if address set is Business and is asigned to Producer
         if self.address_type == self.AddressType.BUSINESS and self.account.account_type != 'producer':
             raise ValidationError("Only producers can have a business address.")
         
@@ -61,12 +63,12 @@ class Address(models.Model):
             self.is_default = True
 
         # Unset previous default for same account + type so uniqueness constraint passes
-        if self.is_default:
-            Address.objects.filter(
-                account=self.account,
-                address_type=self.address_type,
-                is_default=True,
-            ).exclude(pk=self.pk).update(is_default=False)
+        if self.is_default:                                 # Check if address is Default
+            Address.objects.filter(                         
+                account=self.account,                       # Finds address to selected account
+                address_type=self.address_type,             # Finds address type
+                is_default=True,                            # Check if marked as default
+            ).exclude(pk=self.pk).update(is_default=False)  # Exclude new address, mark old ones as default=false
 
     # Enforces rules before saving to database
     def save(self, *args, **kwargs):    
@@ -74,7 +76,7 @@ class Address(models.Model):
         self.full_clean()               
         # Calls django save() function only if no errors arise
         super().save(*args, **kwargs)  
-        
+
     class Meta:
         # Returns address in order, fetches address first by default, then by created order
         ordering = ["-is_default", "-created_at"]

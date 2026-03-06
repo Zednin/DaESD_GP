@@ -58,6 +58,8 @@ INSTALLED_APPS = [
     "apps.orders",
     "apps.traceability",
     "apps.cart",
+    "apps.community",
+    "apps.sustainability",
 ]
 
 SITE_ID = 1

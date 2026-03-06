@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import Category, Product 
+from .models import Category, Product, InventoryAdjustment
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -11,3 +11,8 @@ class CategoryAdmin(admin.ModelAdmin):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = [field.name for field in Product._meta.fields]
+
+@admin.register(InventoryAdjustment)
+class InventoryAdjustmentAdmin(admin.ModelAdmin):
+    list_display = [field.name for field in InventoryAdjustment._meta.fields]
+
