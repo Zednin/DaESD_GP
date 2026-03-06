@@ -2,7 +2,6 @@ import { Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import RequireAuth from "./auth/RequireAuth";
 
 // General pages
 import Home from "./pages/Home";
@@ -12,9 +11,9 @@ import Login from "./pages/Login";
 import Cart from "./pages/Cart";
 
 // Customer pages
-import Checkout from "./pages/Checkout/Checkout";
+import Checkout from "./pages/Customer/Checkout";
 import CustomerMyAccount from "./pages/Customer/MyAccount";
-import CheckoutSuccess from "./pages/Checkout/CheckoutSuccess";
+import OrderCompletion from "./pages/Customer/OrderCompletion";
 
 // Producer pages
 import ProducerDashboard from "./pages/Producer/ProducerDashboard";
@@ -34,12 +33,9 @@ export default function App() {
         <Route path="/cart" element={<Cart />} />
 
         {/* Customer */}
-        <Route path="/checkout" element={
-        <RequireAuth>
-          <Checkout />
-        </RequireAuth>} />
+        <Route path="/checkout" element={<Checkout />} />
         <Route path="/my-account" element={<CustomerMyAccount />} />
-        <Route path="/checkout/success" element={<CheckoutSuccess />} />
+        <Route path="/order-completion" element={<OrderCompletion />} />
 
         {/* Producer */}
         <Route path="/producer/dashboard" element={<ProducerDashboard />} />

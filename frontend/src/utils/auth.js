@@ -95,3 +95,21 @@ export async function logout() {
 
   emitAuthUpdated();
 }
+
+
+export async function syncCartItem(productId, qty) {
+  const csrf = getCookie("csrftoken");
+
+  await fetch("/api/cart-items/", {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": csrf,
+    },
+    body: JSON.stringify({
+      product_id: productId,
+      quantity: qty,
+    }),
+  });
+}

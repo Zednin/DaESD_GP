@@ -117,7 +117,9 @@ export default function AccountMenu({ user, onLogout }) {
   const [open, setOpen] = useState(false);
   const [stack, setStack] = useState(["root"]);
   const wrapRef = useRef(null);
-  const [darkMode, setDarkMode] = useState("off"); // "off" | "on" | "auto" 
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem("theme") || "auto"; // "auto" default
+  });
 
   const activeKey = stack[stack.length - 1];
   const activePanel = panels[activeKey];
@@ -148,6 +150,39 @@ export default function AccountMenu({ user, onLogout }) {
       document.removeEventListener("keydown", onKeyDown);
     };
   }, []);
+
+ useEffect(() => {
+    localStorage.setItem("theme", darkMode);
+
+    const root = document.documentElement;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const apply = () => {
+    const isDark = darkMode === "auto" ? mq.matches : darkMode === "on";
+
+    // enable transitions just for the switch moment
+    root.classList.add("theme-animate");
+    root.dataset.theme = isDark ? "dark" : "light";
+
+    window.clearTimeout(root.__themeTimer);
+    root.__themeTimer = window.setTimeout(() => {
+      root.classList.remove("theme-animate");
+    }, 260);
+  };
+
+  apply();
+
+  if (darkMode === "auto") {
+    const onChange = () => apply();
+    if (mq.addEventListener) mq.addEventListener("change", onChange);
+    else mq.addListener(onChange);
+
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", onChange);
+      else mq.removeListener(onChange);
+    };
+  }
+}, [darkMode]);
 
   function go(panelKey) {
     setStack((s) => [...s, panelKey]);

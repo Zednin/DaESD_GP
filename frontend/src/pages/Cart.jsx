@@ -17,12 +17,12 @@ export default function Cart() {
 
   const subtotal = useMemo(() => getCartSubtotal(items), [items]);
 
-  function updateQty(productId, nextQty) {
-    updateCartQty(productId, nextQty);
+  async function updateQty(productId, nextQty) {
+    await updateCartQty(productId, nextQty);
   }
 
-  function removeItem(productId) {
-    removeFromCart(productId);
+  async function removeItem(productId) {
+    await removeFromCart(productId);
   }
 
   return (
