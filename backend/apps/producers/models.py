@@ -47,7 +47,7 @@ class Producer(models.Model):
      # Auto set when created
     created_at = models.DateTimeField(auto_now_add=True)            
     
-    # Ensures business address belongs to thesame account as business address set by producer
+    # Ensures business address belongs to thesame account as business address set by
     def clean(self):
         super().clean()
         if self.business_address and self.business_address.account_id != self.account_id:
