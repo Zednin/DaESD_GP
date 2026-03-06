@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { readCart, getCartSubtotal } from "../../utils/cartStorage";
+import { ensureCsrf, getCookie } from "../../utils/auth";
 import styles from "./Checkout.module.css";
 
 export default function Checkout() {
@@ -26,27 +27,46 @@ export default function Checkout() {
     });
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
+async function handleSubmit(e) {
+  e.preventDefault();
 
-    const payload = {
-      items,
-      subtotal,
-      delivery: formData,
-    };
+  const payload = {
+    items,
+    subtotal,
+    delivery: formData,
+  };
 
-    console.log("Checkout payload:", payload);
-    // later: POST this to Django
+  try {
+    await ensureCsrf();
+    const csrf = getCookie("csrftoken");
+
+    const res = await fetch("/api/checkout/create-session/", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrf,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      console.error("Checkout failed:", data);
+      throw new Error(data?.detail || "Failed to start checkout");
+    }
+
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      throw new Error("No checkout URL returned");
+    }
+  } catch (err) {
+    console.error("Checkout error:", err);
+    alert("Unable to start checkout. Please try again.");
   }
-
-  if (items.length === 0) {
-    return (
-      <main className="container">
-        <h1>Checkout</h1>
-        <p>Your basket is empty.</p>
-      </main>
-    );
-  }
+}
 
   return (
     <main className={`container ${styles.page}`}>
