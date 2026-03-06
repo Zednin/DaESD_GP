@@ -43,6 +43,9 @@
 
   /* Global radius */
   --radius: 16px;
+
+  /* Banner colours */
+  --banner-bg: rgba(251, 146, 60, 0.12);
 }
 
 /* Dark Mode */
@@ -64,6 +67,8 @@
   --control-bg-hover: rgba(255,255,255,0.12);
 
   --focus: 0 0 0 4px rgba(251, 146, 60, 0.18);
+
+  --banner-bg: rgba(253, 180, 121, 0.14);
 }
 
 /* Smooth theme transition */
