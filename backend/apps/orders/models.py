@@ -50,14 +50,16 @@ class ProducerOrder(models.Model):
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
 
-    subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    commission = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    payout_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     delivery_date = models.DateField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["order", "producer"], name="uniq_order_producer")
+        ]
 
     def __str__(self):
         return f"ProducerOrder {self.id} (Order {self.order_id})"
@@ -183,3 +185,82 @@ class RecurringOrderEvent(models.Model):
         
     def __str__(self) -> str:
         return f"RecurringOrderEvent for {self.recurring_order.name} ID: {self.id} scheduled at {self.scheduled_for} - Status: {self.status}"
+    
+    
+    
+    
+class WeeklySettlement(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("processing", "Processing"),
+        ("completed", "Completed"),
+        ("failed", "Failed"),
+    ]
+    
+    start_period = models.DateTimeField()
+    end_period = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    created_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["start_period", "end_period"],
+                name="uniq_weeklysettlement_period"
+            )
+        ]
+
+    def __str__(self):
+        return f"Settlement {self.id}: {self.start_period} to {self.end_period}"
+    
+class SettlementLine(models.Model):
+    PAYOUT_STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("paid", "Paid"),
+        ("failed", "Failed"),
+    ]
+
+    settlement = models.ForeignKey(
+        WeeklySettlement, on_delete=models.CASCADE, related_name="lines"
+    )
+    producer = models.ForeignKey(
+        Producer, on_delete=models.PROTECT, related_name="settlement_lines"
+    )
+
+    total_sales = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    commission_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    payout_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    payout_status = models.CharField(max_length=20, choices=PAYOUT_STATUS_CHOICES, default="pending")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["settlement", "producer"],
+                name="uniq_settlement_producer"
+            )
+        ]
+
+    def __str__(self):
+        return f"SettlementLine {self.id} - {self.producer.name}"
+    
+class CommissionLedger(models.Model):
+    producer_order = models.OneToOneField(
+        ProducerOrder, on_delete=models.PROTECT, related_name="commission_ledger"
+    )
+    settlement_line = models.ForeignKey(
+        SettlementLine,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="ledger_entries"
+    )
+
+    commission_rate = models.DecimalField(max_digits=5, decimal_places=2)
+    commission_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payout_amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"CommissionLedger {self.id} - ProducerOrder {self.producer_order_id}"
