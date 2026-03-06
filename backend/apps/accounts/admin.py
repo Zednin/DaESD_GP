@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import Account, Customer
+from .models import Account, Customer, Organisation
 
 # Register account model with admin panel
 @admin.register(Account)
@@ -16,3 +16,7 @@ class CustomerAdmin(admin.ModelAdmin):
     def get_username(self, obj):
         return obj.account.username
     get_username.short_description = 'Username'
+
+@admin.register(Organisation)
+class OrganisationAdmin(admin.ModelAdmin):
+    list_display = ['id', 'organisation_name', 'organisation_type', 'customer']

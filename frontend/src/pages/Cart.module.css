@@ -1,0 +1,257 @@
+.page {
+  padding-top: 36px;
+  padding-bottom: 64px;
+}
+
+.header h1 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 44px;
+  color: var(--text);
+}
+
+.header p {
+  margin-top: 10px;
+  color: var(--muted);
+}
+
+.layout {
+  margin-top: 28px;
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.itemsCard,
+.summaryCard {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 18px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+.itemsHeader {
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.itemsTitle {
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.itemsMeta {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  gap: 14px;
+  padding: 14px 16px;
+  align-items: center;
+}
+
+.row + .row {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.info {
+  min-width: 0;
+}
+
+.name {
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 18px;
+}
+
+.meta {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 13px;
+}
+
+.controls {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.qtyLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.70);
+}
+
+.qtyInput {
+  width: 70px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.92);
+  outline: none;
+}
+
+.qtyInput:focus {
+  border-color: rgba(222, 44, 77, 0.7);
+  box-shadow: 0 0 0 4px rgba(222, 44, 77, 0.18);
+}
+
+.removeBtn {
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+
+.removeBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.90);
+}
+
+.total {
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.92);
+  white-space: nowrap;
+  font-size: 18px;
+}
+
+.backRow {
+  padding: 12px 16px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.linkBtn {
+  color: rgba(255, 255, 255, 0.80);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.linkBtn:hover {
+  text-decoration: underline;
+}
+
+.summaryCard {
+  padding: 16px;
+}
+
+.summaryTitle {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.80);
+}
+
+.summaryHint {
+  margin-top: 10px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.60);
+  line-height: 1.4;
+}
+
+.checkoutBtn {
+  display: block;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 9999px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 900;
+  text-align: center;
+  text-decoration: none;
+}
+
+.checkoutBtn:hover {
+  filter: brightness(0.95);
+}
+
+.secondaryBtn {
+  display: block;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.secondaryBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.empty {
+  margin-top: 28px;
+  padding: 28px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.empty h2 {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.empty p {
+  margin-top: 10px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.primaryBtn {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 9999px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 900;
+  text-decoration: none;
+}
