@@ -3,7 +3,9 @@ import styles from "./Login.module.css";
 import { FaGoogle } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { login, signup } from "../utils/auth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
+import { migrateLocalCartToServerIfNeeded } from "../utils/cartStorage";
 
 export default function Login() {
   const [mode, setMode] = useState("login");
@@ -19,6 +21,8 @@ export default function Login() {
   const [password2, setPassword2] = useState("");
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { refresh } = useAuth();
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -28,14 +32,16 @@ export default function Login() {
     try {
       if (mode === "login") {
         await login(email, password);
-        navigate("/products"); // or wherever
       } else {
         await signup({ username, email, password1: password, password2 });
-        // Option A: registration may already log you in (depends on config)
-        // Safer: perform login after signup
         await login(email, password);
-        navigate("/products");
       }
+
+      await refresh();
+      await migrateLocalCartToServerIfNeeded();
+
+      const next = searchParams.get("next") || "/products";
+      navigate(next, { replace: true });
     } catch (err) {
       setError(err?.message || "Something went wrong");
     } finally {

@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import RequireAuth from "./auth/RequireAuth";
 
 // General pages
 import Home from "./pages/Home";
@@ -33,7 +34,10 @@ export default function App() {
         <Route path="/cart" element={<Cart />} />
 
         {/* Customer */}
-        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/checkout" element={
+        <RequireAuth>
+          <Checkout />
+        </RequireAuth>} />
         <Route path="/my-account" element={<CustomerMyAccount />} />
         <Route path="/order-completion" element={<OrderCompletion />} />
 
