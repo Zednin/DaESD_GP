@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.sites", 
     "rest_framework",
     "rest_framework.authtoken",
+    "django_filters",
     "dj_rest_auth",
     "allauth",
     "allauth.account",
@@ -58,6 +59,8 @@ INSTALLED_APPS = [
     "apps.orders",
     "apps.traceability",
     "apps.cart",
+    "apps.community",
+    "apps.sustainability",
 ]
 
 SITE_ID = 1
@@ -204,3 +207,10 @@ CSRF_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
+
+
+# Stripe Payment Gateway
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
+FRONTEND_URL="http://localhost:5173"

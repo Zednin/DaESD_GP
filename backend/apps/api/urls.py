@@ -14,6 +14,7 @@ from apps.orders.views import (
 )
 from apps.producers.views import ProducerViewSet
 from apps.traceability.views import AllergenViewSet
+from apps.payments.views import CreateCheckoutSessionView, stripe_webhook
 
 
 
@@ -35,5 +36,7 @@ urlpatterns = [
     path("", include(router.urls)),
     path("auth/", include("dj_rest_auth.urls")),
     path("auth/registration/", include("dj_rest_auth.registration.urls")),
+    path("checkout/create-session/", CreateCheckoutSessionView.as_view()),
+    path("stripe/webhook/", stripe_webhook),
 ]
 

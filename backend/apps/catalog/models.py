@@ -2,6 +2,7 @@ from django.db import models
 from apps.producers.models import Producer
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
+from django.conf import settings
 # Create your models here.
 
 class Category(models.Model):
@@ -101,6 +102,8 @@ class Product(models.Model):
     # Product listing date
     created_at = models.DateTimeField(auto_now_add=True)             
 
+    # Product listing updated from inventory_adjustment
+    updated_at = models.DateTimeField(auto_now=True)
 
     def clean(self):
         # Validates data before saving
@@ -118,4 +121,59 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
+class InventoryAdjustment(models.Model):
+    """26 Inventory Adjustment"""
+    #Types of adjustments:
+    ADJUSTMENT_REASON = [
+        # Auto adjust when order is made
+        ('order_adjustment', 'Order Adjustment'),    
+        # Adjust when Producer Restocks / Removes stock
+        ('producer_adjustment_add', 'Producer Adjustment - Adding Stock'),
+        ('producer_adjustment_remove', 'Producer Adjustment - Removing Stock')                      
+    ]
 
+    # Inventory adjustment to Product  
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='inventory_adjustment'
+    )
+
+    # Order item id
+    order_item = models.ForeignKey(
+        'orders.OrderItem',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name = 'inventory_adjustment'
+        )
+
+    # Change in quantity
+    delta_quantity = models.IntegerField()
+
+    # Reason for change
+    reason = models.CharField(
+        max_length=50,
+        choices=ADJUSTMENT_REASON
+        )
+
+    # Changed by User or System (null)
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='inventory_adjustment',
+        )
+
+    # Date changed
+    changed_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        # Update the product stock by the delta_quantity
+        self.product.stock += self.delta_quantity
+        self.product.save()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.product} | {self.delta_quantity} | {self.reason}"

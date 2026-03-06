@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {MdOutlineShoppingCart} from "react-icons/md";
 import { AnimatePresence, motion } from "framer-motion";
 import styles from "./Navbar.module.css";
@@ -87,6 +88,18 @@ export default function Navbar() {
 
   const itemCount = getCartCount(cartItems);
   const subtotal = getCartSubtotal(cartItems);
+
+  const navigate = useNavigate();
+
+  function handleCheckoutClick(e) {
+    if (!user) {
+      e.preventDefault(); // stop Link navigating
+      setCartOpen(false);
+      navigate("/login?next=/checkout");
+    } else {
+      setCartOpen(false);
+    }
+  }
 
   // keep navbar in sync when anything updates cartStorage
   useEffect(() => {
@@ -225,7 +238,7 @@ export default function Navbar() {
                         <Link to="/cart" className={styles.viewCartBtn} onClick={() => setCartOpen(false)}>
                           View basket
                         </Link>
-                        <Link to="/checkout" className={styles.checkoutBtn} onClick={() => setCartOpen(false)}>
+                        <Link to="/checkout" className={styles.checkoutBtn} onClick={handleCheckoutClick}>
                           Checkout
                         </Link>
                       </div>
