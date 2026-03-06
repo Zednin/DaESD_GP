@@ -9,3 +9,5 @@ dj-rest-auth
 django-allauth
 requests
 
+stripe==10.8.0
+

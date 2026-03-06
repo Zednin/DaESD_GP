@@ -12,9 +12,9 @@ import Login from "./pages/Login";
 import Cart from "./pages/Cart";
 
 // Customer pages
-import Checkout from "./pages/Customer/Checkout";
+import Checkout from "./pages/Checkout/Checkout";
 import CustomerMyAccount from "./pages/Customer/MyAccount";
-import OrderCompletion from "./pages/Customer/OrderCompletion";
+import CheckoutSuccess from "./pages/Checkout/CheckoutSuccess";
 
 // Producer pages
 import ProducerDashboard from "./pages/Producer/ProducerDashboard";
@@ -39,7 +39,7 @@ export default function App() {
           <Checkout />
         </RequireAuth>} />
         <Route path="/my-account" element={<CustomerMyAccount />} />
-        <Route path="/order-completion" element={<OrderCompletion />} />
+        <Route path="/checkout/success" element={<CheckoutSuccess />} />
 
         {/* Producer */}
         <Route path="/producer/dashboard" element={<ProducerDashboard />} />
