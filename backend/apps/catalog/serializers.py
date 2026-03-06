@@ -3,7 +3,7 @@ from .models import Product
 
 class ProductSerializer(serializers.ModelSerializer):
     # Readable representations
-    producer_name = serializers.CharField(source="producer.name", read_only=True)
+    producer_name = serializers.CharField(source="producer.company_name", read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True)
 
     class Meta:
@@ -23,6 +23,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "availability_start",
             "availability_end",
             "status",
+            "organic_certified",
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
