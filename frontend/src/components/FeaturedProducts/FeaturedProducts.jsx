@@ -8,7 +8,7 @@ import crack from "../../assets/crack.png";
 const featuredProducts = [
   {
     id: 1,
-    name: "Juicy apples",
+    name: "Juicy pum pum apple",
     tagline: "Sweet, crisp and locally loved.",
     price: "£4.48",
     likes: 128,
@@ -26,7 +26,7 @@ const featuredProducts = [
   },
   {
     id: 3,
-    name: "Sugar",
+    name: "Crack cocaine",
     tagline: "Ready to enjoy.",
     price: "£5.20",
     likes: 420,
