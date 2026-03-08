@@ -181,9 +181,7 @@ def handle_checkout_session_completed(session):
                 order=order,
                 producer_id=producer_id,
                 status="pending",
-                subtotal=subtotal,
-                commission=commission,
-                payout_amount=payout_amount,
+                total_amount=subtotal,
             )
 
             for cart_item in producer_items:

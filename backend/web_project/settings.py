@@ -31,6 +31,7 @@ SECRET_KEY = 'django-insecure-35_^4dd_$fhd2s=q1ve45kcr=$*)*go340k1z4mas@(z%4lqa(
 DEBUG = True
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "web"]
+FRONTEND_URL="http://localhost:5173"
 
 
 # Application definition
@@ -49,6 +50,7 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
     "dj_rest_auth.registration",
     "corsheaders",
     "apps.catalog",
@@ -63,18 +65,8 @@ INSTALLED_APPS = [
     "apps.sustainability",
 ]
 
-SITE_ID = 1
-
 #Custom account model to specify extended columns (phone_number, account_type)
 AUTH_USER_MODEL = 'accounts.Account' 
-
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
-]
-
-ACCOUNT_EMAIL_VERIFICATION = "none"   # no verify email required
-ACCOUNT_EMAIL_REQUIRED = True
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = "no-reply@localhost"
 
@@ -199,6 +191,11 @@ ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_EMAIL_VERIFICATION = "none"       # temporarily false until verification is added
+ACCOUNT_LOGIN_REDIRECT_URL = f"{FRONTEND_URL}/auth/callback"
+LOGIN_REDIRECT_URL = f"{FRONTEND_URL}/auth/callback"
+ACCOUNT_SIGNUP_REDIRECT_URL = f"{FRONTEND_URL}/auth/callback"
+ACCOUNT_LOGOUT_REDIRECT_URL = FRONTEND_URL
+SOCIALACCOUNT_ADAPTER = "apps.accounts.adapters.CustomSocialAccountAdapter"
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
@@ -213,4 +210,21 @@ SESSION_COOKIE_SECURE = False
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
-FRONTEND_URL="http://localhost:5173"
+
+# Google OAuth
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "SCOPE": [
+            "profile",
+            "email",
+        ],
+        "AUTH_PARAMS": {
+            "access_type": "online",
+        },
+        "APP": {
+            "client_id": os.getenv("GOOGLE_CLIENT_ID"),
+            "secret": os.getenv("GOOGLE_CLIENT_SECRET"),
+            "key": "",
+        },
+    }
+}
