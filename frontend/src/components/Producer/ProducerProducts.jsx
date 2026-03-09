@@ -40,6 +40,9 @@ const EMPTY_FORM = {
   availability_end: '',
   status: 'available',
   organic_certified: false,
+  category: '',
+  allergens: [],
+  image: '',
 };
 
 // Cross-Site Request Forgery token
@@ -67,15 +70,42 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
           availability_end: product.availability_end,
           status: product.status,
           organic_certified: product.organic_certified,
+          category: product.category ?? '',
+          allergens: product.allergens ?? [],
+          image: product.image ?? '',
         }
       : EMPTY_FORM
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [categories, setCategories] = useState([]);
+  const [allergensList, setAllergensList] = useState([]);
+
+  // Fetch categories and allergens on mount
+  useEffect(() => {
+    fetch('/api/categories/')
+      .then(res => res.json())
+      .then(data => setCategories(data.results ?? data));
+    fetch('/api/allergens/')
+      .then(res => res.json())
+      .then(data => setAllergensList(data.results ?? data));
+  }, []);
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
     setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
+  }
+
+  function handleAllergenToggle(allergenId) {
+    setForm((f) => {
+      const current = f.allergens;
+      return {
+        ...f,
+        allergens: current.includes(allergenId)
+          ? current.filter((id) => id !== allergenId)
+          : [...current, allergenId],
+      };
+    });
   }
 
   // Prepares form for api response on 'add product' / 'save changes'
@@ -90,8 +120,9 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
       producer: producerId,
       price: parseFloat(form.price),
       stock: parseInt(form.stock, 10),
-      category: null,
-      allergens: [],
+      category: form.category ? parseInt(form.category, 10) : null,
+      allergens: form.allergens,
+      image: form.image || null,
     };
 
     // Edit existing products
@@ -153,6 +184,23 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
             <textarea name="description" value={form.description} onChange={handleChange} rows={3} />
           </div>
 
+          {/* Row: category + image */}
+          <div className={styles.formRow}>
+            <div className={styles.field}>
+              <label>Category</label>
+              <select name="category" value={form.category} onChange={handleChange}>
+                <option value="">— None —</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.field}>
+              <label>Image URL</label>
+              <input name="image" type="url" placeholder="https://..." value={form.image} onChange={handleChange} />
+            </div>
+          </div>
+
           {/* Row: price + unit + stock */}
           <div className={styles.formRow}>
             <div className={styles.field}>
@@ -195,13 +243,33 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
                 ))}
               </select>
             </div>
-            <div className={`${styles.field} ${styles.checkboxField}`}>
-              <label>
+            <div className={styles.field}>
+              <label>Organic</label>
+              <label className={styles.allergenCheckbox}>
                 <input name="organic_certified" type="checkbox" checked={form.organic_certified} onChange={handleChange} />
                 Organic Certified
               </label>
             </div>
           </div>
+
+          {/* Allergens */}
+          {allergensList.length > 0 && (
+            <div className={styles.field}>
+              <label>Allergens</label>
+              <div className={styles.allergensGrid}>
+                {allergensList.map((a) => (
+                  <label key={a.id} className={styles.allergenCheckbox}>
+                    <input
+                      type="checkbox"
+                      checked={form.allergens.includes(a.id)}
+                      onChange={() => handleAllergenToggle(a.id)}
+                    />
+                    {a.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className={styles.modalActions}>
             <button type="button" className={styles.cancelBtn} onClick={onClose} disabled={saving}>
