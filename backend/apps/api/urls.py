@@ -4,7 +4,7 @@ from .views import csrf
 
 
 from apps.accounts.views import AccountsViewSet
-from apps.catalog.views import ProductViewSet
+from apps.catalog.views import ProductViewSet, CategoryViewSet
 from apps.addresses.views import AddressViewSet
 from apps.cart.views import CartViewSet, CartItemViewSet
 from apps.orders.views import (
@@ -30,6 +30,7 @@ router.register(r'producer-orders', ProducerOrderViewSet, basename='producer-ord
 router.register(r'order-items', OrderItemViewSet, basename='order-item')
 router.register(r'producers', ProducerViewSet, basename='producer')
 router.register(r'allergens', AllergenViewSet, basename='allergen')
+router.register(r'categories', CategoryViewSet, basename='category')
 
 urlpatterns = [
     path("auth/csrf/", csrf),
