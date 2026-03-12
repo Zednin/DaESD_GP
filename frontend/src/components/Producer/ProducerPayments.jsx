@@ -1,7 +1,387 @@
-export default function ProducerPayments() {
+import { useState, useEffect, useMemo } from 'react';
+import styles from '../../pages/Producer/ProducerDashboard.module.css';
+
+/* Helpers */
+function inferPaymentStatus(orderStatus) {
+  if (['delivered', 'completed'].includes(orderStatus)) return 'paid';
+  if (['cancelled', 'rejected'].includes(orderStatus))  return 'cancelled';
+  return 'pending';
+}
+
+const ORDER_STATUS_CLASS = {
+  pending:   styles.badgeWarning,
+  accepted:  styles.badgeBlue,
+  preparing: styles.badgeBlue,
+  ready:     styles.badgePurple,
+  delivered: styles.badgeGreen,
+  completed: styles.badgeGreen,
+  cancelled: styles.badgeGrey,
+  rejected:  styles.badgeRed,
+};
+
+const PAYOUT_STATUS_CLASS = {
+  paid:      styles.badgeGreen,
+  pending:   styles.badgeWarning,
+  cancelled: styles.badgeGrey,
+};
+
+const FILTER_OPTIONS = ['all', 'paid', 'pending', 'cancelled'];
+
+function buildMonthlyReport(orders) {
+  const groups = {};
+  orders.forEach(o => {
+    const key = o.created_at.slice(0, 7);
+    if (!groups[key]) groups[key] = { gross: 0, commission: 0, net: 0, count: 0, paid: 0, pending: 0, cancelled: 0 };
+    const ps = inferPaymentStatus(o.status);
+    groups[key].gross      += o.subtotal;
+    groups[key].commission += o.commission;
+    groups[key].net        += o.payout_amount;
+    groups[key].count      += 1;
+    groups[key][ps]        += 1;
+  });
+
+  return Object.entries(groups)
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([key, v]) => ({
+      key,
+      label: new Date(key + '-01').toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }),
+      ...v,
+      effectiveRate: v.gross > 0 ? ((v.commission / v.gross) * 100).toFixed(1) : '0.0',
+    }));
+}
+
+/* Component */
+export default function ProducerPayments({ producerId, producerName }) {
+  const [orders, setOrders]       = useState([]);
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState('');
+  const [filter, setFilter]       = useState('all');
+  const [activeTab, setActiveTab] = useState('transactions');
+
+  useEffect(() => {
+    if (!producerId) { setOrders([]); return; }
+    let cancelled = false;
+    setLoading(true);
+    setError('');
+
+    (async () => {
+      try {
+        const ordersRes = await fetch(
+          `/api/producer-orders/?producer=${producerId}`,
+          { credentials: 'include' },
+        );
+        if (!ordersRes.ok) throw new Error('Failed to load orders');
+        const ordersData = await ordersRes.json();
+        if (cancelled) return;
+
+        setOrders(
+          (ordersData.results ?? ordersData).map(o => ({
+            ...o,
+            subtotal:      parseFloat(o.subtotal),
+            commission:    parseFloat(o.commission),
+            payout_amount: parseFloat(o.payout_amount),
+          }))
+        );
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [producerId]);
+
+  const monthlyReport = useMemo(() => buildMonthlyReport(orders), [orders]);
+
+  const rows = useMemo(() =>
+    [...orders]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .map(o => ({
+        id:             o.id,
+        orderId:        o.order,
+        date:           o.created_at,
+        subtotal:       o.subtotal,
+        commission:     o.commission,
+        payout:         o.payout_amount,
+        commissionRate: o.subtotal > 0 ? ((o.commission / o.subtotal) * 100).toFixed(1) : '0.0',
+        orderStatus:    o.status,
+        paymentStatus:  inferPaymentStatus(o.status),
+        deliveryDate:   o.delivery_date,
+      })),
+    [orders]
+  );
+
+  const filteredRows = filter === 'all' ? rows : rows.filter(r => r.paymentStatus === filter);
+
+  // Summary stats
+  const completed       = orders.filter(o => ['delivered', 'completed'].includes(o.status));
+  const totalGross      = completed.reduce((s, o) => s + o.subtotal, 0);
+  const totalCommission = completed.reduce((s, o) => s + o.commission, 0);
+  const totalNet        = completed.reduce((s, o) => s + o.payout_amount, 0);
+  const pendingAmount   = orders.filter(o => ['pending','accepted','preparing','ready'].includes(o.status)).reduce((s, o) => s + o.payout_amount, 0);
+  const overallRate     = totalGross > 0 ? ((totalCommission / totalGross) * 100).toFixed(1) : '0.0';
+
+  // Export stubs (no functionality yet)
+  function handleExportCSV()  { /* TODO: wire up CSV export */ }
+  function handleExportPDF()  { /* TODO: wire up PDF export */ }
+
+  /* Loading / error guards */
+  if (!producerId) {
+    return (
+      <div className={styles.centred}>
+        <p>Choose a producer above to view payments.</p>
+      </div>
+    );
+  }
+  if (loading) {
+    return (
+      <div className={styles.centred}>
+        <span className={styles.spinner} />
+        Loading…
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className={styles.centred}>
+        <p className={styles.errorText}>Error: {error}</p>
+      </div>
+    );
+  }
+
   return (
-    <section>
-      <h2>Payments</h2>
+    <section className={styles.section}>
+
+      {/* Header */}
+      <div className={styles.sectionHeader}>
+        <div>
+          <h2 className={styles.sectionTitle}>Payments &amp; Finance</h2>
+          <p className={styles.subtitle}>Your earnings, commission breakdown, and finance reports</p>
+        </div>
+      </div>
+
+      {/* Summary cards */}
+      <div className={styles.statsGrid}>
+        <div className={styles.statCard}>
+          <p className={styles.statLabel}>Net Revenue</p>
+          <p className={`${styles.statValue} ${styles.statAccent}`}>£{totalNet.toFixed(2)}</p>
+          <p className={styles.statSub}>After {overallRate}% platform commission</p>
+        </div>
+        <div className={styles.statCard}>
+          <p className={styles.statLabel}>Gross Sales</p>
+          <p className={styles.statValue}>£{totalGross.toFixed(2)}</p>
+          <p className={styles.statSub}>Total before commission</p>
+        </div>
+        <div className={styles.statCard}>
+          <p className={styles.statLabel}>Commission Paid</p>
+          <p className={styles.statValue}>£{totalCommission.toFixed(2)}</p>
+          <p className={styles.statSub}>Platform fee on completed orders</p>
+        </div>
+        <div className={styles.statCard}>
+          <p className={styles.statLabel}>Pending Payouts</p>
+          <p className={styles.statValue}>£{pendingAmount.toFixed(2)}</p>
+          <p className={styles.statSub}>Orders in progress</p>
+        </div>
+      </div>
+
+      {/* Tab switcher */}
+      <div className={styles.tabBar}>
+        <button
+          className={`${styles.tabBtn} ${activeTab === 'transactions' ? styles.tabBtnActive : ''}`}
+          onClick={() => setActiveTab('transactions')}
+        >
+          Transactions
+        </button>
+        <button
+          className={`${styles.tabBtn} ${activeTab === 'finance-report' ? styles.tabBtnActive : ''}`}
+          onClick={() => setActiveTab('finance-report')}
+        >
+          Finance Report
+        </button>
+      </div>
+
+      {/* TAB: Transactions */}
+      {activeTab === 'transactions' && (
+        <>
+          {/* Filter pills + export buttons */}
+          <div className={styles.filterRow}>
+            <div className={styles.filterTabs}>
+              {FILTER_OPTIONS.map(f => (
+                <button
+                  key={f}
+                  className={`${styles.filterTab} ${filter === f ? styles.filterTabActive : ''}`}
+                  onClick={() => setFilter(f)}
+                >
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                  <span className={styles.filterTabCount}>
+                    {f === 'all' ? rows.length : rows.filter(r => r.paymentStatus === f).length}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className={styles.exportBtns}>
+              <button className={styles.exportBtn} onClick={handleExportCSV}>↓ Export CSV</button>
+              <button className={styles.exportBtn} onClick={handleExportPDF}>↓ Export PDF</button>
+            </div>
+          </div>
+
+          {filteredRows.length === 0 ? (
+            <div className={styles.empty}>
+              <p>No {filter !== 'all' ? filter : ''} transactions found.</p>
+            </div>
+          ) : (
+            <div className={styles.tableWrapper}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Order Ref</th>
+                    <th>Date</th>
+                    <th>Delivery Date</th>
+                    <th>Gross Sales</th>
+                    <th>Commission</th>
+                    <th>Net Payout</th>
+                    <th>Order Status</th>
+                    <th>Payment</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRows.map(row => (
+                    <tr key={row.id}>
+                      <td className={styles.muted}>#{row.orderId}</td>
+                      <td className={styles.dateCell}>
+                        {new Date(row.date).toLocaleDateString('en-GB')}
+                      </td>
+                      <td className={styles.dateCell}>
+                        {row.deliveryDate
+                          ? new Date(row.deliveryDate).toLocaleDateString('en-GB')
+                          : <span className={styles.muted}>—</span>}
+                      </td>
+                      <td>£{row.subtotal.toFixed(2)}</td>
+                      <td>
+                        <span className={styles.commissionCell}>
+                          £{row.commission.toFixed(2)}
+                          <span className={styles.commissionRate}>({row.commissionRate}%)</span>
+                        </span>
+                      </td>
+                      <td><strong>£{row.payout.toFixed(2)}</strong></td>
+                      <td>
+                        <span className={`${styles.badge} ${ORDER_STATUS_CLASS[row.orderStatus] ?? styles.badgeGrey}`}>
+                          {row.orderStatus}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`${styles.badge} ${PAYOUT_STATUS_CLASS[row.paymentStatus] ?? styles.badgeGrey}`}>
+                          {row.paymentStatus}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className={styles.tableFoot}>
+                    <td colSpan={3}><strong>Totals ({filteredRows.length} orders)</strong></td>
+                    <td><strong>£{filteredRows.reduce((s, r) => s + r.subtotal, 0).toFixed(2)}</strong></td>
+                    <td><strong>£{filteredRows.reduce((s, r) => s + r.commission, 0).toFixed(2)}</strong></td>
+                    <td><strong>£{filteredRows.reduce((s, r) => s + r.payout, 0).toFixed(2)}</strong></td>
+                    <td colSpan={2} />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* TAB: Finance Report (weekly settlement summary) */}
+      {activeTab === 'finance-report' && (
+        <>
+          <div className={styles.filterRow}>
+            <div>
+              <h3 className={styles.subheading} style={{ margin: 0 }}>Weekly Settlement Report</h3>
+              <p className={styles.subtitle} style={{ margin: 0 }}>
+                Gross sales, platform commission, and net payout — settled weekly
+              </p>
+            </div>
+            <div className={styles.exportBtns}>
+              <button className={styles.exportBtn} onClick={handleExportCSV}>↓ Export CSV</button>
+              <button className={styles.exportBtn} onClick={handleExportPDF}>↓ Export PDF</button>
+            </div>
+          </div>
+
+          {monthlyReport.length === 0 ? (
+            <div className={styles.empty}>
+              <p>No financial data to report yet.</p>
+            </div>
+          ) : (
+            <div className={styles.tableWrapper}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Period</th>
+                    <th>Orders</th>
+                    <th>Gross Sales</th>
+                    <th>Commission</th>
+                    <th>Commission Rate</th>
+                    <th>Net Payout</th>
+                    <th>Paid</th>
+                    <th>Pending</th>
+                    <th>Cancelled</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthlyReport.map(row => (
+                    <tr key={row.key}>
+                      <td><strong>{row.label}</strong></td>
+                      <td className={styles.centredCell}>{row.count}</td>
+                      <td>£{row.gross.toFixed(2)}</td>
+                      <td>£{row.commission.toFixed(2)}</td>
+                      <td className={styles.centredCell}>
+                        <span className={`${styles.badge} ${styles.badgeGrey}`}>
+                          {row.effectiveRate}%
+                        </span>
+                      </td>
+                      <td><strong>£{row.net.toFixed(2)}</strong></td>
+                      <td className={styles.centredCell}>
+                        {row.paid > 0
+                          ? <span className={`${styles.badge} ${styles.badgeGreen}`}>{row.paid}</span>
+                          : <span className={styles.muted}>—</span>}
+                      </td>
+                      <td className={styles.centredCell}>
+                        {row.pending > 0
+                          ? <span className={`${styles.badge} ${styles.badgeWarning}`}>{row.pending}</span>
+                          : <span className={styles.muted}>—</span>}
+                      </td>
+                      <td className={styles.centredCell}>
+                        {row.cancelled > 0
+                          ? <span className={`${styles.badge} ${styles.badgeGrey}`}>{row.cancelled}</span>
+                          : <span className={styles.muted}>—</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className={styles.tableFoot}>
+                    <td><strong>All Time</strong></td>
+                    <td className={styles.centredCell}><strong>{orders.length}</strong></td>
+                    <td><strong>£{monthlyReport.reduce((s, r) => s + r.gross, 0).toFixed(2)}</strong></td>
+                    <td><strong>£{monthlyReport.reduce((s, r) => s + r.commission, 0).toFixed(2)}</strong></td>
+                    <td className={styles.centredCell}>
+                      <span className={`${styles.badge} ${styles.badgeGrey}`}>{overallRate}%</span>
+                    </td>
+                    <td><strong>£{monthlyReport.reduce((s, r) => s + r.net, 0).toFixed(2)}</strong></td>
+                    <td className={styles.centredCell}><strong>{monthlyReport.reduce((s, r) => s + r.paid, 0)}</strong></td>
+                    <td className={styles.centredCell}><strong>{monthlyReport.reduce((s, r) => s + r.pending, 0)}</strong></td>
+                    <td className={styles.centredCell}><strong>{monthlyReport.reduce((s, r) => s + r.cancelled, 0)}</strong></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+
+        </>
+      )}
+
     </section>
   );
 }
