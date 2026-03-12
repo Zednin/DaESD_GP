@@ -13,6 +13,150 @@
   color: var(--text);
 }
 
+/* ── AI Recommendations ── */
+.recsSection {
+  margin-bottom: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.recsToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  width: 100%;
+  padding: 14px 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.recsToggle:hover {
+  background: var(--surface-2);
+}
+
+.recsToggle {
+  transition: background 250ms ease;
+}
+
+.recsSubtext {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.recsArrow {
+  width: 22px;
+  height: 22px;
+  color: var(--muted);
+  transform: rotate(-90deg);
+  transition: transform 250ms ease;
+}
+
+.recsArrowOpen {
+  transform: rotate(0deg);
+}
+
+.recsGrid {
+  display: flex;
+  gap: 16px;
+  padding: 12px 20px 20px;
+  overflow-x: auto;
+}
+
+/* Compact recommendation card */
+.recCard {
+  position: relative;
+  flex: 0 0 180px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.recCard:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+
+.recImagePlaceholder {
+  position: relative;
+  height: 120px;
+  background: linear-gradient(135deg, var(--surface-2), var(--surface));
+}
+
+.recOrganicBadge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 14px;
+}
+
+.recCardBody {
+  padding: 10px 12px 12px;
+}
+
+.recName {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recPrice {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  white-space: nowrap;
+}
+
+.recQuickAddBtn {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 60px;
+  height: 32px;
+  border: none;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: transform 220ms ease, opacity 220ms ease, filter 220ms ease;
+}
+
+.recCard:hover .recQuickAddBtn {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.recQuickAddBtn:hover {
+  filter: brightness(0.96);
+}
+
+@media (hover: none) {
+  .recQuickAddBtn {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ── Toolbar ── */
 .toolbar {
   display: flex;
