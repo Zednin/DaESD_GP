@@ -330,43 +330,24 @@ function DeleteModal({ product, onClose, onDeleted }) {
 }
 
 /* Main component  */
-export default function ProducerProducts() {
-  const [allProducers, setAllProducers] = useState([]);
-  const [selectedProducerId, setSelectedProducerId] = useState('');
-  const [producerName, setProducerName] = useState('');
-
-  const [producerId, setProducerId] = useState(null);
+export default function ProducerProducts({ producerId, producerName }) {
   const [products, setProducts] = useState([]);
-  const [loading] = useState(false);
-  const [error] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
-    fetch('/api/producers/')
+    if (!producerId) { setProducts([]); return; }
+    setLoading(true);
+    setError('');
+    fetch(`/api/products/?producer=${producerId}`, { credentials: 'include' })
       .then(res => res.json())
-      .then(data => setAllProducers(data.results ?? data));
-  }, []);
-
-  /* Load products when a producer is selected */
-  function handleProducerSelect(e) {
-    const pid = e.target.value;
-    setSelectedProducerId(pid);
-    if (!pid) {
-      setProducerId(null);
-      setProducerName('');
-      setProducts([]);
-      return;
-    }
-    const chosen = allProducers.find((p) => p.id === parseInt(pid, 10));
-    const pidInt = parseInt(pid, 10);
-    setProducerId(pidInt);
-    setProducerName(chosen?.company_name ?? 'Producer');
-    fetch(`/api/products/?producer=${pid}`)
-      .then(res => res.json())
-      .then(data => setProducts(data.results ?? data));
-  }
+      .then(data => setProducts(data.results ?? data))
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [producerId]);
 
   function handleSaved(product, mode) {
     setProducts((prev) =>
@@ -380,6 +361,14 @@ export default function ProducerProducts() {
   function handleDeleted(id) {
     setProducts((prev) => prev.filter((p) => p.id !== id));
     setDeleteTarget(null);
+  }
+
+  if (!producerId) {
+    return (
+      <div className={styles.centred}>
+        <p>Choose a producer above to view and manage their products.</p>
+      </div>
+    );
   }
 
   if (loading) {
@@ -402,26 +391,6 @@ export default function ProducerProducts() {
   return (
     <section className={styles.section}>
 
-      {/* Producer picker --- REMOVE LATER ON */}
-      <div className={styles.adminBanner}>
-        <span className={styles.adminLabel}>Producer:</span>
-        <select
-          className={styles.adminSelect}
-          value={selectedProducerId}
-          onChange={handleProducerSelect}
-        >
-          <option value="">— Choose a producer —</option>
-          {allProducers.map((p) => (
-            <option key={p.id} value={p.id}>{p.company_name}</option>
-          ))}
-        </select>
-        {allProducers.length === 0 && (
-          <span className={styles.adminHint}>
-            No producers in the database yet.
-          </span>
-        )}
-      </div>
-
       {/* Header */}
       <div className={styles.sectionHeader}>
         <div>
@@ -442,11 +411,7 @@ export default function ProducerProducts() {
       </div>
 
       {/* Body */}
-      {!producerId ? (
-        <div className={styles.empty}>
-          <p>Choose a producer above to view and manage their products.</p>
-        </div>
-      ) : products.length === 0 ? (
+      {products.length === 0 ? (
         <div className={styles.empty}>
           <p>No products listed yet.</p>
           <button className={styles.addBtn} onClick={() => setEditTarget('new')}>
