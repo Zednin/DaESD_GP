@@ -41,6 +41,24 @@
   /* Focus ring */
   --focus: 0 0 0 4px rgba(110, 35, 50, 0.18);
 
+  /* Semantic colours */
+  --error: #ef4444;
+  --error-muted: rgba(239, 68, 68, 0.15);
+  --error-border: rgba(239, 68, 68, 0.35);
+  --success: #22c55e;
+  --success-muted: rgba(34, 197, 94, 0.15);
+  --warning: #eab308;
+  --warning-muted: rgba(234, 179, 8, 0.12);
+  --warning-border: rgba(234, 179, 8, 0.3);
+  --neutral-badge: #94a3b8;
+  --neutral-badge-bg: rgba(148, 163, 184, 0.15);
+
+  /* Hover overlays */
+  --hover-overlay: rgba(17, 24, 39, 0.04);
+  --primary-muted: rgba(110, 35, 50, 0.15);
+  --primary-muted-hover: rgba(110, 35, 50, 0.22);
+  --primary-border: rgba(110, 35, 50, 0.45);
+
   /* Global radius */
   --radius: 16px;
 
@@ -69,6 +87,23 @@
   --focus: 0 0 0 4px rgba(251, 146, 60, 0.18);
 
   --banner-bg: rgba(253, 180, 121, 0.14);
+
+  --error: #ef4444;
+  --error-muted: rgba(239, 68, 68, 0.15);
+  --error-border: rgba(239, 68, 68, 0.35);
+  --success: #22c55e;
+  --success-muted: rgba(34, 197, 94, 0.15);
+  --warning: #eab308;
+  --warning-muted: rgba(234, 179, 8, 0.12);
+  --warning-border: rgba(234, 179, 8, 0.3);
+  --neutral-badge: #94a3b8;
+  --neutral-badge-bg: rgba(148, 163, 184, 0.15);
+
+  /* Hover overlays */
+  --hover-overlay: rgba(17, 24, 39, 0.04);
+  --primary-muted: rgba(110, 35, 50, 0.15);
+  --primary-muted-hover: rgba(110, 35, 50, 0.22);
+  --primary-border: rgba(110, 35, 50, 0.45);
 }
 
 /* Smooth theme transition */

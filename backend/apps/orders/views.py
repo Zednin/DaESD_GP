@@ -1,4 +1,5 @@
 from rest_framework.viewsets import ModelViewSet
+from django_filters.rest_framework import DjangoFilterBackend
 from .models import Order, ProducerOrder, OrderItem
 from .serializers import (
     OrderSerializer,
@@ -13,6 +14,8 @@ class OrderViewSet(ModelViewSet):
 class ProducerOrderViewSet(ModelViewSet):
     queryset = ProducerOrder.objects.all()
     serializer_class = ProducerOrderSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['producer', 'status']
 
 class OrderItemViewSet(ModelViewSet):
     queryset = OrderItem.objects.all()
