@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './ProducerDashboard.module.css';
 import ProducerOverview from '../../components/Producer/ProducerOverview';
 import ProducerProducts from '../../components/Producer/ProducerProducts';
@@ -18,16 +18,27 @@ const navItems = [
 
 export default function ProducerDashboard() {
   const [activeSection, setActiveSection] = useState('overview');
+  const [allProducers, setAllProducers] = useState([]);
+  const [selectedProducerId, setSelectedProducerId] = useState('');
+
+  useEffect(() => {
+    fetch('/api/producers/', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setAllProducers(data.results ?? data));
+  }, []);
+
+  const producerId = selectedProducerId ? parseInt(selectedProducerId, 10) : null;
+  const producerName = allProducers.find(p => p.id === producerId)?.company_name ?? '';
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'overview':  return <ProducerOverview />;
-      case 'products':  return <ProducerProducts />;
-      case 'orders':    return <ProducerOrders />;
-      case 'payments':  return <ProducerPayments />;
-      case 'surplus':   return <ProducerSurplus />;
-      case 'profile':   return <ProducerProfile />;
-      default:          return <ProducerOverview />;
+      case 'overview':  return <ProducerOverview producerId={producerId} producerName={producerName} />;
+      case 'products':  return <ProducerProducts producerId={producerId} producerName={producerName} />;
+      case 'orders':    return <ProducerOrders producerId={producerId} producerName={producerName} />;
+      case 'payments':  return <ProducerPayments producerId={producerId} producerName={producerName} />;
+      case 'surplus':   return <ProducerSurplus producerId={producerId} producerName={producerName} />;
+      case 'profile':   return <ProducerProfile producerId={producerId} producerName={producerName} />;
+      default:          return <ProducerOverview producerId={producerId} producerName={producerName} />;
     }
   };
 
@@ -51,6 +62,24 @@ export default function ProducerDashboard() {
 
       {/* Main content */}
       <main className={styles.content}>
+        {/* Producer selector */}
+        <div className={styles.adminBanner}>
+          <span className={styles.adminLabel}>Producer:</span>
+          <select
+            className={styles.adminSelect}
+            value={selectedProducerId}
+            onChange={(e) => setSelectedProducerId(e.target.value)}
+          >
+            <option value="">— Choose a producer —</option>
+            {allProducers.map((p) => (
+              <option key={p.id} value={p.id}>{p.company_name}</option>
+            ))}
+          </select>
+          {allProducers.length === 0 && (
+            <span className={styles.adminHint}>No producers in the database yet.</span>
+          )}
+        </div>
+
         {renderSection()}
       </main>
     </div>
