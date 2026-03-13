@@ -6,7 +6,6 @@ import QuickAddModal from "../components/QuickAddModal/QuickAddModal";
 import FilterPanel from "../components/FilterPanel/FilterPanel";
 import styles from "./Products.module.css";
 import { addToCart, getCartSubtotal, readCart } from "../utils/cartStorage";
-import { useAuth } from "../auth/AuthContext";
 
 // Hardcoded recommendations — replace with API call later
 const HARDCODED_RECOMMENDATIONS = [
@@ -18,13 +17,14 @@ const HARDCODED_RECOMMENDATIONS = [
 ];
 
 export default function Products() {
-  const { user } = useAuth();
   const [rawProducts, setRawProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [producers, setProducers] = useState([]);
   const [allergens, setAllergens] = useState([]);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [recsOpen, setRecsOpen] = useState(false);
+  const [viewMode, setViewMode] = useState("grid");
 
   // --- Filter / sort state ---
   const [search, setSearch] = useState("");
@@ -138,7 +138,7 @@ export default function Products() {
       </header>
 
       {/* ── AI Recommendations (customers only) ── */}
-      {isCustomer && HARDCODED_RECOMMENDATIONS.length > 0 && (
+      {HARDCODED_RECOMMENDATIONS.length > 0 && (
         <section className={styles.recsSection}>
           <button
             type="button"
