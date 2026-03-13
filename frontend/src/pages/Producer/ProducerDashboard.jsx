@@ -80,7 +80,9 @@ export default function ProducerDashboard() {
           )}
         </div>
 
-        {renderSection()}
+        <div key={activeSection} className={styles.fadeIn}>
+          {renderSection()}
+        </div>
       </main>
     </div>
   );
