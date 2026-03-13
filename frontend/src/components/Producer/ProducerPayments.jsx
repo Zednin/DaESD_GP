@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
 import styles from '../../pages/Producer/ProducerDashboard.module.css';
 
 /* Helpers */
@@ -57,6 +57,19 @@ export default function ProducerPayments({ producerId, producerName }) {
   const [error, setError]         = useState('');
   const [filter, setFilter]       = useState('all');
   const [activeTab, setActiveTab] = useState('transactions');
+  const tabBarRef = useRef(null);
+  const tabRefs = useRef({});
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+
+  useLayoutEffect(() => {
+    const btn = tabRefs.current[activeTab];
+    const bar = tabBarRef.current;
+    if (btn && bar) {
+      const barRect = bar.getBoundingClientRect();
+      const btnRect = btn.getBoundingClientRect();
+      setIndicator({ left: btnRect.left - barRect.left, width: btnRect.width });
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (!producerId) { setOrders([]); return; }
@@ -186,19 +199,25 @@ export default function ProducerPayments({ producerId, producerName }) {
       </div>
 
       {/* Tab switcher */}
-      <div className={styles.tabBar}>
+      <div className={styles.tabBar} ref={tabBarRef}>
         <button
+          ref={el => (tabRefs.current['transactions'] = el)}
           className={`${styles.tabBtn} ${activeTab === 'transactions' ? styles.tabBtnActive : ''}`}
           onClick={() => setActiveTab('transactions')}
         >
           Transactions
         </button>
         <button
+          ref={el => (tabRefs.current['finance-report'] = el)}
           className={`${styles.tabBtn} ${activeTab === 'finance-report' ? styles.tabBtnActive : ''}`}
           onClick={() => setActiveTab('finance-report')}
         >
           Finance Report
         </button>
+        <span
+          className={styles.tabIndicator}
+          style={{ left: indicator.left, width: indicator.width }}
+        />
       </div>
 
       {/* TAB: Transactions */}

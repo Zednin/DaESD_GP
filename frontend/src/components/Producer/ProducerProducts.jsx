@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import styles from '../../pages/Producer/ProducerDashboard.module.css';
 
 /*  Mock data 
@@ -80,6 +80,12 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
   const [error, setError] = useState('');
   const [categories, setCategories] = useState([]);
   const [allergensList, setAllergensList] = useState([]);
+  const [closing, setClosing] = useState(false);
+
+  const handleClose = useCallback(() => {
+    setClosing(true);
+    setTimeout(onClose, 200);
+  }, [onClose]);
 
   // Fetch categories and allergens on mount
   useEffect(() => {
@@ -162,11 +168,11 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
   }
 
   return (
-    <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className={`${styles.overlay} ${closing ? styles.overlayClosing : ''}`} onClick={(e) => e.target === e.currentTarget && handleClose()}>
       <div className={styles.modal}>
         <div className={styles.modalHeader}>
           <h3>{isEdit ? 'Edit Product' : 'Add New Product'}</h3>
-          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
+          <button className={styles.closeBtn} onClick={handleClose} aria-label="Close">✕</button>
         </div>
 
         {error && <p className={styles.errorBanner}>{error}</p>}
@@ -289,6 +295,12 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
 function DeleteModal({ product, onClose, onDeleted }) {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
+  const [closing, setClosing] = useState(false);
+
+  const handleClose = useCallback(() => {
+    setClosing(true);
+    setTimeout(onClose, 200);
+  }, [onClose]);
 
   async function handleDelete() {
     setDeleting(true);
@@ -310,7 +322,7 @@ function DeleteModal({ product, onClose, onDeleted }) {
   }
 
   return (
-    <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className={`${styles.overlay} ${closing ? styles.overlayClosing : ''}`} onClick={(e) => e.target === e.currentTarget && handleClose()}>
       <div className={`${styles.modal} ${styles.deleteModal}`}>
         <h3>Delete Product</h3>
         <p>
@@ -319,7 +331,7 @@ function DeleteModal({ product, onClose, onDeleted }) {
         </p>
         {error && <p className={styles.errorBanner}>{error}</p>}
         <div className={styles.modalActions}>
-          <button className={styles.cancelBtn} onClick={onClose} disabled={deleting}>Cancel</button>
+          <button className={styles.cancelBtn} onClick={handleClose} disabled={deleting}>Cancel</button>
           <button className={styles.deleteBtn} onClick={handleDelete} disabled={deleting}>
             {deleting ? 'Deleting…' : 'Delete'}
           </button>
