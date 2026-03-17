@@ -19,6 +19,7 @@ import CheckoutSuccess from "./pages/Checkout/CheckoutSuccess";
 // Producer pages
 import ProducerDashboard from "./pages/Producer/ProducerDashboard";
 import ProducerMyAccount from "./pages/Producer/ProducerMyAccount";
+import RequireProducer from "./auth/RequireProducer";
 
 export default function App() {
   return (
@@ -42,8 +43,22 @@ export default function App() {
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
 
         {/* Producer */}
-        <Route path="/producer/dashboard" element={<ProducerDashboard />} />
-        <Route path="/producer/myaccount" element={<ProducerMyAccount />} />
+        <Route
+          path="/producer/dashboard"
+          element={
+            <RequireProducer>
+              <ProducerDashboard />
+            </RequireProducer>
+          }
+        />
+        <Route
+          path="/producer/myaccount"
+          element={
+            <RequireProducer>
+              <ProducerMyAccount />
+            </RequireProducer>
+          }
+        />
       </Routes>
 
       <Footer />

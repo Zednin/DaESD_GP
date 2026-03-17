@@ -263,42 +263,65 @@ function DeleteModal({ product, onClose, onDeleted }) {
 
 /* Main component  */
 export default function ProducerProducts() {
-  const [allProducers, setAllProducers] = useState([]);
-  const [selectedProducerId, setSelectedProducerId] = useState('');
   const [producerName, setProducerName] = useState('');
-
   const [producerId, setProducerId] = useState(null);
   const [products, setProducts] = useState([]);
-  const [loading] = useState(false);
-  const [error] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
-    fetch('/api/producers/')
-      .then(res => res.json())
-      .then(data => setAllProducers(data.results ?? data));
-  }, []);
+    async function loadProducerAndProducts() {
+      setLoading(true);
+      setError('');
 
-  /* Load products when a producer is selected */
-  function handleProducerSelect(e) {
-    const pid = e.target.value;
-    setSelectedProducerId(pid);
-    if (!pid) {
-      setProducerId(null);
-      setProducerName('');
-      setProducts([]);
-      return;
+      try {
+        const producerRes = await fetch('/api/producers/', {
+          credentials: 'include',
+          headers: { Accept: 'application/json' },
+        });
+
+        if (!producerRes.ok) {
+          throw new Error('Failed to load producer profile');
+        }
+
+        const producerData = await producerRes.json();
+        const producerList = producerData.results ?? producerData;
+        const producer = producerList[0];
+
+        if (!producer) {
+          setProducerId(null);
+          setProducerName('');
+          setProducts([]);
+          setError('No producer profile found for this account.');
+          return;
+        }
+
+        setProducerId(producer.id);
+        setProducerName(producer.company_name ?? 'My Products');
+
+        const productsRes = await fetch(`/api/products/?producer=${producer.id}`, {
+          credentials: 'include',
+          headers: { Accept: 'application/json' },
+        });
+
+        if (!productsRes.ok) {
+          throw new Error('Failed to load products');
+        }
+
+        const productsData = await productsRes.json();
+        setProducts(productsData.results ?? productsData);
+      } catch (err) {
+        setError(err.message || 'Something went wrong');
+      } finally {
+        setLoading(false);
+      }
     }
-    const chosen = allProducers.find((p) => p.id === parseInt(pid, 10));
-    const pidInt = parseInt(pid, 10);
-    setProducerId(pidInt);
-    setProducerName(chosen?.company_name ?? 'Producer');
-    fetch(`/api/products/?producer=${pid}`)
-      .then(res => res.json())
-      .then(data => setProducts(data.results ?? data));
-  }
+
+    loadProducerAndProducts();
+  }, []);
 
   function handleSaved(product, mode) {
     setProducts((prev) =>
@@ -333,52 +356,22 @@ export default function ProducerProducts() {
 
   return (
     <section className={styles.section}>
-
-      {/* Producer picker --- REMOVE LATER ON */}
-      <div className={styles.adminBanner}>
-        <span className={styles.adminLabel}>Producer:</span>
-        <select
-          className={styles.adminSelect}
-          value={selectedProducerId}
-          onChange={handleProducerSelect}
-        >
-          <option value="">— Choose a producer —</option>
-          {allProducers.map((p) => (
-            <option key={p.id} value={p.id}>{p.company_name}</option>
-          ))}
-        </select>
-        {allProducers.length === 0 && (
-          <span className={styles.adminHint}>
-            No producers in the database yet.
-          </span>
-        )}
-      </div>
-
-      {/* Header */}
       <div className={styles.sectionHeader}>
         <div>
           <h2 className={styles.sectionTitle}>
             {producerName ? `${producerName} — Products` : 'My Products'}
           </h2>
-          {producerId && (
-            <p className={styles.subtitle}>
-              {products.length} product{products.length !== 1 ? 's' : ''} listed
-            </p>
-          )}
+          <p className={styles.subtitle}>
+            {products.length} product{products.length !== 1 ? 's' : ''} listed
+          </p>
         </div>
-        {producerId && (
-          <button className={styles.addBtn} onClick={() => setEditTarget('new')}>
-            + Add Product
-          </button>
-        )}
+
+        <button className={styles.addBtn} onClick={() => setEditTarget('new')}>
+          + Add Product
+        </button>
       </div>
 
-      {/* Body */}
-      {!producerId ? (
-        <div className={styles.empty}>
-          <p>Choose a producer above to view and manage their products.</p>
-        </div>
-      ) : products.length === 0 ? (
+      {products.length === 0 ? (
         <div className={styles.empty}>
           <p>No products listed yet.</p>
           <button className={styles.addBtn} onClick={() => setEditTarget('new')}>
@@ -431,10 +424,18 @@ export default function ProducerProducts() {
                   </td>
                   <td className={styles.actionsCell}>
                     <div className={styles.actionsBtns}>
-                      <button className={styles.editBtn} onClick={() => setEditTarget(p)} aria-label={`Edit ${p.name}`}>
+                      <button
+                        className={styles.editBtn}
+                        onClick={() => setEditTarget(p)}
+                        aria-label={`Edit ${p.name}`}
+                      >
                         Edit
                       </button>
-                      <button className={styles.deleteRowBtn} onClick={() => setDeleteTarget(p)} aria-label={`Delete ${p.name}`}>
+                      <button
+                        className={styles.deleteRowBtn}
+                        onClick={() => setDeleteTarget(p)}
+                        aria-label={`Delete ${p.name}`}
+                      >
                         Delete
                       </button>
                     </div>
@@ -446,7 +447,6 @@ export default function ProducerProducts() {
         </div>
       )}
 
-      {/* Add / Edit modal */}
       {editTarget !== null && (
         <ProductModal
           product={editTarget === 'new' ? null : editTarget}
@@ -456,7 +456,6 @@ export default function ProducerProducts() {
         />
       )}
 
-      {/* Delete confirmation modal */}
       {deleteTarget !== null && (
         <DeleteModal
           product={deleteTarget}
