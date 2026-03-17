@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "apps.cart",
     "apps.community",
     "apps.sustainability",
+    'apps.payments.apps.PaymentsConfig',
 ]
 
 SITE_ID = 1
