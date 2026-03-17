@@ -2,7 +2,10 @@ import { Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+
+// Auth
 import RequireAuth from "./auth/RequireAuth";
+import AuthCallback from "./auth/AuthCallback";
 
 // General pages
 import Home from "./pages/Home";
@@ -32,6 +35,9 @@ export default function App() {
         <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login />} />
         <Route path="/cart" element={<Cart />} />
+
+        {/* Auth */}
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* Customer */}
         <Route path="/checkout" element={
