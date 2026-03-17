@@ -26,12 +26,14 @@ class ProductSerializer(serializers.ModelSerializer):
             "price",
             "unit",
             "stock",
-            "allergens",
-            "availability_start",
-            "availability_end",
+            "availability_mode",
+            "season_start_month",
+            "season_end_month",
             "status",
+            "harvest_date",
             "organic_certified",
             "image",
             "created_at",
+            "updated_at",
         ]
-        read_only_fields = ["id", "created_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]
