@@ -1,3 +1,463 @@
+/* ═══════════════════════════════════════════════════════════
+   STAT CARDS  (Overview + Payments)
+═══════════════════════════════════════════════════════════ */
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+}
+
+.statCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statLabel {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 0;
+}
+
+.statValue {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.statAccent {
+  color: var(--primary);
+}
+
+.statSub {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Section sub-heading */
+.subheading {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  color: var(--text);
+  margin: 0 0 12px;
+}
+
+.headingWithInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   REVENUE BAR CHART
+═══════════════════════════════════════════════════════════ */
+
+.chartCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.barChart {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  height: 160px;
+  padding-top: 28px; /* room for the £ label above bars */
+}
+
+.barCol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+}
+
+.barTrack {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.bar {
+  width: 100%;
+  background: var(--primary);
+  border-radius: 4px 4px 0 0;
+  min-height: 3px;
+  transition: opacity 0.3s ease, background 0.3s ease;
+  opacity: 1;
+}
+
+.bar:hover {
+  opacity: 0.9;
+}
+
+.barLabel {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.barMonth {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EXTRA BADGE COLOURS
+═══════════════════════════════════════════════════════════ */
+
+.badgeWarning {
+  background: var(--warning-muted);
+  color: var(--warning);
+}
+
+.badgeBlue {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+}
+
+.badgePurple {
+  background: rgba(139, 92, 246, 0.12);
+  color: #8b5cf6;
+}
+
+.badgeRed {
+  background: var(--error-muted);
+  color: var(--error);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FILTER TABS  (Payments)
+═══════════════════════════════════════════════════════════ */
+
+.filterRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filterTabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filterTab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.filterTab:hover {
+  background: var(--hover-overlay);
+  color: var(--text);
+}
+
+.filterTabActive {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--bg);
+}
+
+.filterTabActive:hover {
+  background: var(--primary);
+  color: var(--bg);
+  opacity: 0.9;
+}
+
+.filterTabCount {
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+  padding: 1px 7px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.filterTabActive .filterTabCount {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SUB-TAB BAR  (Transactions / Finance Report)
+═══════════════════════════════════════════════════════════ */
+
+.tabBar {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.tabIndicator {
+  position: absolute;
+  bottom: 0;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 1px;
+  transition: left 0.3s ease, width 0.3s ease;
+}
+
+.tabBtn {
+  padding: 10px 24px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.tabBtn:hover {
+  color: var(--text);
+}
+
+.tabBtnActive {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EXPORT BUTTON
+═══════════════════════════════════════════════════════════ */
+
+.exportBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.exportBtn:hover {
+  background: var(--hover-overlay);
+  border-color: var(--text);
+}
+
+.exportBtns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dlWrap {
+  position: relative;
+  display: inline-block;
+}
+
+.dlIconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.dlIconBtn:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.dlDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+  z-index: 50;
+  min-width: 150px;
+  padding: 4px;
+  animation: dlDropdownIn 0.15s ease;
+}
+
+@keyframes dlDropdownIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.dlDropdownItem {
+  display: block;
+  width: 100%;
+  padding: 9px 14px;
+  background: none;
+  border: none;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+
+.dlDropdownItem:hover {
+  background: var(--hover-overlay);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TABLE FOOTER  (totals row)
+═══════════════════════════════════════════════════════════ */
+
+.tableFoot td {
+  padding: 12px 16px;
+  background: var(--surface-2);
+  border-top: 2px solid var(--border);
+  font-size: 14px;
+}
+
+/* Commission cell with rate badge */
+.commissionCell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.commissionRate {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.infoHint {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.infoHintIcon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.infoHint:hover .infoHintIcon {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface-2));
+}
+
+.infoTooltip {
+  position: absolute;
+  top: calc(100% + 10px);
+  min-width: 260px;
+  max-width: 320px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+  z-index: 30;
+}
+
+.infoTooltip::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  bottom: 100%;
+  width: 10px;
+  height: 10px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  transform: rotate(45deg) translateY(5px);
+}
+
+.infoHint:hover .infoTooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INFO BOX  (commission explanation note)
+═══════════════════════════════════════════════════════════ */
+
+.infoBox {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.infoBox strong {
+  color: var(--text);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LAYOUT WRAPPER
+═══════════════════════════════════════════════════════════ */
+
 .dashboardWrapper {
   display: flex;
   min-height: calc(100vh - 140px); /* account for navbar + footer */
@@ -45,13 +505,13 @@
 }
 
 .navBtn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hover-overlay);
   color: var(--text);
 }
 
 .navBtn.active {
   background: var(--primary);
-  color: #fff;
+  color: var(--bg);
   font-weight: 600;
 }
 
@@ -60,6 +520,16 @@
   flex: 1;
   padding: 40px 48px;
   overflow-y: auto;
+}
+
+/* Fade-in for tab switches */
+.fadeIn {
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Responsive: stack on small screens */
@@ -125,7 +595,7 @@
 /* Add button  */
 .addBtn {
   background: var(--primary);
-  color: #fff;
+  color: var(--bg);
   border: none;
   border-radius: 8px;
   padding: 10px 20px;
@@ -196,7 +666,7 @@
 }
 
 .table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--hover-overlay);
 }
 
 /* Name cell */
@@ -233,13 +703,13 @@
 }
 
 .badgeGreen {
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  background: var(--success-muted);
+  color: var(--success);
 }
 
 .badgeGrey {
-  background: rgba(148, 163, 184, 0.15);
-  color: #94a3b8;
+  background: var(--neutral-badge-bg);
+  color: var(--neutral-badge);
 }
 
 /* Stock */
@@ -249,14 +719,11 @@
 
 .stockZero {
   font-weight: 600;
-  color: #f87171;
+  color: var(--error);
 }
 
 /* Dates  */
 .dateCell {
-  display: flex;
-  align-items: center;
-  gap: 4px;
   white-space: nowrap;
   font-size: 13px;
 }
@@ -305,23 +772,23 @@
 }
 
 .editBtn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hover-overlay);
   border-color: var(--text);
 }
 
 .deleteRowBtn {
   background: transparent;
-  border: 1px solid rgba(248, 113, 113, 0.4);
+  border: 1px solid var(--error-border);
   border-radius: 6px;
   padding: 5px 12px;
   font-size: 13px;
-  color: #f87171;
+  color: var(--error);
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
 .deleteRowBtn:hover {
-  background: rgba(248, 113, 113, 0.1);
+  background: var(--error-muted);
 }
 
 /*  Loading / error states  */
@@ -351,13 +818,13 @@
 }
 
 .errorText {
-  color: #f87171;
+  color: var(--error);
   margin: 0;
 }
 
 .retryBtn {
   background: var(--primary);
-  color: #fff;
+  color: var(--bg);
   border: none;
   border-radius: 8px;
   padding: 8px 20px;
@@ -375,6 +842,21 @@
   justify-content: center;
   z-index: 1000;
   padding: 16px;
+  animation: overlayIn 0.25s ease;
+}
+
+.overlayClosing {
+  animation: overlayOut 0.2s ease forwards;
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes overlayOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
 /* Modal box  */
@@ -390,6 +872,21 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  animation: modalIn 0.25s ease;
+}
+
+.overlayClosing .modal {
+  animation: modalOut 0.2s ease forwards;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes modalOut {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to   { opacity: 0; transform: scale(0.95) translateY(10px); }
 }
 
 .deleteModal {
@@ -467,7 +964,7 @@
 .field input,
 .field select,
 .field textarea {
-  background: var(--bg, #0f172a);
+  background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 9px 12px;
@@ -511,13 +1008,47 @@
   cursor: pointer;
 }
 
+/* Allergens grid */
+.allergensGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.allergenCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  transition: border-color 0.15s ease;
+}
+
+.allergenCheckbox:hover {
+  border-color: var(--primary);
+}
+
+.allergenCheckbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 /* Error banner  */
 .errorBanner {
-  background: rgba(248, 113, 113, 0.1);
-  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: var(--error-muted);
+  border: 1px solid var(--error-border);
   border-radius: 8px;
   padding: 10px 14px;
-  color: #f87171;
+  color: var(--error);
   font-size: 14px;
   margin: 0;
 }
@@ -543,7 +1074,7 @@
 }
 
 .cancelBtn:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--hover-overlay);
 }
 
 .cancelBtn:disabled,
@@ -560,7 +1091,7 @@
   padding: 9px 24px;
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
+  color: var(--bg);
   cursor: pointer;
   transition: opacity 0.15s ease;
 }
@@ -570,13 +1101,13 @@
 }
 
 .deleteBtn {
-  background: #ef4444;
+  background: var(--error);
   border: none;
   border-radius: 8px;
   padding: 9px 24px;
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
+  color: var(--bg);
   cursor: pointer;
   transition: opacity 0.15s ease;
 }
@@ -605,15 +1136,15 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: rgba(234, 179, 8, 0.08);
-  border: 1px solid rgba(234, 179, 8, 0.3);
+  background: var(--warning-muted);
+  border: 1px solid var(--warning-border);
   border-radius: 10px;
   flex-wrap: wrap;
 }
 
 .adminBadge {
-  background: rgba(234, 179, 8, 0.2);
-  color: #eab308;
+  background: var(--warning-muted);
+  color: var(--warning);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -630,7 +1161,7 @@
 }
 
 .adminSelect {
-  background: var(--bg, #0f172a);
+  background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 7px 12px;
@@ -643,7 +1174,7 @@
 
 .adminSelect:focus {
   outline: none;
-  border-color: #eab308;
+  border-color: var(--warning);
 }
 
 .adminHint {
