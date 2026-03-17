@@ -15,6 +15,8 @@ class Order(models.Model):
         ("pending", "Pending"),
         ("confirmed", "Confirmed"),
         ("cancelled", "Cancelled"),
+        ("in transit", "In Transit"),
+        ("ready for collection", "Ready for Collection"),
         ("completed", "Completed"),
     ]
 
