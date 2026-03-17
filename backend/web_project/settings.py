@@ -186,16 +186,18 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 ACCOUNT_USER_MODEL_USERNAME_FIELD = "username"
-ACCOUNT_AUTHENTICATION_METHOD = "email"
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_EMAIL_VERIFICATION = "none"       # temporarily false until verification is added
 ACCOUNT_LOGIN_REDIRECT_URL = f"{FRONTEND_URL}/auth/callback"
 LOGIN_REDIRECT_URL = f"{FRONTEND_URL}/auth/callback"
 ACCOUNT_SIGNUP_REDIRECT_URL = f"{FRONTEND_URL}/auth/callback"
 ACCOUNT_LOGOUT_REDIRECT_URL = FRONTEND_URL
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 SOCIALACCOUNT_ADAPTER = "apps.accounts.adapters.CustomSocialAccountAdapter"
+REST_AUTH_REGISTER_SERIALIZERS = {
+    "REGISTER_SERIALIZER": "apps.accounts.serializers.CustomRegisterSerializer",
+}
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
@@ -228,3 +230,4 @@ SOCIALACCOUNT_PROVIDERS = {
         },
     }
 }
+SOCIALACCOUNT_LOGIN_ON_GET = True
