@@ -2,8 +2,12 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import csrf
 
+from apps.accounts.views import (
+    AccountsViewSet,
+    CustomerRegisterView,
+    ProducerRegisterView,
+)
 
-from apps.accounts.views import AccountsViewSet
 from apps.catalog.views import ProductViewSet
 from apps.addresses.views import AddressViewSet
 from apps.cart.views import CartViewSet, CartItemViewSet
@@ -34,8 +38,12 @@ router.register(r'allergens', AllergenViewSet, basename='allergen')
 urlpatterns = [
     path("auth/csrf/", csrf),
     path("", include(router.urls)),
+    # Registration endpoints
     path("auth/", include("dj_rest_auth.urls")),
-    path("auth/registration/", include("dj_rest_auth.registration.urls")),
+    # Custom registration endpoints
+    path("auth/register/customer/", CustomerRegisterView.as_view(), name="customer-register"),
+    path("auth/register/producer/", ProducerRegisterView.as_view(), name="producer-register"),
+    
     path("checkout/create-session/", CreateCheckoutSessionView.as_view()),
     path("stripe/webhook/", stripe_webhook),
 ]
