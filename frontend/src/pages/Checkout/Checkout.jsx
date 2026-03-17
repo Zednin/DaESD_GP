@@ -129,6 +129,9 @@ async function handleSubmit(e) {
             <button type="submit" className={styles.payBtn}>
               Place order
             </button>
+            <p className={styles.note}>
+              You’ll confirm payment and delivery details securely on the next page.
+            </p>
           </form>
         </section>
 
