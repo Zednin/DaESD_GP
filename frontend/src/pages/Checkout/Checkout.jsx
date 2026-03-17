@@ -5,134 +5,91 @@ import styles from "./Checkout.module.css";
 
 export default function Checkout() {
   const [items] = useState(() => readCart());
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const subtotal = useMemo(
     () => getCartSubtotal(items),
     [items]
   );
 
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    addressLine1: "",
-    addressLine2: "",
-    city: "",
-    postcode: "",
-  });
+  const commission = subtotal * 0.05;
 
-  function handleChange(e) {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      await ensureCsrf();
+      const csrf = getCookie("csrftoken");
+
+      const res = await fetch("/api/checkout/create-session/", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrf,
+        },
+        body: JSON.stringify({}), // backend uses server-side cart
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        console.error("Checkout failed:", data);
+        throw new Error(data?.detail || "Failed to start checkout");
+      }
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("No checkout URL returned");
+      }
+    } catch (err) {
+      console.error("Checkout error:", err);
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   }
 
-async function handleSubmit(e) {
-  e.preventDefault();
-
-  const payload = {
-    items,
-    subtotal,
-    delivery: formData,
-  };
-
-  try {
-    await ensureCsrf();
-    const csrf = getCookie("csrftoken");
-
-    const res = await fetch("/api/checkout/create-session/", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": csrf,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      console.error("Checkout failed:", data);
-      throw new Error(data?.detail || "Failed to start checkout");
-    }
-
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      throw new Error("No checkout URL returned");
-    }
-  } catch (err) {
-    console.error("Checkout error:", err);
-    alert("Unable to start checkout. Please try again.");
+  if (items.length === 0) {
+    return (
+      <main className="container">
+        <h1>Your cart is empty</h1>
+      </main>
+    );
   }
-}
+
+  const formatCurrency = (value) =>
+    new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: "GBP",
+    }).format(value);
 
   return (
     <main className={`container ${styles.page}`}>
       <h1>Checkout</h1>
 
       <div className={styles.layout}>
-        {/* LEFT: delivery form */}
+        {/* LEFT: action panel */}
         <section className={styles.formCard}>
-          <h2>Delivery details</h2>
+          <h2>Ready to complete your order?</h2>
 
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <input
-              name="fullName"
-              placeholder="Full name"
-              value={formData.fullName}
-              onChange={handleChange}
-              required
-            />
+          <p className={styles.note}>
+            You’ll confirm payment and delivery details securely on the next page.
+          </p>
 
-            <input
-              name="email"
-              type="email"
-              placeholder="Email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
+          {error && <p className={styles.error}>{error}</p>}
 
-            <input
-              name="addressLine1"
-              placeholder="Address line 1"
-              value={formData.addressLine1}
-              onChange={handleChange}
-              required
-            />
-
-            <input
-              name="addressLine2"
-              placeholder="Address line 2"
-              value={formData.addressLine2}
-              onChange={handleChange}
-            />
-
-            <input
-              name="city"
-              placeholder="City"
-              value={formData.city}
-              onChange={handleChange}
-              required
-            />
-
-            <input
-              name="postcode"
-              placeholder="Postcode"
-              value={formData.postcode}
-              onChange={handleChange}
-              required
-            />
-
-            <button type="submit" className={styles.payBtn}>
-              Place order
-            </button>
-            <p className={styles.note}>
-              You’ll confirm payment and delivery details securely on the next page.
-            </p>
-          </form>
+          <button
+            onClick={handleSubmit}
+            className={styles.payBtn}
+            disabled={loading}
+          >
+            {loading ? "Redirecting..." : "Continue to payment"}
+          </button>
         </section>
 
         {/* RIGHT: order summary */}
@@ -146,7 +103,7 @@ async function handleSubmit(e) {
                   {item.name} × {item.qty}
                 </span>
                 <span>
-                  £{(item.qty * Number(item.price)).toFixed(2)}
+                  {formatCurrency(item.qty * Number(item.price))}
                 </span>
               </li>
             ))}
@@ -154,7 +111,12 @@ async function handleSubmit(e) {
 
           <div className={styles.totalRow}>
             <span>Subtotal</span>
-            <strong>£{subtotal.toFixed(2)}</strong>
+            <strong>{formatCurrency(subtotal)}</strong>
+          </div>
+
+          <div className={styles.totalRow}>
+            <span>Platform fee (5%)</span>
+            <span>{formatCurrency(commission)}</span>
           </div>
         </aside>
       </div>
