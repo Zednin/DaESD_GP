@@ -12,24 +12,26 @@ from django.conf import settings
 class Account(AbstractUser):
     """#1 Account"""
 
-    # Account types of created users
+    # List of different account types of created users
     ACCOUNT_TYPE_CHOICES = [
         ('customer', 'Customer'),
         ('producer', 'Producer'),
         ('admin', 'Admin'),
     ]
+
     # Defaults to customer 
     account_type = models.CharField(max_length=10, 
                                     choices=ACCOUNT_TYPE_CHOICES, 
                                     default='customer',
                                     db_index=True
                                     )
-    # Ensures email is unique
+    # Ensures email is unique (AbstractUser has email but not unique by default)
     email = models.EmailField(unique=True)
 
-    # Auto add account created date
-    created_at = models.DateTimeField(auto_now_add=True)
-    
+    # Note - AbstractUser already provides 'date_joined' — use that instead of a custom created_at
+    # Access via: instance.date_joined
+
+    # Overides the django save, normalise save 
     def save(self, *args, **kwargs):
         if self.email:
             self.email = BaseUserManager.normalize_email(self.email).strip()

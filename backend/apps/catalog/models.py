@@ -22,6 +22,27 @@ class Category(models.Model):
 class Product(models.Model):
     """7 Product"""
 
+    # Set seasonal avaialability for product
+    class AvailabilityMode(models.TextChoices):
+        YEAR_ROUND = "year_round", "Available Year-Round"
+        SEASONAL = "seasonal", "In Season"
+
+    # Months
+    MONTH_CHOICES = [
+        (1, "January"),
+        (2, "February"),
+        (3, "March"),
+        (4, "April"),
+        (5, "May"),
+        (6, "June"),
+        (7, "July"),
+        (8, "August"),
+        (9, "September"),
+        (10, "October"),
+        (11, "November"),
+        (12, "December"),
+    ]
+
     # Different units for products
     UNIT_CHOICES = [
         ('kg', 'Kilogram'),
@@ -77,11 +98,22 @@ class Product(models.Model):
     # Amount of producr in stock
     stock = models.IntegerField(default=0)                         
     
-    # Start Availability date
-    availability_start = models.DateField()
-    
-    # End Availability date
-    availability_end = models.DateField()
+    # Seasonal availability
+    availability_mode = models.CharField(
+        max_length=20,
+        choices=AvailabilityMode.choices,
+        default=AvailabilityMode.YEAR_ROUND
+    )
+    season_start_month = models.PositiveSmallIntegerField(
+        choices=MONTH_CHOICES,
+        null=True,
+        blank=True
+    )
+    season_end_month = models.PositiveSmallIntegerField(
+        choices=MONTH_CHOICES,
+        null=True,
+        blank=True
+    )
     
     # Availability status of Product
     status = models.CharField(
@@ -112,9 +144,18 @@ class Product(models.Model):
         # Validates data before saving
         super().clean()
         
+        errors = {}
         # Prevents availability end from being set before start
-        if self.availability_end and self.availability_start and self.availability_end < self.availability_start:
-            raise ValidationError("availability_end cannot be before availability_start.")
+        if self.availability_mode == self.AvailabilityMode.SEASONAL:
+            if not self.season_start_month:
+                errors["season_start_month"] = "This field is required for seasonal products."
+            if not self.season_end_month:
+                errors["season_end_month"] = "This field is required for seasonal products."
+        else:
+            if self.season_start_month is not None:
+                errors["season_start_month"] = "Leave blank for year-round products."
+            if self.season_end_month is not None:
+                errors["season_end_month"] = "Leave blank for year-round products."
 
     # Enforces rules before saving to database
     def save(self, *args, **kwargs):
