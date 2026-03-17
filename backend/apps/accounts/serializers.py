@@ -10,10 +10,10 @@ class AccountSerializer(serializers.ModelSerializer):
         fields = ['id', 
                   'username', 
                   'email', 
-                  'account_type',
-                  'first_name',
-                  'last_name',
-                  'created_at'
+                  'date_joined', 
+                  'first_name', 
+                  'last_name', 
+                  'account_type'
                   ]
         
         # Prevents frontend from changing 'id' value, assigned by DB
