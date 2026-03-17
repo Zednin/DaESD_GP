@@ -1,34 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import styles from '../../pages/Producer/ProducerDashboard.module.css';
-
-/*  Mock data 
-const MOCK_PRODUCERS = [
-  { id: 1, company_name: 'Green Valley Farm' },
-  { id: 2, company_name: 'Sunny Meadows Organics' },
-  { id: 3, company_name: 'Riverside Dairy' },
-];
-
-let nextId = 10;
-const MOCK_PRODUCTS = {
-  1: [
-    { id: 1, name: 'Carrots', description: 'Fresh garden carrots', price: '1.50', unit: 'kg', stock: 100, availability_start: '2026-03-01', availability_end: '2026-06-30', status: 'available', organic_certified: true, category_name: 'Vegetables' },
-    { id: 2, name: 'Potatoes', description: 'Maris Piper potatoes', price: '0.80', unit: 'kg', stock: 200, availability_start: '2026-03-01', availability_end: '2026-09-30', status: 'available', organic_certified: false, category_name: 'Vegetables' },
-  ],
-  2: [
-    { id: 3, name: 'Honey', description: 'Raw wildflower honey', price: '6.00', unit: 'unit', stock: 40, availability_start: '2026-04-01', availability_end: '2026-12-31', status: 'available', organic_certified: true, category_name: 'Honey & Preserves' },
-  ],
-  3: [
-    { id: 4, name: 'Whole Milk', description: 'Fresh whole milk', price: '1.20', unit: 'litre', stock: 80, availability_start: '2026-03-01', availability_end: '2026-12-31', status: 'available', organic_certified: false, category_name: 'Dairy' },
-    { id: 5, name: 'Cheddar Cheese', description: 'Mature cheddar', price: '4.50', unit: 'kg', stock: 0, availability_start: '2026-03-01', availability_end: '2026-12-31', status: 'unavailable', organic_certified: false, category_name: 'Dairy' },
-  ],
-};
-
-// In-memory store
-const mockProductStore = Object.fromEntries(
-  Object.entries(MOCK_PRODUCTS).map(([k, v]) => [k, v.map((p) => ({ ...p }))])
-);
-
-*/
+import { FiUpload } from 'react-icons/fi';
 
 const EMPTY_FORM = {
   name: '',
@@ -237,8 +209,12 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
               </select>
             </div>
             <div className={styles.field}>
-              <label>Image URL</label>
-              <input name="image" type="url" placeholder="https://..." value={form.image} onChange={handleChange} />
+              <label>Product Image</label>
+              <label className={styles.uploadBtn}>
+                <FiUpload size={18} />
+                Upload Image
+                <input name="image" type="file" accept="image/*" style={{ display: 'none' }} />
+              </label>
             </div>
           </div>
 

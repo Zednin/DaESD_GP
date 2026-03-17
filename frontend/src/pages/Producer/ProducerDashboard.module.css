@@ -987,6 +987,28 @@
   resize: vertical;
 }
 
+.uploadBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-2);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.uploadBtn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 .checkboxField {
   justify-content: flex-end;
 }
