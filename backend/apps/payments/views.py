@@ -1,19 +1,29 @@
 import stripe
 
-
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
+from datetime import timedelta
 from django.conf import settings
 from django.http import HttpResponse
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
 from apps.cart.models import Cart
-from apps.orders.models import Order, OrderItem, ProducerOrder
+from apps.orders.models import Order, OrderItem, ProducerOrder, CommissionLedger
+from apps.payments.models import Payment
 from apps.addresses.models import Address
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
+COMMISSION_RATE = Decimal("0.05")
+
+
+def money(value):
+    return Decimal(value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -109,25 +119,14 @@ def handle_checkout_session_completed(session):
     if not cart_items:
         return
 
-    total_amount = sum(
+    total_amount = money(sum(
         Decimal(item.price_snapshot) * item.quantity for item in cart_items
-    )
+    ))
 
     shipping = session.get("shipping_details") or {}
     customer_details = session.get("customer_details") or {}
+    address = shipping.get("address") or customer_details.get("address") or {}
 
-    address = (
-        shipping.get("address")
-        or customer_details.get("address")
-        or {}
-    )
-
-    name = (
-        shipping.get("name")
-        or customer_details.get("name")
-        or ""
-    )
-    
     line1 = address.get("line1")
     city = address.get("city")
     postcode = address.get("postal_code")
@@ -153,13 +152,20 @@ def handle_checkout_session_completed(session):
         order = Order.objects.create(
             account_id=user_id,
             delivery_address=delivery_address,
-            status="confirmed",
+            status="pending",
             total_amount=total_amount,
             commission_amount=Decimal("0.00"),
             stripe_session_id=session["id"],
         )
 
-        # Group cart items by producer
+        Payment.objects.create(
+            order=order,
+            provider="stripe",
+            amount=total_amount,
+            currency="GBP",
+            status="paid",
+        )
+
         items_by_producer = {}
         for cart_item in cart_items:
             producer_id = cart_item.product.producer_id
@@ -168,14 +174,19 @@ def handle_checkout_session_completed(session):
         total_commission = Decimal("0.00")
 
         for producer_id, producer_items in items_by_producer.items():
-            subtotal = sum(
+            subtotal = money(sum(
                 Decimal(item.price_snapshot) * item.quantity
                 for item in producer_items
-            )
+            ))
 
-            commission = Decimal("0.00")  # replace later with real commission logic
-            payout_amount = subtotal - commission
+            commission = money(subtotal * COMMISSION_RATE)
+            payout_amount = money(subtotal - commission)
             total_commission += commission
+
+            producer = producer_items[0].product.producer
+            delivery_date = (
+                timezone.now() + timedelta(hours=producer.lead_time_hours)
+            ).date()
 
             producer_order = ProducerOrder.objects.create(
                 order=order,
@@ -185,7 +196,7 @@ def handle_checkout_session_completed(session):
             )
 
             for cart_item in producer_items:
-                line_total = Decimal(cart_item.price_snapshot) * cart_item.quantity
+                line_total = money(Decimal(cart_item.price_snapshot) * cart_item.quantity)
 
                 OrderItem.objects.create(
                     producer_order=producer_order,
@@ -195,9 +206,14 @@ def handle_checkout_session_completed(session):
                     line_total=line_total,
                 )
 
-        # Update overall commission on the parent order
-        order.commission_amount = total_commission
+            CommissionLedger.objects.create(
+                producer_order=producer_order,
+                commission_rate=Decimal("5.00"),
+                commission_amount=commission,
+                payout_amount=payout_amount,
+            )
+
+        order.commission_amount = money(total_commission)
         order.save(update_fields=["commission_amount"])
 
-        # Clear cart after successful order creation
         cart.items.all().delete()

@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "apps.cart",
     "apps.community",
     "apps.sustainability",
+    'apps.payments.apps.PaymentsConfig',
 ]
 
 #Custom account model to specify extended columns (phone_number, account_type)
