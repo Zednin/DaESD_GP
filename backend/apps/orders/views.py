@@ -25,10 +25,24 @@ class ProducerOrderViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        qs = (
+            ProducerOrder.objects
+            .select_related("order__account", "producer")
+            .prefetch_related("items__product")
+            .order_by("-created_at")
+        )
+
+        # Admin/staff: allow filtering by ?producer=<id>
+        if user.is_staff or user.is_superuser:
+            producer_id = self.request.query_params.get("producer")
+            if producer_id:
+                qs = qs.filter(producer_id=producer_id)
+            return qs
+
+        # Regular producer: scope to their own orders
         if hasattr(user, "producer_profile"):
-            return ProducerOrder.objects.filter(
-                producer=user.producer_profile
-            ).order_by("-created_at")
+            return qs.filter(producer=user.producer_profile)
+
         return ProducerOrder.objects.none()
 
 

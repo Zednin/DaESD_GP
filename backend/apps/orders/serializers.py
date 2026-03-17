@@ -18,39 +18,6 @@ class OrderSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
-class ProducerOrderSerializer(serializers.ModelSerializer):
-    subtotal = serializers.DecimalField(
-        source='total_amount', max_digits=10, decimal_places=2, read_only=True,
-    )
-    commission = serializers.SerializerMethodField()
-    payout_amount = serializers.SerializerMethodField()
-
-    class Meta:
-        model = ProducerOrder
-        fields = [
-            "id",
-            "order",
-            "producer",
-            "status",
-            "subtotal",
-            "commission",
-            "payout_amount",
-            "delivery_date",
-            "created_at",
-            "updated_at",
-        ]
-
-    def get_commission(self, obj):
-        return (obj.total_amount * COMMISSION_RATE).quantize(
-            Decimal('0.01'), rounding=ROUND_HALF_UP,
-        )
-
-    def get_payout_amount(self, obj):
-        commission = (obj.total_amount * COMMISSION_RATE).quantize(
-            Decimal('0.01'), rounding=ROUND_HALF_UP,
-        )
-        return obj.total_amount - commission
-
 class OrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
 
@@ -67,3 +34,45 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "price_snapshot", "line_total", "created_at"]
+
+class ProducerOrderSerializer(serializers.ModelSerializer):
+    subtotal = serializers.DecimalField(
+        source='total_amount', max_digits=10, decimal_places=2, read_only=True,
+    )
+    commission = serializers.SerializerMethodField()
+    payout_amount = serializers.SerializerMethodField()
+    customer_name = serializers.SerializerMethodField()
+    items = OrderItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ProducerOrder
+        fields = [
+            "id",
+            "order",
+            "producer",
+            "status",
+            "subtotal",
+            "commission",
+            "payout_amount",
+            "delivery_date",
+            "customer_name",
+            "items",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_commission(self, obj):
+        return (obj.total_amount * COMMISSION_RATE).quantize(
+            Decimal('0.01'), rounding=ROUND_HALF_UP,
+        )
+
+    def get_payout_amount(self, obj):
+        commission = (obj.total_amount * COMMISSION_RATE).quantize(
+            Decimal('0.01'), rounding=ROUND_HALF_UP,
+        )
+        return obj.total_amount - commission
+
+    def get_customer_name(self, obj):
+        account = obj.order.account
+        full = f"{account.first_name} {account.last_name}".strip()
+        return full or account.username
