@@ -36,8 +36,10 @@ const EMPTY_FORM = {
   price: '',
   unit: 'unit',
   stock: '',
-  availability_start: '',
-  availability_end: '',
+  availability_mode: 'year_round',
+  season_start_month: '',
+  season_end_month: '',
+  harvest_date: '',
   status: 'available',
   organic_certified: false,
   category: '',
@@ -55,6 +57,30 @@ function getCookie(name) {
 const UNIT_OPTIONS = ['kg', 'g', 'litre', 'ml', 'unit', 'dozen'];
 const STATUS_OPTIONS = ['available', 'unavailable'];
 
+const MONTH_OPTIONS = [
+  { value: 1, label: 'January' },
+  { value: 2, label: 'February' },
+  { value: 3, label: 'March' },
+  { value: 4, label: 'April' },
+  { value: 5, label: 'May' },
+  { value: 6, label: 'June' },
+  { value: 7, label: 'July' },
+  { value: 8, label: 'August' },
+  { value: 9, label: 'September' },
+  { value: 10, label: 'October' },
+  { value: 11, label: 'November' },
+  { value: 12, label: 'December' },
+];
+
+function formatAvailability(product) {
+  if (product.availability_mode === 'seasonal') {
+    const start = MONTH_OPTIONS.find(m => m.value === product.season_start_month)?.label ?? '?';
+    const end = MONTH_OPTIONS.find(m => m.value === product.season_end_month)?.label ?? '?';
+    return `${start} – ${end}`;
+  }
+  return 'Year Round';
+}
+
 /* Product form modal  */
 function ProductModal({ product, producerId, onClose, onSaved }) {
   const isEdit = Boolean(product?.id);
@@ -66,8 +92,10 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
           price: product.price,
           unit: product.unit,
           stock: product.stock,
-          availability_start: product.availability_start,
-          availability_end: product.availability_end,
+          availability_mode: product.availability_mode ?? 'year_round',
+          season_start_month: product.season_start_month ?? '',
+          season_end_month: product.season_end_month ?? '',
+          harvest_date: product.harvest_date ? product.harvest_date.slice(0, 16) : '',
           status: product.status,
           organic_certified: product.organic_certified,
           category: product.category ?? '',
@@ -129,6 +157,13 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
       category: form.category ? parseInt(form.category, 10) : null,
       allergens: form.allergens,
       image: form.image || null,
+      season_start_month: form.availability_mode === 'seasonal' && form.season_start_month
+        ? parseInt(form.season_start_month, 10)
+        : null,
+      season_end_month: form.availability_mode === 'seasonal' && form.season_end_month
+        ? parseInt(form.season_end_month, 10)
+        : null,
+      harvest_date: form.harvest_date || null,
     };
 
     // Edit existing products
@@ -227,17 +262,44 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
             </div>
           </div>
 
-          {/* Row: dates */}
+          {/* Row: availability mode + harvest date */}
           <div className={styles.formRow}>
             <div className={styles.field}>
-              <label>Availability Start *</label>
-              <input name="availability_start" type="date" value={form.availability_start} onChange={handleChange} required />
+              <label>Availability Mode *</label>
+              <select name="availability_mode" value={form.availability_mode} onChange={handleChange} required>
+                <option value="year_round">Year Round</option>
+                <option value="seasonal">Seasonal</option>
+              </select>
             </div>
             <div className={styles.field}>
-              <label>Availability End *</label>
-              <input name="availability_end" type="date" value={form.availability_end} onChange={handleChange} required />
+              <label>Harvest Date</label>
+              <input name="harvest_date" type="datetime-local" value={form.harvest_date} onChange={handleChange} />
             </div>
           </div>
+
+          {/* Conditional: season months (only when seasonal) */}
+          {form.availability_mode === 'seasonal' && (
+            <div className={styles.formRow}>
+              <div className={styles.field}>
+                <label>Season Start Month *</label>
+                <select name="season_start_month" value={form.season_start_month} onChange={handleChange} required>
+                  <option value="">-- Select --</option>
+                  {MONTH_OPTIONS.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.field}>
+                <label>Season End Month *</label>
+                <select name="season_end_month" value={form.season_end_month} onChange={handleChange} required>
+                  <option value="">-- Select --</option>
+                  {MONTH_OPTIONS.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* Row: status + organic */}
           <div className={styles.formRow}>
@@ -470,9 +532,7 @@ export default function ProducerProducts({ producerId, producerName }) {
                   </td>
                   <td className={styles.centredCell}>{p.organic_certified ? '✓' : '—'}</td>
                   <td className={styles.dateCell}>
-                    <span>{p.availability_start}</span>
-                    <span className={styles.dateSep}>→</span>
-                    <span>{p.availability_end}</span>
+                    <span>{formatAvailability(p)}</span>
                   </td>
                   <td className={styles.actionsCell}>
                     <div className={styles.actionsBtns}>
