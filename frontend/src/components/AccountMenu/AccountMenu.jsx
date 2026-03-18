@@ -15,7 +15,7 @@ const panels = {
               leftIcon: <FiUser />,
               title: user?.username || user?.email || "Account",
               subtitle: "See your profile",
-              onClick: () => console.log("go profile"),
+              action: "profile",
             }
           : {
               type: "profile",
@@ -196,13 +196,24 @@ export default function AccountMenu({ user, onLogout }) {
     setOpen(false);
     setStack(["root"]);
   }
-
   function handleItem(item) {
     if (item.toPanel) return go(item.toPanel);
 
     if (item.action === "signin") {
       close();
       navigate("/login");
+      return;
+    }
+
+    if (item.action === "profile") {
+      close();
+
+      if (user?.account_type === "producer") {
+        navigate("/producer/myaccount");
+      } else {
+        navigate("/my-account");
+      }
+
       return;
     }
 
@@ -215,7 +226,6 @@ export default function AccountMenu({ user, onLogout }) {
     item.onClick?.();
     close();
   }
-
   const items = activePanel.items({ user });
 
   return (
