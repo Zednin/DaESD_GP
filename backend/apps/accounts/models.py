@@ -89,10 +89,10 @@ class Organisation(models.Model):
 
     # Ensures that organisation is to a single customer account
     customer = models.OneToOneField(
-        settings.AUTH_USER_MODEL, 
-        on_delete=models.CASCADE, 
+        'yourapp.Customer',
+        on_delete=models.CASCADE,
         related_name='organisation'
-        )
+    )
     
     # Org name
     organisation_name = models.CharField(max_length=255)
