@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
-import styles from '../../pages/Producer/ProducerDashboard.module.css';
+import shared from '../../pages/Producer/ProducerShared.module.css';
+import local from './ProducerPayments.module.css';
+const styles = { ...shared, ...local };
 import { downloadCSV, generateFinanceReportPDF } from '../../utils/exportHelpers';
 import leafLogo from '../../assets/leaf.png';
 
