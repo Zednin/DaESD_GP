@@ -1,36 +1,79 @@
-import { useState } from 'react';
-import OrderHistory from '../../components/Customer/OrderHistory';
-import RecurringOrders from '../../components/Customer/RecurringOrders';
-import Reviews from '../../components/Customer/Reviews';
-import Settings from '../../components/Customer/Settings';
+import { useState } from "react";
+import styles from "../../pages/Producer/ProducerDashboard.module.css";
+
+import OrderHistory from "../../components/Customer/OrderHistory";
+import RecurringOrders from "../../components/Customer/RecurringOrders";
+import Reviews from "../../components/Customer/Reviews";
+import Settings from "../../components/Customer/Settings";
 
 export default function MyAccount() {
-  const [activeSection, setActiveSection] = useState('orderHistory');
+  const [activeSection, setActiveSection] = useState("orderHistory");
 
-  const renderSection = () => {
+  function renderSection() {
     switch (activeSection) {
-      case 'orderHistory':    return <OrderHistory />;
-      case 'recurringOrders': return <RecurringOrders />;
-      case 'reviews':         return <Reviews />;
-      case 'settings':        return <Settings />;
-      default:                return <OrderHistory />;
+      case "orderHistory":
+        return <OrderHistory />;
+      case "recurringOrders":
+        return <RecurringOrders />;
+      case "reviews":
+        return <Reviews />;
+      case "settings":
+        return <Settings />;
+      default:
+        return <OrderHistory />;
     }
-  };
+  }
 
   return (
-    <main>
-      <h1>My Account</h1>
+    <div className={styles.dashboardWrapper}>
+      
+      {/* Sidebar */}
+      <aside className={styles.sidebar}>
+        <h2 className={styles.sidebarTitle}>My Account</h2>
 
-      <nav>
-        <button onClick={() => setActiveSection('orderHistory')}>Order History</button>
-        <button onClick={() => setActiveSection('recurringOrders')}>Recurring Orders</button>
-        <button onClick={() => setActiveSection('reviews')}>Reviews</button>
-        <button onClick={() => setActiveSection('settings')}>Settings</button>
-      </nav>
+        <nav className={styles.nav}>
+          <button
+            className={`${styles.navBtn} ${
+              activeSection === "orderHistory" ? styles.active : ""
+            }`}
+            onClick={() => setActiveSection("orderHistory")}
+          >
+            Orders
+          </button>
 
-      <div>
+          <button
+            className={`${styles.navBtn} ${
+              activeSection === "recurringOrders" ? styles.active : ""
+            }`}
+            onClick={() => setActiveSection("recurringOrders")}
+          >
+            Recurring Orders
+          </button>
+
+          <button
+            className={`${styles.navBtn} ${
+              activeSection === "reviews" ? styles.active : ""
+            }`}
+            onClick={() => setActiveSection("reviews")}
+          >
+            Reviews
+          </button>
+
+          <button
+            className={`${styles.navBtn} ${
+              activeSection === "settings" ? styles.active : ""
+            }`}
+            onClick={() => setActiveSection("settings")}
+          >
+            Settings
+          </button>
+        </nav>
+      </aside>
+
+      {/* Content */}
+      <section className={styles.content}>
         {renderSection()}
-      </div>
-    </main>
+      </section>
+    </div>
   );
 }
