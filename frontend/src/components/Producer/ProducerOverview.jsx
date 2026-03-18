@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import styles from '../../pages/Producer/ProducerDashboard.module.css';
+import shared from '../../pages/Producer/ProducerShared.module.css';
+import local from './ProducerOverview.module.css';
+const styles = { ...shared, ...local };
 
 /* Helpers */
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import styles from '../../pages/Producer/ProducerDashboard.module.css';
+import shared from '../../pages/Producer/ProducerShared.module.css';
+import local from './ProducerProducts.module.css';
+const styles = { ...shared, ...local };
 import { FiUpload } from 'react-icons/fi';
 
 const EMPTY_FORM = {

@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, Fragment } from 'react';
-import styles from '../../pages/Producer/ProducerDashboard.module.css';
+import shared from '../../pages/Producer/ProducerShared.module.css';
+import local from './ProducerOrders.module.css';
+const styles = { ...shared, ...local };
 import { FiSearch, FiX } from 'react-icons/fi';
 
 /* Helpers */
