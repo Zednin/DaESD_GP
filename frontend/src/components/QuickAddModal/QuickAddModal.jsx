@@ -136,7 +136,7 @@ export default function QuickAddModal({
                 className={styles.addBtn}
                 onClick={() => onAdd(product, qty)}
               >
-                Add to basket
+                Add to basket — £{(Number(product.price) * qty).toFixed(2)}
               </button>
             </div>
 
