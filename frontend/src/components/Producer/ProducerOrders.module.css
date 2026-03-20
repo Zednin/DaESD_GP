@@ -77,3 +77,119 @@
   color: var(--danger, #e53e3e);
   border-color: var(--danger, #e53e3e);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   STATUS BADGE WITH DOT  (• Pending / • Preparing …)
+═══════════════════════════════════════════════════════════ */
+
+.orderStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.badgeDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: currentColor;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACTION COLUMN
+═══════════════════════════════════════════════════════════ */
+
+/* Pending: direct ✓ / ✗ icon buttons */
+.actionIconBtns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.actionIconSafe,
+.actionIconDanger {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.actionIconSafe:disabled,
+.actionIconDanger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.actionIconSafe {
+  background: var(--success-muted, rgba(22,163,74,0.1));
+  color: var(--success, #16a34a);
+}
+
+.actionIconSafe:hover:not(:disabled) {
+  background: var(--success, #16a34a);
+  color: #fff;
+}
+
+.actionIconDanger {
+  background: var(--error-muted, rgba(229,62,62,0.1));
+  color: var(--error, #e53e3e);
+}
+
+.actionIconDanger:hover:not(:disabled) {
+  background: var(--error, #e53e3e);
+  color: #fff;
+}
+
+/* Single next step: pill chip + confirm tick */
+.statusPicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.nextStatusChip {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.confirmIconBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary, #3b82f6);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.confirmIconBtn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.confirmIconBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
