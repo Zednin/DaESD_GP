@@ -92,8 +92,8 @@
 }
 
 .clearFiltersBtn:hover {
-  color: var(--danger, #e53e3e);
-  border-color: var(--danger, #e53e3e);
+  color: var(--danger);
+  border-color: var(--danger);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -152,23 +152,23 @@
 }
 
 .actionIconSafe {
-  background: var(--success-muted, rgba(22,163,74,0.1));
-  color: var(--success, #16a34a);
+  background: var(--success-muted);
+  color: var(--success);
 }
 
 .actionIconSafe:hover:not(:disabled) {
-  background: var(--success, #16a34a);
-  color: #fff;
+  background: var(--success);
+  color: var(--bg);
 }
 
 .actionIconDanger {
-  background: var(--error-muted, rgba(229,62,62,0.1));
-  color: var(--error, #e53e3e);
+  background: var(--error-muted);
+  color: var(--error);
 }
 
 .actionIconDanger:hover:not(:disabled) {
-  background: var(--error, #e53e3e);
-  color: #fff;
+  background: var(--error);
+  color: var(--bg);
 }
 
 /* Single next step: pill chip + confirm tick */
@@ -184,8 +184,8 @@
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+  background: var(--primary-muted);
+  color: var(--primary);
 }
 
 .confirmIconBtn {
@@ -193,8 +193,8 @@
   height: 28px;
   border: none;
   border-radius: 6px;
-  background: var(--primary, #3b82f6);
-  color: #fff;
+  background: var(--primary);
+  color: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -232,7 +232,7 @@
 }
 
 .sortBtn:hover {
-  color: var(--primary, #3b82f6);
+  color: var(--primary);
 }
 
 /* Modal animations */
@@ -273,7 +273,7 @@
 }
 
 .modalContent {
-  background: var(--surface-1, #fff);
+  background: var(--surface);
   border-radius: 16px;
   width: 100%;
   max-width: 900px;
@@ -282,6 +282,27 @@
   padding: 28px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
   animation: modalFadeUp 0.25s ease-out;
+  scrollbar-gutter: stable;
+}
+
+/* Rounded scrollbar */
+.modalContent::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modalContent::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+.modalContent::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+}
+
+.modalContent::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
 }
 
 .modalContentClosing {
@@ -332,7 +353,7 @@
 }
 
 .detailCard {
-  background: var(--surface-2, #f9fafb);
+  background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
@@ -380,7 +401,7 @@
 
 /* Special instructions */
 .specialInstructions {
-  background: var(--surface-2, #f9fafb);
+  background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
@@ -404,4 +425,150 @@
   border-top: 2px solid var(--border);
   padding-top: 10px;
   font-size: 14px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UPDATE STATUS BUTTON  (in table actions column)
+═══════════════════════════════════════════════════════════ */
+
+.updateStatusBtn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  background: var(--primary);
+  color: var(--bg);
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.updateStatusBtn:hover {
+  opacity: 0.85;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STATUS-CHANGE MODAL
+═══════════════════════════════════════════════════════════ */
+
+.statusModalContent {
+  background: var(--surface);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 440px;
+  padding: 28px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: modalFadeUp 0.25s ease-out;
+}
+
+.statusModalSub {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.statusModalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.statusSelectLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.statusSelect {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.statusSelect:focus {
+  border-color: var(--primary);
+}
+
+.cancelReasonInput {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+  min-height: 60px;
+  transition: border-color 0.15s;
+}
+
+.cancelReasonInput:focus {
+  border-color: var(--danger);
+}
+
+.statusModalActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.statusSaveBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.statusSaveBtn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.statusSaveBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.notifyEmailBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.notifyEmailBtn:hover {
+  color: var(--primary);
+  border-color: var(--primary);
 }
