@@ -15,6 +15,7 @@ from apps.orders.views import (
 from apps.producers.views import ProducerViewSet
 from apps.traceability.views import AllergenViewSet
 from apps.payments.views import CreateCheckoutSessionView, stripe_webhook
+from apps.catalog.views import ProductImageUploadView
 
 
 
@@ -40,5 +41,6 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     path("checkout/create-session/", CreateCheckoutSessionView.as_view()),
     path("stripe/webhook/", stripe_webhook),
+    path("products/<int:product_id>/upload-image/", ProductImageUploadView.as_view(), name="product-upload-image"),
 ]
 
