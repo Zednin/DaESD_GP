@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
+import { FiDownload } from 'react-icons/fi';
 import shared from '../../pages/Producer/ProducerShared.module.css';
 import local from './ProducerPayments.module.css';
 const styles = { ...shared, ...local };
@@ -570,9 +571,7 @@ export default function ProducerPayments({ producerId, producerName }) {
                             onClick={() => setDlDropdown(dlDropdown === row.key ? null : row.key)}
                             title="Download report"
                           >
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M8 1v9m0 0L5 7m3 3 3-3M2 12v1a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
+                            <FiDownload size={16} />
                           </button>
                           {dlDropdown === row.key && (
                             <div className={styles.dlDropdown}>
