@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import shared from '../../pages/Producer/ProducerShared.module.css';
 import local from './ProducerOrders.module.css';
 const styles = { ...shared, ...local };
-import { FiSearch, FiX, FiCheck, FiUser, FiMapPin, FiPackage, FiFileText, FiChevronUp, FiChevronDown } from 'react-icons/fi';
+import { FiSearch, FiX, FiCheck, FiUser, FiMapPin, FiPackage, FiFileText, FiChevronUp, FiChevronDown, FiMail } from 'react-icons/fi';
 
 /* Helpers */
 function getCookie(name) {
@@ -25,13 +25,13 @@ const ORDER_STATUS_CLASS = {
 
 const STATUS_FILTERS = ['all', 'pending', 'accepted', 'preparing', 'ready', 'delivered', 'rejected', 'cancelled'];
 
-/** Returns the next-step actions available for a given status */
-function getActions(status) {
+/** Returns the valid next statuses for the dropdown */
+function getNextStatuses(status) {
   switch (status) {
-    case 'pending':   return [{ label: 'Accept', next: 'accepted', style: 'save' }, { label: 'Reject', next: 'rejected', style: 'delete' }];
-    case 'accepted':  return [{ label: 'Start Preparing', next: 'preparing', style: 'save' }];
-    case 'preparing': return [{ label: 'Mark Ready', next: 'ready', style: 'save' }];
-    case 'ready':     return [{ label: 'Mark Delivered', next: 'ready_delivered', style: 'save' }];
+    case 'pending':   return ['accepted', 'rejected'];
+    case 'accepted':  return ['preparing', 'cancelled'];
+    case 'preparing': return ['ready', 'cancelled'];
+    case 'ready':     return ['delivered', 'cancelled'];
     default:          return [];
   }
 }
@@ -57,6 +57,10 @@ export default function ProducerOrders({ producerId }) {
   const [dateTo, setDateTo]       = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [modalClosing, setModalClosing]  = useState(false);
+  const [statusOrder, setStatusOrder]       = useState(null);   // order for status-change modal
+  const [statusChoice, setStatusChoice]     = useState('');      // selected new status
+  const [statusClosing, setStatusClosing]   = useState(false);
+  const [cancelReason, setCancelReason]     = useState('');
   const [updating, setUpdating] = useState(null); // id of order being updated
   const [sortKey, setSortKey]   = useState('created_at');
   const [sortDir, setSortDir]   = useState('desc');
@@ -96,12 +100,30 @@ export default function ProducerOrders({ producerId }) {
     return () => { cancelled = true; };
   }, [producerId]);
 
-  /* Close modal with fade-down animation */
+  /* Close detail modal with fade-down animation */
   function closeModal() {
     setModalClosing(true);
     setTimeout(() => {
       setSelectedOrder(null);
       setModalClosing(false);
+    }, 200);
+  }
+
+  /* Open status-change modal */
+  function openStatusModal(order) {
+    const next = getNextStatuses(order.status);
+    setStatusChoice(next[0] || '');
+    setStatusOrder(order);
+  }
+
+  /* Close status-change modal with fade-down */
+  function closeStatusModal() {
+    setStatusClosing(true);
+    setTimeout(() => {
+      setStatusOrder(null);
+      setStatusChoice('');
+      setCancelReason('');
+      setStatusClosing(false);
     }, 200);
   }
 
@@ -172,8 +194,6 @@ export default function ProducerOrders({ producerId }) {
 
   /* Status update handler */
   async function handleStatusChange(orderId, newStatus) {
-    // "ready_delivered" is our internal key for the ready → delivered transition
-    const actualStatus = newStatus === 'ready_delivered' ? 'delivered' : newStatus;
     setUpdating(orderId);
     try {
       const res = await fetch(`/api/producer-orders/${orderId}/`, {
@@ -183,7 +203,7 @@ export default function ProducerOrders({ producerId }) {
           'X-CSRFToken': getCookie('csrftoken'),
         },
         credentials: 'include',
-        body: JSON.stringify({ status: actualStatus }),
+        body: JSON.stringify({ status: newStatus }),
       });
       if (!res.ok) throw new Error('Update failed');
       const updated = await res.json();
@@ -200,6 +220,7 @@ export default function ProducerOrders({ producerId }) {
             : o
         ),
       );
+      closeStatusModal();
     } catch (err) {
       alert(`Failed to update order: ${err.message}`);
     } finally {
@@ -346,7 +367,7 @@ export default function ProducerOrders({ producerId }) {
             </thead>
             <tbody>
               {filtered.map(order => {
-                const actions = getActions(order.status);
+                const hasNext = getNextStatuses(order.status).length > 0;
 
                 return (
                   <tr
@@ -375,39 +396,14 @@ export default function ProducerOrders({ producerId }) {
                       </span>
                     </td>
                     <td className={styles.actionsCell} onClick={e => e.stopPropagation()}>
-                      {actions.length > 0 ? (() => {
-                        if (actions.length > 1) {
-                          return (
-                            <div className={styles.actionIconBtns}>
-                              {actions.map(a => (
-                                <button
-                                  key={a.next}
-                                  className={a.style === 'delete' ? styles.actionIconDanger : styles.actionIconSafe}
-                                  disabled={updating === order.id}
-                                  onClick={() => handleStatusChange(order.id, a.next)}
-                                  title={a.label}
-                                >
-                                  {updating === order.id ? '…' : a.style === 'delete' ? <FiX size={13} /> : <FiCheck size={13} />}
-                                </button>
-                              ))}
-                            </div>
-                          );
-                        }
-                        const action = actions[0];
-                        return (
-                          <div className={styles.statusPicker}>
-                            <span className={styles.nextStatusChip}>{action.label}</span>
-                            <button
-                              className={styles.confirmIconBtn}
-                              disabled={updating === order.id}
-                              onClick={() => handleStatusChange(order.id, action.next)}
-                              title="Confirm"
-                            >
-                              {updating === order.id ? '…' : <FiCheck size={13} />}
-                            </button>
-                          </div>
-                        );
-                      })() : (
+                      {hasNext ? (
+                        <button
+                          className={styles.updateStatusBtn}
+                          onClick={() => openStatusModal(order)}
+                        >
+                          Update Status
+                        </button>
+                      ) : (
                         <span className={styles.muted}>—</span>
                       )}
                     </td>
@@ -539,6 +535,85 @@ export default function ProducerOrders({ producerId }) {
           </div>
         </div>
       )}
+
+      {/* Status-change modal */}
+      {statusOrder && (() => {
+        const nextStatuses = getNextStatuses(statusOrder.status);
+        return (
+          <div
+            className={`${styles.modalOverlay} ${statusClosing ? styles.modalOverlayClosing : ''}`}
+            onClick={closeStatusModal}
+          >
+            <div
+              className={`${styles.statusModalContent} ${statusClosing ? styles.modalContentClosing : ''}`}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className={styles.modalHeader}>
+                <div>
+                  <h3 className={styles.modalTitle}>Update Order Status</h3>
+                  <p className={styles.statusModalSub}>Order #{statusOrder.order} &middot; Currently <strong>{statusOrder.status}</strong></p>
+                </div>
+                <button className={styles.modalClose} onClick={closeStatusModal}>
+                  <FiX size={20} />
+                </button>
+              </div>
+
+              <div className={styles.statusModalBody}>
+                <label className={styles.statusSelectLabel}>
+                  New Status
+                  <select
+                    className={styles.statusSelect}
+                    value={statusChoice}
+                    onChange={e => setStatusChoice(e.target.value)}
+                  >
+                    {nextStatuses.map(s => (
+                      <option key={s} value={s}>
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {(statusChoice === 'cancelled' || statusChoice === 'rejected') && (
+                  <label className={styles.statusSelectLabel}>
+                    Reason for {statusChoice === 'cancelled' ? 'Cancellation' : 'Rejection'}
+                    <textarea
+                      className={styles.cancelReasonInput}
+                      rows={3}
+                      placeholder="e.g. Out of stock, supplier delay…"
+                      value={cancelReason}
+                      onChange={e => setCancelReason(e.target.value)}
+                    />
+                  </label>
+                )}
+
+                <div className={styles.statusModalActions}>
+                  <button
+                    className={styles.statusSaveBtn}
+                    disabled={
+                      !statusChoice
+                      || updating === statusOrder.id
+                      || ((statusChoice === 'cancelled' || statusChoice === 'rejected') && !cancelReason.trim())
+                    }
+                    onClick={() => handleStatusChange(statusOrder.id, statusChoice)}
+                  >
+                    <FiCheck size={15} />
+                    {updating === statusOrder.id ? 'Saving…' : 'Save Changes'}
+                  </button>
+
+                  <button
+                    className={styles.notifyEmailBtn}
+                    title="Send email notification to customer"
+                  >
+                    <FiMail size={15} />
+                    Notify Customer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
     </section>
   );
