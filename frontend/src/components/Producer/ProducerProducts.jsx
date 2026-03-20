@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import styles from '../../pages/Producer/ProducerDashboard.module.css';
 import { FiUpload } from 'react-icons/fi';
+import apiClient from "../../utils/apiClient";
+import { uploadProductImage } from "../../utils/productUploads";
 
 const EMPTY_FORM = {
   name: '',
@@ -19,12 +21,6 @@ const EMPTY_FORM = {
   image: '',
 };
 
-// Cross-Site Request Forgery token
-function getCookie(name) {
-  return document.cookie.split('; ') 
-    .find(r => r.startsWith(name + '='))
-    ?.split('=')[1];
-}
 
 const UNIT_OPTIONS = ['kg', 'g', 'litre', 'ml', 'unit', 'dozen'];
 const STATUS_OPTIONS = ['available', 'unavailable'];
@@ -56,6 +52,7 @@ function formatAvailability(product) {
 /* Product form modal  */
 function ProductModal({ product, producerId, onClose, onSaved }) {
   const isEdit = Boolean(product?.id);
+  const [imageFile, setImageFile] = useState(null);
   const [form, setForm] = useState(
     isEdit
       ? {
@@ -89,17 +86,35 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
 
   // Fetch categories and allergens on mount
   useEffect(() => {
-    fetch('/api/categories/')
-      .then(res => res.json())
-      .then(data => setCategories(data.results ?? data));
-    fetch('/api/allergens/')
-      .then(res => res.json())
-      .then(data => setAllergensList(data.results ?? data));
+    async function loadFormData() {
+      try {
+        const [categoriesRes, allergensRes] = await Promise.all([
+          apiClient.get("/categories/"),
+          apiClient.get("/allergens/"),
+        ]);
+
+        setCategories(categoriesRes.data.results ?? categoriesRes.data);
+        setAllergensList(allergensRes.data.results ?? allergensRes.data);
+      } catch (err) {
+        setError("Failed to load form data.");
+      }
+    }
+
+    loadFormData();
   }, []);
 
   function handleChange(e) {
-    const { name, value, type, checked } = e.target;
-    setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
+    const { name, value, type, checked, files } = e.target;
+
+    if (type === "file") {
+      setImageFile(files?.[0] ?? null);
+      return;
+    }
+
+    setForm((f) => ({
+      ...f,
+      [name]: type === 'checkbox' ? checked : value
+    }));
   }
 
   function handleAllergenToggle(allergenId) {
@@ -117,61 +132,63 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
   // Prepares form for api response on 'add product' / 'save changes'
   async function handleSubmit(e) {
     e.preventDefault();
-
-    // disable submit (turns to saving) when user clicks Submit
     setSaving(true);
     setError('');
-    const payload = {
-      ...form,
-      producer: producerId,
-      price: parseFloat(form.price),
-      stock: parseInt(form.stock, 10),
-      category: form.category ? parseInt(form.category, 10) : null,
-      allergens: form.allergens,
-      image: form.image || null,
-      season_start_month: form.availability_mode === 'seasonal' && form.season_start_month
-        ? parseInt(form.season_start_month, 10)
-        : null,
-      season_end_month: form.availability_mode === 'seasonal' && form.season_end_month
-        ? parseInt(form.season_end_month, 10)
-        : null,
-      harvest_date: form.harvest_date || null,
-    };
 
-    // Edit existing products
-    if (isEdit) {
+    try {
+      const payload = {
+        ...form,
+        producer: producerId,
+        price: parseFloat(form.price),
+        stock: parseInt(form.stock, 10),
+        category: form.category ? parseInt(form.category, 10) : null,
+        allergens: form.allergens,
+        image: form.image || null,
+        season_start_month:
+          form.availability_mode === 'seasonal' && form.season_start_month
+            ? parseInt(form.season_start_month, 10)
+            : null,
+        season_end_month:
+          form.availability_mode === 'seasonal' && form.season_end_month
+            ? parseInt(form.season_end_month, 10)
+            : null,
+        harvest_date: form.harvest_date || null,
+      };
 
-      // PUT = Updating existing record, product_id goes to url
-      const res = await fetch(`/api/products/${product.id}/`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-        
-        // Convert to JSON 
-        body: JSON.stringify(payload),
-      });
+      let savedProduct;
 
-      // Wait for django response and parse back into js object
-      const updated = await res.json();
+      if (isEdit) {
+        const res = await apiClient.put(`/products/${product.id}/`, payload);
+        savedProduct = res.data;
+      } else {
+        const res = await apiClient.post(`/products/`, payload);
+        savedProduct = res.data;
+      }
 
-      // replace old row with updated one
-      onSaved(updated, 'edit');
-    } else {
+      // Upload image after product exists / is updated
+      if (imageFile && savedProduct?.id) {
+        const uploadData = await uploadProductImage(savedProduct.id, imageFile);
 
-      // POST = create new record from scratch and generate id
-      const res = await fetch('/api/products/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-        body: JSON.stringify(payload),
-      });
+        savedProduct = {
+          ...savedProduct,
+          image: uploadData.image,
+        };
+      }
 
-      // pass new object to django
-      const created = await res.json();
 
       // add new product to list on screen
-      onSaved(created, 'add');
+      onSaved(savedProduct, isEdit ? 'edit' : 'add');
+    } catch (err) {
+      const message =
+        err.response?.data?.detail ||
+        err.response?.data?.image?.[0] ||
+        err.response?.data?.non_field_errors?.[0] ||
+        "Failed to save product.";
+      setError(message);
+    } finally {
+      // Re enable save buttone when form is submitted
+      setSaving(false);
     }
-    // Re enable save buttone when form is submitted
-    setSaving(false);
   }
 
   return (
@@ -213,7 +230,7 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
               <label className={styles.uploadBtn}>
                 <FiUpload size={18} />
                 Upload Image
-                <input name="image" type="file" accept="image/*" style={{ display: 'none' }} />
+                <input name="image" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleChange}/>
               </label>
             </div>
           </div>
@@ -346,10 +363,7 @@ function DeleteModal({ product, onClose, onDeleted }) {
     try {
       
       // Send delete request to backend
-      const res = await fetch(`/api/products/${product.id}/`, {
-        method: 'DELETE',
-        headers: { 'X-CSRFToken': getCookie('csrftoken') },
-      });
+      await apiClient.delete(`/products/${product.id}/`);
 
       // Remove listed product from screen
       onDeleted(product.id);
@@ -389,15 +403,29 @@ export default function ProducerProducts({ producerId, producerName }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
-    if (!producerId) { setProducts([]); return; }
-    setLoading(true);
-    setError('');
-    fetch(`/api/products/?producer=${producerId}`, { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => setProducts(data.results ?? data))
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [producerId]);
+    async function loadProducts() {
+      if (!producerId) {
+        setProducts([]);
+        return;
+      }
+ 
+      setLoading(true);
+      setError('');
+
+      try {
+        const res = await apiClient.get(`/products/`, {
+          params: { producer: producerId },
+        });
+        setProducts(res.data.results ?? res.data);
+      } catch (err) {
+        setError(err.response?.data?.detail || err.message || "Failed to load products.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+  loadProducts();
+}, [producerId]);
 
   function handleSaved(product, mode) {
     setProducts((prev) =>
