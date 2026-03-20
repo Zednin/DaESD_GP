@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, Fragment } from 'react';
 import shared from '../../pages/Producer/ProducerShared.module.css';
 import local from './ProducerOrders.module.css';
 const styles = { ...shared, ...local };
-import { FiSearch, FiX } from 'react-icons/fi';
+import { FiSearch, FiX, FiCheck } from 'react-icons/fi';
 
 /* Helpers */
 function getCookie(name) {
@@ -56,7 +56,7 @@ export default function ProducerOrders({ producerId }) {
   const [dateFrom, setDateFrom]   = useState('');
   const [dateTo, setDateTo]       = useState('');
   const [expandedId, setExpandedId] = useState(null);
-  const [updating, setUpdating]   = useState(null); // id of order being updated
+  const [updating, setUpdating] = useState(null); // id of order being updated
 
   /* Fetch orders */
   useEffect(() => {
@@ -302,25 +302,47 @@ export default function ProducerOrders({ producerId }) {
                           : <span className={styles.muted}>—</span>}
                       </td>
                       <td>
-                        <span className={`${styles.badge} ${ORDER_STATUS_CLASS[order.status] ?? styles.badgeGrey}`}>
+                        <span className={`${styles.orderStatusBadge} ${ORDER_STATUS_CLASS[order.status] ?? styles.badgeGrey}`}>
+                          <span className={styles.badgeDot} />
                           {order.status}
                         </span>
                       </td>
                       <td className={styles.actionsCell} onClick={e => e.stopPropagation()}>
-                        {actions.length > 0 ? (
-                          <div className={styles.actionsBtns}>
-                            {actions.map(a => (
+                        {actions.length > 0 ? (() => {
+                          // Multiple options (pending: Accept / Reject) → direct icon buttons
+                          if (actions.length > 1) {
+                            return (
+                              <div className={styles.actionIconBtns}>
+                                {actions.map(a => (
+                                  <button
+                                    key={a.next}
+                                    className={a.style === 'delete' ? styles.actionIconDanger : styles.actionIconSafe}
+                                    disabled={updating === order.id}
+                                    onClick={() => handleStatusChange(order.id, a.next)}
+                                    title={a.label}
+                                  >
+                                    {updating === order.id ? '…' : a.style === 'delete' ? <FiX size={13} /> : <FiCheck size={13} />}
+                                  </button>
+                                ))}
+                              </div>
+                            );
+                          }
+                          // Single next step → pill chip + confirm tick
+                          const action = actions[0];
+                          return (
+                            <div className={styles.statusPicker}>
+                              <span className={styles.nextStatusChip}>{action.label}</span>
                               <button
-                                key={a.next}
-                                className={a.style === 'delete' ? styles.deleteRowBtn : styles.editBtn}
+                                className={styles.confirmIconBtn}
                                 disabled={updating === order.id}
-                                onClick={() => handleStatusChange(order.id, a.next)}
+                                onClick={() => handleStatusChange(order.id, action.next)}
+                                title="Confirm"
                               >
-                                {updating === order.id ? '…' : a.label}
+                                {updating === order.id ? '…' : <FiCheck size={13} />}
                               </button>
-                            ))}
-                          </div>
-                        ) : (
+                            </div>
+                          );
+                        })() : (
                           <span className={styles.muted}>—</span>
                         )}
                       </td>
