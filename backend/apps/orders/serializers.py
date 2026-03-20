@@ -42,6 +42,9 @@ class ProducerOrderSerializer(serializers.ModelSerializer):
     commission = serializers.SerializerMethodField()
     payout_amount = serializers.SerializerMethodField()
     customer_name = serializers.SerializerMethodField()
+    customer_email = serializers.SerializerMethodField()
+    customer_phone = serializers.SerializerMethodField()
+    delivery_address = serializers.SerializerMethodField()
     items = OrderItemSerializer(many=True, read_only=True)
 
     class Meta:
@@ -56,6 +59,9 @@ class ProducerOrderSerializer(serializers.ModelSerializer):
             "payout_amount",
             "delivery_date",
             "customer_name",
+            "customer_email",
+            "customer_phone",
+            "delivery_address",
             "items",
             "created_at",
             "updated_at",
@@ -76,3 +82,22 @@ class ProducerOrderSerializer(serializers.ModelSerializer):
         account = obj.order.account
         full = f"{account.first_name} {account.last_name}".strip()
         return full or account.username
+
+    def get_customer_email(self, obj):
+        return obj.order.account.email
+
+    def get_customer_phone(self, obj):
+        account = obj.order.account
+        profile = getattr(account, 'customer_profile', None)
+        return profile.phone_number if profile else ""
+
+    def get_delivery_address(self, obj):
+        addr = obj.order.delivery_address
+        if not addr:
+            return None
+        return {
+            "address_line_1": addr.address_line_1,
+            "address_line_2": addr.address_line_2 or "",
+            "city": addr.city,
+            "postcode": addr.postcode,
+        }

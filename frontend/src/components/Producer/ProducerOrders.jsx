@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, Fragment } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import shared from '../../pages/Producer/ProducerShared.module.css';
 import local from './ProducerOrders.module.css';
 const styles = { ...shared, ...local };
-import { FiSearch, FiX, FiCheck } from 'react-icons/fi';
+import { FiSearch, FiX, FiCheck, FiUser, FiMapPin, FiPackage, FiFileText, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 
 /* Helpers */
 function getCookie(name) {
@@ -55,8 +55,11 @@ export default function ProducerOrders({ producerId }) {
   const [search, setSearch]       = useState('');
   const [dateFrom, setDateFrom]   = useState('');
   const [dateTo, setDateTo]       = useState('');
-  const [expandedId, setExpandedId] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [modalClosing, setModalClosing]  = useState(false);
   const [updating, setUpdating] = useState(null); // id of order being updated
+  const [sortKey, setSortKey]   = useState('created_at');
+  const [sortDir, setSortDir]   = useState('desc');
 
   /* Fetch orders */
   useEffect(() => {
@@ -93,11 +96,51 @@ export default function ProducerOrders({ producerId }) {
     return () => { cancelled = true; };
   }, [producerId]);
 
+  /* Close modal with fade-down animation */
+  function closeModal() {
+    setModalClosing(true);
+    setTimeout(() => {
+      setSelectedOrder(null);
+      setModalClosing(false);
+    }, 200);
+  }
+
+  /* Sort toggle helper */
+  function toggleSort(key) {
+    if (sortKey === key) {
+      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
+  }
+
   /* Derived data */
-  const sorted = useMemo(
-    () => [...orders].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)),
-    [orders],
-  );
+  const sorted = useMemo(() => {
+    const mult = sortDir === 'asc' ? 1 : -1;
+    return [...orders].sort((a, b) => {
+      let av, bv;
+      switch (sortKey) {
+        case 'order':
+          av = a.order; bv = b.order; break;
+        case 'created_at':
+          av = new Date(a.created_at); bv = new Date(b.created_at); break;
+        case 'items':
+          av = a.items?.length ?? 0; bv = b.items?.length ?? 0; break;
+        case 'subtotal':
+          av = a.subtotal; bv = b.subtotal; break;
+        case 'delivery_date':
+          av = a.delivery_date ? new Date(a.delivery_date) : new Date(0);
+          bv = b.delivery_date ? new Date(b.delivery_date) : new Date(0);
+          break;
+        default:
+          av = new Date(a.created_at); bv = new Date(b.created_at);
+      }
+      if (av < bv) return -1 * mult;
+      if (av > bv) return  1 * mult;
+      return 0;
+    });
+  }, [orders, sortKey, sortDir]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -263,15 +306,40 @@ export default function ProducerOrders({ producerId }) {
         </div>
       ) : (
         <div className={styles.tableWrapper}>
-          <table className={styles.table}>
+          <table className={`${styles.table} ${styles.ordersTable}`}>
             <thead>
               <tr>
-                <th>Order Ref</th>
+                <th>
+                  <button className={styles.sortBtn} onClick={() => toggleSort('order')}>
+                    Order Ref
+                    {sortKey === 'order' && (sortDir === 'asc' ? <FiChevronUp size={13} /> : <FiChevronDown size={13} />)}
+                  </button>
+                </th>
                 <th>Customer</th>
-                <th>Date</th>
-                <th>Items</th>
-                <th>Subtotal</th>
-                <th>Delivery Date</th>
+                <th>
+                  <button className={styles.sortBtn} onClick={() => toggleSort('created_at')}>
+                    Date
+                    {sortKey === 'created_at' && (sortDir === 'asc' ? <FiChevronUp size={13} /> : <FiChevronDown size={13} />)}
+                  </button>
+                </th>
+                <th>
+                  <button className={styles.sortBtn} onClick={() => toggleSort('items')}>
+                    Items
+                    {sortKey === 'items' && (sortDir === 'asc' ? <FiChevronUp size={13} /> : <FiChevronDown size={13} />)}
+                  </button>
+                </th>
+                <th>
+                  <button className={styles.sortBtn} onClick={() => toggleSort('subtotal')}>
+                    Subtotal
+                    {sortKey === 'subtotal' && (sortDir === 'asc' ? <FiChevronUp size={13} /> : <FiChevronDown size={13} />)}
+                  </button>
+                </th>
+                <th>
+                  <button className={styles.sortBtn} onClick={() => toggleSort('delivery_date')}>
+                    Delivery Date
+                    {sortKey === 'delivery_date' && (sortDir === 'asc' ? <FiChevronUp size={13} /> : <FiChevronDown size={13} />)}
+                  </button>
+                </th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -279,107 +347,196 @@ export default function ProducerOrders({ producerId }) {
             <tbody>
               {filtered.map(order => {
                 const actions = getActions(order.status);
-                const isExpanded = expandedId === order.id;
 
                 return (
-                  <Fragment key={order.id}>
-                    <tr
-                      onClick={() => setExpandedId(isExpanded ? null : order.id)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <td className={styles.muted}>#{order.order}</td>
-                      <td>{order.customer_name}</td>
-                      <td className={styles.dateCell}>
-                        {new Date(order.created_at).toLocaleDateString('en-GB')}
-                      </td>
-                      <td className={styles.centredCell}>
-                        {order.items?.length ?? 0}
-                      </td>
-                      <td><strong>£{order.subtotal.toFixed(2)}</strong></td>
-                      <td className={styles.dateCell}>
-                        {order.delivery_date
-                          ? new Date(order.delivery_date).toLocaleDateString('en-GB')
-                          : <span className={styles.muted}>—</span>}
-                      </td>
-                      <td>
-                        <span className={`${styles.orderStatusBadge} ${ORDER_STATUS_CLASS[order.status] ?? styles.badgeGrey}`}>
-                          <span className={styles.badgeDot} />
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className={styles.actionsCell} onClick={e => e.stopPropagation()}>
-                        {actions.length > 0 ? (() => {
-                          // Multiple options (pending: Accept / Reject) → direct icon buttons
-                          if (actions.length > 1) {
-                            return (
-                              <div className={styles.actionIconBtns}>
-                                {actions.map(a => (
-                                  <button
-                                    key={a.next}
-                                    className={a.style === 'delete' ? styles.actionIconDanger : styles.actionIconSafe}
-                                    disabled={updating === order.id}
-                                    onClick={() => handleStatusChange(order.id, a.next)}
-                                    title={a.label}
-                                  >
-                                    {updating === order.id ? '…' : a.style === 'delete' ? <FiX size={13} /> : <FiCheck size={13} />}
-                                  </button>
-                                ))}
-                              </div>
-                            );
-                          }
-                          // Single next step → pill chip + confirm tick
-                          const action = actions[0];
+                  <tr
+                    key={order.id}
+                    onClick={() => setSelectedOrder(order)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <td className={styles.muted}>#{order.order}</td>
+                    <td>{order.customer_name}</td>
+                    <td className={styles.dateCell}>
+                      {new Date(order.created_at).toLocaleDateString('en-GB')}
+                    </td>
+                    <td className={styles.centredCell}>
+                      {order.items?.length ?? 0}
+                    </td>
+                    <td><strong>£{order.subtotal.toFixed(2)}</strong></td>
+                    <td className={styles.dateCell}>
+                      {order.delivery_date
+                        ? new Date(order.delivery_date).toLocaleDateString('en-GB')
+                        : <span className={styles.muted}>—</span>}
+                    </td>
+                    <td>
+                      <span className={`${styles.orderStatusBadge} ${ORDER_STATUS_CLASS[order.status] ?? styles.badgeGrey}`}>
+                        <span className={styles.badgeDot} />
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className={styles.actionsCell} onClick={e => e.stopPropagation()}>
+                      {actions.length > 0 ? (() => {
+                        if (actions.length > 1) {
                           return (
-                            <div className={styles.statusPicker}>
-                              <span className={styles.nextStatusChip}>{action.label}</span>
-                              <button
-                                className={styles.confirmIconBtn}
-                                disabled={updating === order.id}
-                                onClick={() => handleStatusChange(order.id, action.next)}
-                                title="Confirm"
-                              >
-                                {updating === order.id ? '…' : <FiCheck size={13} />}
-                              </button>
+                            <div className={styles.actionIconBtns}>
+                              {actions.map(a => (
+                                <button
+                                  key={a.next}
+                                  className={a.style === 'delete' ? styles.actionIconDanger : styles.actionIconSafe}
+                                  disabled={updating === order.id}
+                                  onClick={() => handleStatusChange(order.id, a.next)}
+                                  title={a.label}
+                                >
+                                  {updating === order.id ? '…' : a.style === 'delete' ? <FiX size={13} /> : <FiCheck size={13} />}
+                                </button>
+                              ))}
                             </div>
                           );
-                        })() : (
-                          <span className={styles.muted}>—</span>
-                        )}
-                      </td>
-                    </tr>
-
-                    {/* Expanded items row */}
-                    {isExpanded && order.items?.length > 0 && (
-                      <tr>
-                        <td colSpan={8} style={{ padding: 0, background: 'var(--surface-2)' }}>
-                          <table className={styles.table} style={{ margin: 0, border: 'none' }}>
-                            <thead>
-                              <tr>
-                                <th>Product</th>
-                                <th>Qty</th>
-                                <th>Unit Price</th>
-                                <th>Line Total</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {order.items.map(item => (
-                                <tr key={item.id}>
-                                  <td>{item.product_name}</td>
-                                  <td className={styles.centredCell}>{item.quantity}</td>
-                                  <td>£{parseFloat(item.price_snapshot).toFixed(2)}</td>
-                                  <td><strong>£{parseFloat(item.line_total).toFixed(2)}</strong></td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
+                        }
+                        const action = actions[0];
+                        return (
+                          <div className={styles.statusPicker}>
+                            <span className={styles.nextStatusChip}>{action.label}</span>
+                            <button
+                              className={styles.confirmIconBtn}
+                              disabled={updating === order.id}
+                              onClick={() => handleStatusChange(order.id, action.next)}
+                              title="Confirm"
+                            >
+                              {updating === order.id ? '…' : <FiCheck size={13} />}
+                            </button>
+                          </div>
+                        );
+                      })() : (
+                        <span className={styles.muted}>—</span>
+                      )}
+                    </td>
+                  </tr>
                 );
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Order detail modal */}
+      {selectedOrder && (
+        <div className={`${styles.modalOverlay} ${modalClosing ? styles.modalOverlayClosing : ''}`} onClick={closeModal}>
+          <div className={`${styles.modalContent} ${modalClosing ? styles.modalContentClosing : ''}`} onClick={e => e.stopPropagation()}>
+
+            {/* Modal header */}
+            <div className={styles.modalHeader}>
+              <div>
+                <h3 className={styles.modalTitle}>Order #{selectedOrder.order}</h3>
+                <span className={`${styles.orderStatusBadge} ${ORDER_STATUS_CLASS[selectedOrder.status] ?? styles.badgeGrey}`}>
+                  <span className={styles.badgeDot} />
+                  {selectedOrder.status}
+                </span>
+              </div>
+              <button className={styles.modalClose} onClick={closeModal}>
+                <FiX size={20} />
+              </button>
+            </div>
+
+            {/* Info grid */}
+            <div className={styles.detailGrid}>
+
+              {/* Customer contact information */}
+              <div className={styles.detailCard}>
+                <h4 className={styles.detailCardTitle}><FiUser size={15} /> Customer Contact</h4>
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Name</span>
+                  <span>{selectedOrder.customer_name}</span>
+                </div>
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Email</span>
+                  <span>{selectedOrder.customer_email || <span className={styles.muted}>—</span>}</span>
+                </div>
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Phone</span>
+                  <span>{selectedOrder.customer_phone || <span className={styles.muted}>—</span>}</span>
+                </div>
+              </div>
+
+              {/* Delivery address */}
+              <div className={styles.detailCard}>
+                <h4 className={styles.detailCardTitle}><FiMapPin size={15} /> Delivery Address</h4>
+                {selectedOrder.delivery_address ? (
+                  <>
+                    <p className={styles.addressLine}>{selectedOrder.delivery_address.address_line_1}</p>
+                    {selectedOrder.delivery_address.address_line_2 && (
+                      <p className={styles.addressLine}>{selectedOrder.delivery_address.address_line_2}</p>
+                    )}
+                    <p className={styles.addressLine}>{selectedOrder.delivery_address.city}</p>
+                    <p className={styles.addressLine}>{selectedOrder.delivery_address.postcode}</p>
+                  </>
+                ) : (
+                  <p className={styles.muted}>No delivery address on file</p>
+                )}
+              </div>
+
+              {/* Order dates & value */}
+              <div className={styles.detailCard}>
+                <h4 className={styles.detailCardTitle}><FiFileText size={15} /> Order Details</h4>
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Order Date</span>
+                  <span>{new Date(selectedOrder.created_at).toLocaleDateString('en-GB')}</span>
+                </div>
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Delivery Date</span>
+                  <span>
+                    {selectedOrder.delivery_date
+                      ? new Date(selectedOrder.delivery_date).toLocaleDateString('en-GB')
+                      : <span className={styles.muted}>Not set</span>}
+                  </span>
+                </div>
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Total Value</span>
+                  <span><strong>£{selectedOrder.subtotal.toFixed(2)}</strong></span>
+                </div>
+              </div>
+            </div>
+
+            {/* Order instructions */}
+            <div className={styles.specialInstructions}>
+              <h4 className={styles.detailCardTitle}><FiFileText size={15} /> Order Instructions</h4>
+              <p>{selectedOrder.special_instructions || <span className={styles.muted}>No instructions provided</span>}</p>
+            </div>
+
+            {/* Itemised product list */}
+            <div className={styles.modalItemsSection}>
+              <h4 className={styles.detailCardTitle}><FiPackage size={15} /> Items Ordered</h4>
+              {selectedOrder.items?.length > 0 ? (
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Qty</th>
+                      <th>Unit Price</th>
+                      <th>Line Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedOrder.items.map(item => (
+                      <tr key={item.id}>
+                        <td>{item.product_name}</td>
+                        <td className={styles.centredCell}>{item.quantity}</td>
+                        <td>£{parseFloat(item.price_snapshot).toFixed(2)}</td>
+                        <td><strong>£{parseFloat(item.line_total).toFixed(2)}</strong></td>
+                      </tr>
+                    ))}
+                    <tr className={styles.totalRow}>
+                      <td colSpan={3}><strong>Total</strong></td>
+                      <td><strong>£{selectedOrder.subtotal.toFixed(2)}</strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              ) : (
+                <p className={styles.muted}>No items</p>
+              )}
+            </div>
+
+          </div>
         </div>
       )}
 
