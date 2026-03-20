@@ -27,7 +27,11 @@ class ProducerOrderViewSet(ModelViewSet):
         user = self.request.user
         qs = (
             ProducerOrder.objects
-            .select_related("order__account", "producer")
+            .select_related(
+                "order__account__customer_profile",
+                "order__delivery_address",
+                "producer",
+            )
             .prefetch_related("items__product")
             .order_by("-created_at")
         )
