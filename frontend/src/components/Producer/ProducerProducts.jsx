@@ -68,7 +68,7 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
           status: product.status,
           organic_certified: product.organic_certified,
           category: product.category ?? '',
-          allergens: product.allergens ?? [],
+          allergens: (product.allergens ?? []).map((a) => (typeof a === 'object' ? a.id : a)),
           image: product.image ?? '',
         }
       : EMPTY_FORM
@@ -136,13 +136,14 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
     setError('');
 
     try {
+      const { allergens: _allergens, ...rest } = form;
       const payload = {
-        ...form,
+        ...rest,
         producer: producerId,
         price: parseFloat(form.price),
         stock: parseInt(form.stock, 10),
         category: form.category ? parseInt(form.category, 10) : null,
-        allergens: form.allergens,
+        allergen_ids: form.allergens,
         image: form.image || null,
         season_start_month:
           form.availability_mode === 'seasonal' && form.season_start_month
