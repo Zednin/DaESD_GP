@@ -51,34 +51,6 @@
   flex-wrap: wrap;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   EXPORT BUTTON
-═══════════════════════════════════════════════════════════ */
-
-.exportBtn {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.exportBtn:hover {
-  background: var(--hover-overlay);
-  border-color: var(--text);
-}
-
-.exportBtns {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .dlWrap {
   position: relative;
   display: inline-block;
@@ -154,16 +126,11 @@
   font-size: 14px;
 }
 
-/* Commission cell with rate badge */
+/* Commission cell */
 .commissionCell {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.commissionRate {
-  font-size: 11px;
-  color: var(--muted);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -239,20 +206,186 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   INFO BOX  (commission explanation note)
+   TAX YEAR RUNNING TOTAL BANNER
 ═══════════════════════════════════════════════════════════ */
 
-.infoBox {
-  background: var(--surface-2);
+.taxYearBanner {
+  background: var(--surface);
   border: 1px solid var(--border);
   border-left: 4px solid var(--primary);
-  border-radius: 8px;
-  padding: 14px 18px;
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.6;
+  border-radius: 12px;
+  padding: 20px 24px;
 }
 
-.infoBox strong {
+.taxYearHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.taxYearTitle {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
   color: var(--text);
+  margin: 0;
+}
+
+.taxYearGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.taxYearStat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.taxYearLabel {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.taxYearValue {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.taxYearValueAccent {
+  color: var(--primary);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TRANSACTION REF
+═══════════════════════════════════════════════════════════ */
+
+.txRef {
+  display: block;
+  font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EXPANDABLE ROW  (order items breakdown)
+═══════════════════════════════════════════════════════════ */
+
+.expandCell {
+  width: 32px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.expandBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.expandBtn:hover {
+  background: var(--hover-overlay);
+  color: var(--text);
+  border-color: var(--text);
+}
+
+.expandedParent {
+  background: var(--surface-2) !important;
+}
+
+.itemsRow {
+  background: var(--surface-2);
+}
+
+.itemsRow:hover {
+  background: var(--surface-2) !important;
+}
+
+.itemsRow > td {
+  padding: 0 16px 16px !important;
+  border-bottom: 2px solid var(--border) !important;
+}
+
+.itemsBreakdown {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+}
+
+.itemsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.itemsTable th {
+  padding: 6px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.itemsTable td {
+  padding: 8px 12px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+.itemsTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.itemsMeta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.itemsSummary {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--muted);
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STATUS COUNTS  (inline badges in finance report table)
+═══════════════════════════════════════════════════════════ */
+
+.statusCounts {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
 }

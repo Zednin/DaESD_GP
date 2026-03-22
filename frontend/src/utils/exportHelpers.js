@@ -190,106 +190,268 @@ function addPageFooter(doc, C) {
   }
 }
 
-/* ── Finance Report PDF ── */
-export async function generateFinanceReportPDF({ producerName, weeklyReport, weekTotal, allTimeTotals, summaryStats, logoUrl, title }) {
+/* ── Helpers for payment report ── */
+function anonymiseName(fullName) {
+  if (!fullName) return 'Customer';
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+}
+
+function paymentStatusLabel(orderStatus) {
+  if (['delivered', 'completed'].includes(orderStatus)) return 'Processed';
+  if (['cancelled', 'rejected'].includes(orderStatus)) return 'Cancelled';
+  return 'Pending Bank Transfer';
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   Payment Report PDF 
+══════════════════════════════════════════════════════════════════ */
+export async function generatePaymentReportPDF({
+  producerName, weekRows, weeklyReport, weekTotal, allTimeTotals,
+  taxYearTotals, summaryStats, logoUrl, title,
+}) {
   const C = getColors();
   const doc = new jsPDF('landscape', 'mm', 'a4');
   const logoBase64 = await loadLogoBase64(logoUrl);
 
+  /* ── Page 1: Header + summary ── */
   addHeader(doc, logoBase64, C);
 
   let y = addTitle(
     doc,
-    title || 'Finance Report — Weekly Settlement Summary',
-    `${producerName}  •  ${new Date().toLocaleDateString('en-GB')}`,
+    title || 'Payment Report',
+    `${producerName}  •  Generated ${new Date().toLocaleDateString('en-GB')}`,
     42,
     C,
   );
 
+  // Summary cards
   y = addSummaryCards(doc, [
-    { label: 'Net Revenue',     value: `£${summaryStats.totalNet.toFixed(2)}` },
-    { label: 'Gross Sales',     value: `£${summaryStats.totalGross.toFixed(2)}` },
-    { label: 'Commission Paid', value: `£${summaryStats.totalCommission.toFixed(2)}` },
-    { label: 'Total Orders',    value: `${weekTotal ? weekTotal.count : allTimeTotals.count}` },
+    { label: 'Producer Payment (95%)', value: `£${summaryStats.totalNet.toFixed(2)}` },
+    { label: 'Total Orders Value',     value: `£${summaryStats.totalGross.toFixed(2)}` },
+    { label: 'Commission (5%)',        value: `£${summaryStats.totalCommission.toFixed(2)}` },
+    { label: 'Orders',                 value: `${weekRows.length}` },
   ], y, C);
 
-  const tableHeaders = [['Period', 'Orders', 'Gross Sales', 'Commission', 'Rate', 'Net Payout', 'Paid', 'Pending', 'Cancelled']];
+  // Tax year running total box
+  if (taxYearTotals) {
+    doc.setFillColor(...C.SURFACE2);
+    const pageW = doc.internal.pageSize.getWidth();
+    doc.roundedRect(14, y, pageW - 28, 18, 3, 3, 'F');
 
-  const tableRows = weeklyReport.map(r => [
-    r.label,
-    r.count,
-    `£${r.gross.toFixed(2)}`,
-    `£${r.commission.toFixed(2)}`,
-    `${r.effectiveRate}%`,
-    `£${r.net.toFixed(2)}`,
-    r.paid || '—',
-    r.pending || '—',
-    r.cancelled || '—',
-  ]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(...C.TEXT);
+    doc.text(`Tax Year ${taxYearTotals.label} Running Total`, 20, y + 8);
 
-  const WEEK_BG = [235, 225, 228];
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...C.MUTED);
+    const taxSummary = `Gross: £${taxYearTotals.gross.toFixed(2)}   |   Commission: £${taxYearTotals.commission.toFixed(2)}   |   Net Earnings: £${taxYearTotals.net.toFixed(2)}   |   ${taxYearTotals.orderCount} completed orders`;
+    doc.text(taxSummary, 20, y + 14);
 
-  // Week Total row (only present for weekly reports)
-  if (weekTotal) {
-    tableRows.push([
-      { content: 'Week Total', styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
-      { content: `${weekTotal.count}`, styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
-      { content: `£${weekTotal.gross.toFixed(2)}`, styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
-      { content: `£${weekTotal.commission.toFixed(2)}`, styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
-      { content: `${weekTotal.rate}%`, styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
-      { content: `£${weekTotal.net.toFixed(2)}`, styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
-      { content: `${weekTotal.paid}`, styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
-      { content: `${weekTotal.pending}`, styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
-      { content: `${weekTotal.cancelled}`, styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
-    ]);
+    y += 24;
   }
 
-  // All-time footer row
-  tableRows.push([
-    { content: 'All Time', styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
-    { content: `${allTimeTotals.count}`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
-    { content: `£${allTimeTotals.gross.toFixed(2)}`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
-    { content: `£${allTimeTotals.commission.toFixed(2)}`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
-    { content: `${allTimeTotals.rate}%`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
-    { content: `£${allTimeTotals.net.toFixed(2)}`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
-    { content: `${allTimeTotals.paid}`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
-    { content: `${allTimeTotals.pending}`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
-    { content: `${allTimeTotals.cancelled}`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
+  /* ── Section: Individual Order Breakdown ── */
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(...C.TEXT);
+  doc.text('Individual Order Breakdown', 14, y);
+  y += 6;
+
+  // Order detail table
+  const orderHeaders = [[
+    'Order #', 'Stripe Ref', 'Date', 'Customer',
+    'Items Sold', 'Gross', 'Commission', 'Net Payout', 'Status',
+  ]];
+
+  const orderRows = weekRows.map(r => {
+    const stripeRef = r.stripeRef ?? r.stripe_ref ?? '';
+    const customer = anonymiseName(r.customerName ?? r.customer_name ?? '');
+    const items = (r.items || []);
+    const itemsSummary = items.length > 0
+      ? items.map(it => `${it.quantity}x ${it.product_name}`).join(', ')
+      : '—';
+    const gross = r.subtotal ?? parseFloat(r.total_amount ?? 0);
+    const commission = r.commission ?? (gross * 0.05);
+    const payout = r.payout ?? r.payout_amount ?? (gross - commission);
+    const status = paymentStatusLabel(r.orderStatus ?? r.status ?? '');
+
+    return [
+      `#${r.orderId ?? r.order}`,
+      stripeRef || '—',
+      new Date(r.date ?? r.created_at).toLocaleDateString('en-GB'),
+      customer,
+      itemsSummary,
+      `£${gross.toFixed(2)}`,
+      `£${commission.toFixed(2)}`,
+      `£${payout.toFixed(2)}`,
+      status,
+    ];
+  });
+
+  // Totals row
+  const totalGross = weekRows.reduce((s, r) => s + (r.subtotal ?? parseFloat(r.total_amount ?? 0)), 0);
+  const totalCommission = weekRows.reduce((s, r) => s + (r.commission ?? (r.subtotal ?? 0) * 0.05), 0);
+  const totalPayout = weekRows.reduce((s, r) => s + (r.payout ?? r.payout_amount ?? 0), 0);
+
+  orderRows.push([
+    { content: `${weekRows.length} orders`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
+    { content: 'TOTAL', styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
+    { content: '', styles: { fillColor: C.FOOTER_BG } },
+    { content: '', styles: { fillColor: C.FOOTER_BG } },
+    { content: '', styles: { fillColor: C.FOOTER_BG } },
+    { content: `£${totalGross.toFixed(2)}`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
+    { content: `£${totalCommission.toFixed(2)}`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
+    { content: `£${totalPayout.toFixed(2)}`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
+    { content: '', styles: { fillColor: C.FOOTER_BG } },
   ]);
 
   autoTable(doc, {
-    head: tableHeaders,
-    body: tableRows,
+    head: orderHeaders,
+    body: orderRows,
     startY: y,
     margin: { left: 14, right: 14 },
     styles: {
-      fontSize: 8,
-      cellPadding: 3,
+      fontSize: 7,
+      cellPadding: 2.5,
       textColor: C.TEXT,
       lineColor: C.BORDER,
       lineWidth: 0.2,
+      overflow: 'linebreak',
     },
     headStyles: {
       fillColor: C.PRIMARY,
       textColor: C.WHITE,
       fontStyle: 'bold',
-      fontSize: 8,
+      fontSize: 7,
     },
     alternateRowStyles: {
       fillColor: C.ALT_ROW,
     },
     columnStyles: {
-      1: { halign: 'center' },
-      2: { halign: 'right' },
-      3: { halign: 'right' },
-      4: { halign: 'center' },
-      5: { halign: 'right' },
-      6: { halign: 'center' },
-      7: { halign: 'center' },
-      8: { halign: 'center' },
+      0: { cellWidth: 18 },              // Order #
+      1: { cellWidth: 38 },              // Stripe Ref
+      2: { cellWidth: 22 },              // Date
+      3: { cellWidth: 26 },              // Customer
+      4: { cellWidth: 'auto' },          // Items Sold
+      5: { cellWidth: 20, halign: 'right' },  // Gross
+      6: { cellWidth: 22, halign: 'right' },  // Commission
+      7: { cellWidth: 22, halign: 'right' },  // Net Payout
+      8: { cellWidth: 28 },              // Status
     },
   });
 
+  /* ── Page 2+: Weekly settlement summary (if weeklyReport provided) ── */
+  if (weeklyReport && weeklyReport.length > 0) {
+    doc.addPage();
+    addHeader(doc, logoBase64, C);
+
+    let y2 = addTitle(
+      doc,
+      'Weekly Settlement Summary',
+      `${producerName}  •  ${new Date().toLocaleDateString('en-GB')}`,
+      42,
+      C,
+    );
+
+    const settlementHeaders = [['Period', 'Orders', 'Total Orders Value', 'Commission (5%)', 'Rate', 'Producer Payment (95%)', 'Processed', 'Pending Transfer', 'Cancelled']];
+
+    const settlementRows = weeklyReport.map(r => [
+      r.label,
+      r.count,
+      `£${r.gross.toFixed(2)}`,
+      `£${r.commission.toFixed(2)}`,
+      `${r.effectiveRate}%`,
+      `£${r.net.toFixed(2)}`,
+      r.processed ?? r.paid ?? '—',
+      r.pending_transfer ?? r.pending ?? '—',
+      r.cancelled || '—',
+    ]);
+
+    const WEEK_BG = [235, 225, 228];
+
+    if (weekTotal) {
+      settlementRows.push([
+        { content: 'Week Total', styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
+        { content: `${weekTotal.count}`, styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
+        { content: `£${weekTotal.gross.toFixed(2)}`, styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
+        { content: `£${weekTotal.commission.toFixed(2)}`, styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
+        { content: `${weekTotal.rate}%`, styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
+        { content: `£${weekTotal.net.toFixed(2)}`, styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
+        { content: `${weekTotal.processed ?? weekTotal.paid ?? 0}`, styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
+        { content: `${weekTotal.pending_transfer ?? weekTotal.pending ?? 0}`, styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
+        { content: `${weekTotal.cancelled}`, styles: { fontStyle: 'bold', fillColor: WEEK_BG, textColor: C.PRIMARY } },
+      ]);
+    }
+
+    // All-time footer
+    settlementRows.push([
+      { content: 'All Time', styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
+      { content: `${allTimeTotals.count}`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
+      { content: `£${allTimeTotals.gross.toFixed(2)}`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
+      { content: `£${allTimeTotals.commission.toFixed(2)}`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
+      { content: `${allTimeTotals.rate}%`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
+      { content: `£${allTimeTotals.net.toFixed(2)}`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
+      { content: `${allTimeTotals.processed ?? allTimeTotals.paid ?? 0}`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
+      { content: `${allTimeTotals.pending_transfer ?? allTimeTotals.pending ?? 0}`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
+      { content: `${allTimeTotals.cancelled}`, styles: { fontStyle: 'bold', fillColor: C.FOOTER_BG } },
+    ]);
+
+    autoTable(doc, {
+      head: settlementHeaders,
+      body: settlementRows,
+      startY: y2,
+      margin: { left: 14, right: 14 },
+      styles: {
+        fontSize: 8,
+        cellPadding: 3,
+        textColor: C.TEXT,
+        lineColor: C.BORDER,
+        lineWidth: 0.2,
+      },
+      headStyles: {
+        fillColor: C.PRIMARY,
+        textColor: C.WHITE,
+        fontStyle: 'bold',
+        fontSize: 8,
+      },
+      alternateRowStyles: {
+        fillColor: C.ALT_ROW,
+      },
+      columnStyles: {
+        1: { halign: 'center' },
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        4: { halign: 'center' },
+        5: { halign: 'right' },
+        6: { halign: 'center' },
+        7: { halign: 'center' },
+        8: { halign: 'center' },
+      },
+    });
+
+    // Tax year note at bottom of settlement page
+    if (taxYearTotals) {
+      const finalY = doc.lastAutoTable.finalY + 10;
+      doc.setFillColor(...C.SURFACE2);
+      const pageW = doc.internal.pageSize.getWidth();
+      doc.roundedRect(14, finalY, pageW - 28, 14, 3, 3, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(...C.TEXT);
+      doc.text(`Tax Year ${taxYearTotals.label} Running Total:`, 20, finalY + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.text(
+        `Gross: £${taxYearTotals.gross.toFixed(2)}  |  Commission: £${taxYearTotals.commission.toFixed(2)}  |  Net Earnings: £${taxYearTotals.net.toFixed(2)}  |  ${taxYearTotals.orderCount} completed orders`,
+        20, finalY + 11,
+      );
+    }
+  }
+
   addPageFooter(doc, C);
-  doc.save(`finance-report-${producerName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.pdf`);
+  doc.save(`payment-report-${producerName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.pdf`);
 }

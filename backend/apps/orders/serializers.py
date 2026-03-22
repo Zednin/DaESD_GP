@@ -46,6 +46,7 @@ class ProducerOrderSerializer(serializers.ModelSerializer):
     customer_phone = serializers.SerializerMethodField()
     delivery_address = serializers.SerializerMethodField()
     items = OrderItemSerializer(many=True, read_only=True)
+    stripe_ref = serializers.SerializerMethodField()
 
     class Meta:
         model = ProducerOrder
@@ -63,9 +64,13 @@ class ProducerOrderSerializer(serializers.ModelSerializer):
             "customer_phone",
             "delivery_address",
             "items",
+            "stripe_ref",
             "created_at",
             "updated_at",
         ]
+
+    def get_stripe_ref(self, obj):
+        return obj.order.stripe_session_id or ""
 
     def get_commission(self, obj):
         return (obj.total_amount * COMMISSION_RATE).quantize(
