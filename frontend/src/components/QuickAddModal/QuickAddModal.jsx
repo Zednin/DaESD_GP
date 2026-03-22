@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import styles from "./QuickAddModal.module.css";
+import { getAllergenInfo, formatAllergenList } from "../../utils/allergenIcons";
 
 export default function QuickAddModal({
   product,
@@ -98,6 +99,31 @@ export default function QuickAddModal({
             ) : (
               <p className={styles.descMuted}>Fresh, locally sourced produce.</p>
             )}
+
+            {/* Allergen information */}
+            <div className={styles.allergenSection}>
+              <h4 className={styles.allergenHeading}>Allergen Information</h4>
+              {product.allergens && product.allergens.length > 0 ? (
+                <>
+                  <p className={styles.allergenContains}>
+                    {formatAllergenList(product.allergens)}
+                  </p>
+                  <div className={styles.allergenIcons}>
+                    {product.allergens.map((a) => {
+                      const { Icon, label } = getAllergenInfo(a.name);
+                      return (
+                        <span key={a.id} className={styles.allergenIconTag} title={label}>
+                          <Icon size={16} />
+                          <span>{label}</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <p className={styles.allergenNone}>No common allergens</p>
+              )}
+            </div>
 
             <div className={styles.controls}>
               <label className={styles.qtyLabel}>Quantity</label>

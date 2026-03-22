@@ -6,6 +6,7 @@ import QuickAddModal from "../components/QuickAddModal/QuickAddModal";
 import FilterPanel from "../components/FilterPanel/FilterPanel";
 import styles from "./Products.module.css";
 import { addToCart, getCartSubtotal, readCart } from "../utils/cartStorage";
+import { getAllergenInfo } from "../utils/allergenIcons";
 
 // Hardcoded recommendations — replace with API call later
 const HARDCODED_RECOMMENDATIONS = [
@@ -79,15 +80,16 @@ export default function Products() {
 
     // Allergen filter: keep products FREE FROM all selected allergens
     if (selectedAllergens.length > 0) {
-      filtered = filtered.filter((p) =>
-        selectedAllergens.every((id) => !(p.allergens ?? []).includes(id))
-      );
+      filtered = filtered.filter((p) => {
+        const productAllergenIds = (p.allergens ?? []).map((a) => a.id);
+        return selectedAllergens.every((id) => !productAllergenIds.includes(id));
+      });
     }
 
     const term = search.trim();
     if (!term) return filtered;
     const fuse = new Fuse(filtered, {
-      keys: ["name", "description"],
+      keys: ["name", "description", "allergens.name"],
       threshold: 0.4,
     });
     return fuse.search(term).map((r) => r.item);
@@ -296,19 +298,32 @@ export default function Products() {
               </div>
 
               <div className={styles.cardBody}>
-                <h3>{product.name}</h3>
-                <span className={styles.price}>
-                  £{Number(product.price).toFixed(2)} / {product.unit}
-                </span>
+                <button
+                  type="button"
+                  className={styles.quickAddBtn}
+                  onClick={() => openQuickAdd(product)}
+                >
+                  Quick add
+                </button>
+                <div className={styles.cardTop}>
+                  <h3>{product.name}</h3>
+                  <span className={styles.price}>
+                    £{Number(product.price).toFixed(2)} / {product.unit}
+                  </span>
+                </div>
+                {product.allergens && product.allergens.length > 0 && (
+                  <div className={styles.allergenTags}>
+                    {product.allergens.map((a) => {
+                      const { Icon, label } = getAllergenInfo(a.name);
+                      return (
+                        <span key={a.id} className={styles.allergenTag} title={label}>
+                          <Icon size={13} /> {label}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-
-              <button
-                type="button"
-                className={styles.quickAddBtn}
-                onClick={() => openQuickAdd(product)}
-              >
-                Quick add
-              </button>
             </div>
           ))}
         </section>
@@ -327,6 +342,18 @@ export default function Products() {
                   {product.producer_name}{product.category_name ? ` · ${product.category_name}` : ""}
                   {product.organic_certified ? " · 🌿 Organic" : ""}
                 </span>
+                {product.allergens && product.allergens.length > 0 && (
+                  <div className={styles.allergenTags}>
+                    {product.allergens.map((a) => {
+                      const { Icon, label } = getAllergenInfo(a.name);
+                      return (
+                        <span key={a.id} className={styles.allergenTag} title={label}>
+                          <Icon size={12} /> {label}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               <span className={styles.listPrice}>
                 £{Number(product.price).toFixed(2)} / {product.unit}

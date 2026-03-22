@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Product, Category
+from apps.traceability.models import Allergen
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -8,10 +9,24 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ["id", "name"]
 
 
+class ProductAllergenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Allergen
+        fields = ["id", "name"]
+
+
 class ProductSerializer(serializers.ModelSerializer):
     # Readable representations
     producer_name = serializers.CharField(source="producer.company_name", read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True)
+    allergens = ProductAllergenSerializer(many=True, read_only=True)
+    # Accept allergen IDs on write
+    allergen_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Allergen.objects.all(),
+        many=True,
+        write_only=True,
+        required=False,
+    )
 
     class Meta:
         model = Product
@@ -35,5 +50,24 @@ class ProductSerializer(serializers.ModelSerializer):
             "image",
             "created_at",
             "updated_at",
+            "allergens",
+            "allergen_ids",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+    def create(self, validated_data):
+        allergens = validated_data.pop("allergen_ids", [])
+        product = super().create(validated_data)
+        for allergen in allergens:
+            allergen.products.add(product)
+        return product
+
+    def update(self, instance, validated_data):
+        allergens = validated_data.pop("allergen_ids", None)
+        product = super().update(instance, validated_data)
+        if allergens is not None:
+            # Clear existing and set new
+            instance.allergens.clear()
+            for allergen in allergens:
+                allergen.products.add(product)
+        return product
