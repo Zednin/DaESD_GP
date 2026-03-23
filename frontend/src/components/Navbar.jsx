@@ -29,7 +29,7 @@ const NavbarMenu = [
     {
         id: 4,
         title: "Reduced to Clear",
-        link: "#",
+        link: "/surplus-deals",
     },
 ]
 

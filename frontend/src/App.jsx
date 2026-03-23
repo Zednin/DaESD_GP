@@ -10,6 +10,7 @@ import AuthCallback from "./auth/AuthCallback";
 // General pages
 import Home from "./pages/Home";
 import Products from "./pages/Products";
+import SurplusDeals from "./components/Marketplace/SurplusDeals";
 import About from "./pages/About";
 import Login from "./pages/Login";
 import Cart from "./pages/Cart";
@@ -32,6 +33,7 @@ export default function App() {
         {/* General */}
         <Route path="/" element={<Home />} />
         <Route path="/products" element={<Products />} />
+        <Route path="/surplus-deals" element={<SurplusDeals />} />
         <Route path="/about" element={<About />} />
         <Route path="/login" element={<Login />} />
         <Route path="/cart" element={<Cart />} />

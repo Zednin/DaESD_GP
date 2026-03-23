@@ -87,10 +87,25 @@ export default function QuickAddModal({
             <div className={styles.titleBlock}>
               <h2 className={styles.title}>{product.name}</h2>
               <div className={styles.priceLine}>
-                <span className={styles.price}>
-                  £{Number(product.price).toFixed(2)}
-                </span>
-                <span className={styles.unit}>/ {product.unit}</span>
+                {product.original_price ? (
+                  <>
+                    <span className={styles.originalPriceStrike}>
+                      £{Number(product.original_price).toFixed(2)}
+                    </span>
+                    <span className={styles.surplusPrice}>
+                      £{Number(product.price).toFixed(2)}
+                    </span>
+                    <span className={styles.unit}>/ {product.unit}</span>
+                    <span className={styles.surplusBadge}>DISCOUNT DEAL</span>
+                  </>
+                ) : (
+                  <>
+                    <span className={styles.price}>
+                      £{Number(product.price).toFixed(2)}
+                    </span>
+                    <span className={styles.unit}>/ {product.unit}</span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -163,6 +178,11 @@ export default function QuickAddModal({
                 onClick={() => onAdd(product, qty)}
               >
                 Add to basket — £{(Number(product.price) * qty).toFixed(2)}
+                {product.original_price && (
+                  <span className={styles.btnSaving}>
+                    {' '}(save £{((Number(product.original_price) - Number(product.price)) * qty).toFixed(2)})
+                  </span>
+                )}
               </button>
             </div>
 

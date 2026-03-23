@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import Fuse from "fuse.js";
 import { AnimatePresence, motion } from "framer-motion";
 import { FiGrid, FiList } from "react-icons/fi";
+import { LuLeaf } from "react-icons/lu";
 import QuickAddModal from "../components/QuickAddModal/QuickAddModal";
 import FilterPanel from "../components/FilterPanel/FilterPanel";
 import styles from "./Products.module.css";
@@ -118,7 +119,16 @@ export default function Products() {
   }
 
   function openQuickAdd(product) {
-    setSelectedProduct(product);
+    // If surplus is active, pass the discounted price
+    if (product.surplus_active) {
+      setSelectedProduct({
+        ...product,
+        original_price: product.price,
+        price: product.surplus_price,
+      });
+    } else {
+      setSelectedProduct(product);
+    }
     setQuickAddOpen(true);
   }
 
@@ -180,7 +190,7 @@ export default function Products() {
                     <div key={product.id} className={styles.recCard}>
                       <div className={styles.recImagePlaceholder}>
                         {product.organic_certified && (
-                          <span className={styles.recOrganicBadge}>🌿</span>
+                          <span className={styles.recOrganicBadge}><LuLeaf size={14} /></span>
                         )}
                       </div>
                       <div className={styles.recCardBody}>
@@ -287,30 +297,33 @@ export default function Products() {
       ) : viewMode === "grid" ? (
         <section className={styles.grid}>
           {products.map((product) => (
-            <div key={product.id} className={styles.card}>
+            <div key={product.id} className={`${styles.card} ${product.surplus_active ? styles.surplusCard : ''}`}>
               <div className={styles.imagePlaceholder}>
                 {product.image && (
                   <img src={product.image} alt={product.name} className={styles.cardImage} />
                 )}
                 {product.organic_certified && (
-                  <span className={styles.organicBadge}>🌿 Organic</span>
+                  <span className={styles.organicBadge}><LuLeaf size={14} /> Organic</span>
+                )}
+                {product.surplus_active && (
+                  <span className={styles.surplusBadge}>-{product.discount_percentage}% OFF</span>
                 )}
               </div>
 
               <div className={styles.cardBody}>
-                <button
-                  type="button"
-                  className={styles.quickAddBtn}
-                  onClick={() => openQuickAdd(product)}
-                >
-                  Quick add
-                </button>
-                <div className={styles.cardTop}>
-                  <h3>{product.name}</h3>
+                <h3>{product.name}</h3>
+                {product.surplus_active ? (
+                  <span className={styles.price}>
+                    <span className={styles.originalPriceStrike}>£{Number(product.price).toFixed(2)}</span>
+                    {' '}
+                    <span className={styles.surplusPrice}>£{Number(product.surplus_price).toFixed(2)}</span>
+                    {' '}/ {product.unit}
+                  </span>
+                ) : (
                   <span className={styles.price}>
                     £{Number(product.price).toFixed(2)} / {product.unit}
                   </span>
-                </div>
+                )}
                 {product.allergens && product.allergens.length > 0 && (
                   <div className={styles.allergenTags}>
                     {product.allergens.map((a) => {
@@ -323,6 +336,13 @@ export default function Products() {
                     })}
                   </div>
                 )}
+                <button
+                  type="button"
+                  className={styles.quickAddBtn}
+                  onClick={() => openQuickAdd(product)}
+                >
+                  Quick add
+                </button>
               </div>
             </div>
           ))}
@@ -340,7 +360,7 @@ export default function Products() {
                 <h3>{product.name}</h3>
                 <span className={styles.listMeta}>
                   {product.producer_name}{product.category_name ? ` · ${product.category_name}` : ""}
-                  {product.organic_certified ? " · 🌿 Organic" : ""}
+                  {product.organic_certified && <> · <LuLeaf size={14} /> Organic</>}
                 </span>
                 {product.allergens && product.allergens.length > 0 && (
                   <div className={styles.allergenTags}>
@@ -355,9 +375,18 @@ export default function Products() {
                   </div>
                 )}
               </div>
-              <span className={styles.listPrice}>
-                £{Number(product.price).toFixed(2)} / {product.unit}
-              </span>
+              {product.surplus_active ? (
+                <span className={styles.listPrice}>
+                  <span className={styles.originalPriceStrike}>£{Number(product.price).toFixed(2)}</span>
+                  {' '}
+                  <span className={styles.surplusPrice}>£{Number(product.surplus_price).toFixed(2)}</span>
+                  {' '}/ {product.unit}
+                </span>
+              ) : (
+                <span className={styles.listPrice}>
+                  £{Number(product.price).toFixed(2)} / {product.unit}
+                </span>
+              )}
               <button
                 type="button"
                 className={styles.listQuickAddBtn}
