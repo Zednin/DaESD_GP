@@ -1,7 +1,8 @@
 from django.db import models
+from django.utils import timezone
 from apps.producers.models import Producer
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.conf import settings
 # Create your models here.
 
@@ -134,11 +135,52 @@ class Product(models.Model):
     # Image URL
     image = models.URLField(max_length=500, blank=True, null=True)
     
+    # Surplus shite
+    is_surplus = models.BooleanField(default=False)
+    discount_percentage = models.PositiveIntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Discount percentage for surplus deal (0-100)"
+    )
+    surplus_end_date = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="When the surplus deal expires"
+    )
+    surplus_note = models.TextField(
+        blank=True,
+        default='',
+        help_text="Producer note about the surplus deal"
+    )
+    best_before_date = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="Best before date for perishable products"
+    )
+
     # Product listing date
-    created_at = models.DateTimeField(auto_now_add=True)             
+    created_at = models.DateTimeField(auto_now_add=True)
 
     # Product listing updated from inventory_adjustment
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def surplus_price(self):
+        """Calculate the discounted price for surplus items."""
+        if self.is_surplus and self.discount_percentage > 0:
+            from decimal import Decimal
+            discount = Decimal(self.discount_percentage) / Decimal(100)
+            return (self.price * (1 - discount)).quantize(Decimal('0.01'))
+        return self.price
+
+    @property
+    def surplus_active(self):
+        """Check if the surplus deal is currently active (not expired)."""
+        if not self.is_surplus:
+            return False
+        if self.surplus_end_date and timezone.now() > self.surplus_end_date:
+            return False
+        return True
 
     def clean(self):
         # Validates data before saving
