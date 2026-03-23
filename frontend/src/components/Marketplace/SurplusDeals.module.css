@@ -1,0 +1,362 @@
+.page {
+  padding: 64px 32px;
+  min-height: 70vh;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════════════════════ */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.headerContent {
+  max-width: 600px;
+}
+
+.title {
+  font-size: 48px;
+  margin: 0 0 8px;
+  color: var(--text);
+}
+
+.subtitle {
+  font-size: 16px;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.wasteTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--success-muted);
+  color: var(--success);
+  border: 1px solid var(--success);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.wasteIcon {
+  font-size: 18px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESULT COUNT
+═══════════════════════════════════════════════════════════ */
+
+.resultCount {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LOADING / EMPTY STATES
+═══════════════════════════════════════════════════════════ */
+
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 300px;
+  color: var(--muted);
+}
+
+.spinner {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 80px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.emptyIcon {
+  font-size: 56px;
+}
+
+.emptyState h3 {
+  color: var(--text);
+  font-size: 20px;
+  margin: 0;
+}
+
+.emptyState p {
+  font-size: 15px;
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PRODUCT GRID
+═══════════════════════════════════════════════════════════ */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PRODUCT CARD
+═══════════════════════════════════════════════════════════ */
+
+.card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Discount badge */
+.discountBadge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  background: var(--error);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 5px 12px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Image area */
+.imageArea {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imagePlaceholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--surface-2), var(--border));
+}
+
+.organicBadge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Card body */
+.cardBody {
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cardTop {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.productName {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.producerName {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PRICING
+═══════════════════════════════════════════════════════════ */
+
+.pricing {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.originalPrice {
+  font-size: 15px;
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.surplusPrice {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--success);
+}
+
+.perUnit {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   URGENCY INFO
+═══════════════════════════════════════════════════════════ */
+
+.urgencyInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.urgencyRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.clockIcon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.urgencyText {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SURPLUS NOTE
+═══════════════════════════════════════════════════════════ */
+
+.surplusNote {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--muted);
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border-radius: 6px;
+  border-left: 3px solid var(--primary);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ALLERGEN TAGS
+═══════════════════════════════════════════════════════════ */
+
+.allergenTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.allergenTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   QUICK ADD BUTTON
+═══════════════════════════════════════════════════════════ */
+
+.quickAddBtn {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--primary);
+  color: var(--bg);
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.quickAddBtn:hover {
+  opacity: 0.9;
+}
+
+.quickAddBtn:active {
+  transform: scale(0.98);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .page {
+    padding: 32px 16px;
+  }
+
+  .title {
+    font-size: 32px;
+  }
+
+  .header {
+    flex-direction: column;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
