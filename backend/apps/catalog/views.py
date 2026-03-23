@@ -3,7 +3,9 @@ from rest_framework import filters, status
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
+from django.utils import timezone
 from .models import Product, Category
 from .serializers import ProductSerializer, CategorySerializer
 from .filters import ProductFilter
@@ -30,7 +32,7 @@ class ProductViewSet(ModelViewSet):
     ]
 
     # Fields the frontend can filter on
-    filterset_fields = ['category__name', 'status', 'producer', 'producer__company_name', 'organic_certified']
+    filterset_fields = ['category__name', 'status', 'producer', 'producer__company_name', 'organic_certified', 'is_surplus']
 
     # Fields searched by ?search=
     search_fields = ['name']
@@ -44,6 +46,20 @@ class ProductViewSet(ModelViewSet):
 
     # Default ordering
     ordering = ['name']
+
+    @action(detail=False, methods=["get"], url_path="surplus-deals")
+    def surplus_deals(self, request):
+        """Return only active surplus deals (not expired)."""
+        now = timezone.now()
+        surplus_products = Product.objects.filter(
+            is_surplus=True,
+            status='available',
+        ).exclude(
+            surplus_end_date__lt=now
+        )
+        serializer = self.get_serializer(surplus_products, many=True)
+        return Response(serializer.data)
+
     
 # Used to whip up the image and whack it onto the cloud
 class ProductImageUploadView(APIView):

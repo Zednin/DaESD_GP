@@ -27,6 +27,11 @@ class ProductSerializer(serializers.ModelSerializer):
         write_only=True,
         required=False,
     )
+    # Surplus computed fields
+    surplus_price = serializers.DecimalField(
+        max_digits=10, decimal_places=2, read_only=True
+    )
+    surplus_active = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Product
@@ -48,12 +53,19 @@ class ProductSerializer(serializers.ModelSerializer):
             "harvest_date",
             "organic_certified",
             "image",
+            "is_surplus",
+            "discount_percentage",
+            "surplus_end_date",
+            "surplus_note",
+            "best_before_date",
+            "surplus_price",
+            "surplus_active",
             "created_at",
             "updated_at",
             "allergens",
             "allergen_ids",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at", "surplus_price", "surplus_active"]
 
     def create(self, validated_data):
         allergens = validated_data.pop("allergen_ids", [])

@@ -6,6 +6,7 @@ class ProductFilter(django_filters.FilterSet):
     max_price = django_filters.NumberFilter(field_name="price", lookup_expr="lte")
     category__name = django_filters.CharFilter(field_name="category__name", lookup_expr="iexact")
     producer__company_name = django_filters.CharFilter(field_name="producer__company_name", lookup_expr="iexact")
+    is_surplus = django_filters.BooleanFilter(field_name="is_surplus")
 
     class Meta:
         model = Product
@@ -14,4 +15,5 @@ class ProductFilter(django_filters.FilterSet):
             'organic_certified',
             'status',
             'producer',
+            'is_surplus',
         ]
