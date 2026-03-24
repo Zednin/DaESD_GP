@@ -1,0 +1,244 @@
+/* backdrop */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+/* panel */
+.panel {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  border-radius: 18px;
+  background: var(--surface, #ffffff);
+  color: var(--text, #111827);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* head */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.close {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--border, rgba(17, 24, 39, 0.12));
+  background: var(--surface, #fff);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--text, #111827);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0;
+}
+
+.close:hover {
+  background: var(--control-bg-hover, rgba(17, 24, 39, 0.06));
+}
+
+/* form */
+.body {
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/*fields  */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.input,
+.select {
+  background: var(--control-bg, rgba(17, 24, 39, 0.04));
+  border: 1px solid var(--border, rgba(17, 24, 39, 0.10));
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.95rem;
+  color: var(--text, #111827);
+  font-family: inherit;
+}
+
+.input::placeholder {
+  color: var(--muted-2, #9ca3af);
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: var(--secondary, #fb923c);
+  box-shadow: var(--focus, 0 0 0 4px rgba(110, 35, 50, 0.18));
+}
+
+.select option {
+  color: #111827;
+  background: #ffffff;
+}
+
+.muted {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--muted, #6b7280);
+}
+
+/* error msg */
+.error {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  background: var(--error-muted, rgba(239, 68, 68, 0.15));
+  border: 1px solid var(--error-border, rgba(239, 68, 68, 0.35));
+  border-radius: 10px;
+  color: var(--error, #ef4444);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* item summary */
+.itemsSummary {
+  background: var(--surface-2, #f6f7f9);
+  border: 1px solid var(--border, rgba(17, 24, 39, 0.10));
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.itemsHeading {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted, #6b7280);
+}
+
+.itemsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.itemRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.92rem;
+  padding: 4px 0;
+  color: var(--text, #111827);
+}
+
+.itemRow + .itemRow {
+  border-top: 1px solid var(--border, rgba(17, 24, 39, 0.10));
+}
+
+/* note */
+.scheduleNote {
+  font-size: 0.9rem;
+  color: var(--muted, #6b7280);
+  padding: 10px 14px;
+  background: var(--banner-bg, rgba(251, 146, 60, 0.12));
+  border-radius: 10px;
+  line-height: 1.5;
+}
+
+.scheduleNote strong {
+  color: var(--text, #111827);
+}
+
+/* actions */
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.cancelBtn {
+  padding: 0.65rem 1.2rem;
+  border-radius: 10px;
+  border: 1px solid var(--border, rgba(17, 24, 39, 0.10));
+  background: transparent;
+  color: var(--text, #111827);
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.cancelBtn:hover {
+  background: var(--control-bg, rgba(17, 24, 39, 0.04));
+}
+
+.confirmBtn {
+  padding: 0.65rem 1.4rem;
+  border-radius: 10px;
+  border: 0;
+  background: var(--primary, #6e2332);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.confirmBtn:hover {
+  opacity: 0.9;
+}
+
+.confirmBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Mobile ── */
+@media (max-width: 600px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .cancelBtn,
+  .confirmBtn {
+    width: 100%;
+    text-align: center;
+  }
+}

@@ -90,52 +90,82 @@ class OrderItem(models.Model):
     
     
 class RecurringOrder(models.Model):
+
     STATUS_CHOICES = [
-        ("active", "Active"),
-        ("paused", "Paused"),
-        ("cancelled", "Cancelled"),
+        ("active", "Active"),           # actively ordering this atm
+        ("paused", "Paused"),           # paused ordering this
+        ("cancelled", "Cancelled"),     # no longer ordering this
     ]
     
     FREQUENCY_CHOICES = [
-        ("daily", "Daily"),
-        ("weekly", "Weekly"),
-        ("monthly", "Monthly"),
+        ("weekly", "Weekly"),           # order every week
+        ("fortnightly", "Fortnightly"), # every two weeks
     ]
     
+    WEEKDAY_CHOICES = [
+        (0, "Monday"),
+        (1, "Tuesday"),
+        (2, "Wednesday"),
+        (3, "Thursday"),
+        (4, "Friday"),
+        (5, "Saturday"),
+        (6, "Sunday"),
+    ]
+    
+    # org that owns this recurring order    
     organisation = models.ForeignKey(
         Organisation, on_delete=models.PROTECT, related_name="recurring_orders"
         )
+    
+    # delivery address 
     delivery_address = models.ForeignKey(
         Address, on_delete=models.PROTECT, related_name="recurring_orders"
         )
+    
+    # recurring order name
     name = models.CharField(max_length=100)
+
+    # weekly or fortnightly 
     frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES)
-    interval = models.PositiveIntegerField(default=1)  # e.g., every 2 weeks
     
-    # e.g. 0=Monday, 1=Tuesday, ..., 6=Sunday (only relevant for weekly)
-    weekday = models.PositiveSmallIntegerField(blank=True, null=True)
-    # e.g. 1-31 (only relevant for monthly)
-    monthday = models.PositiveSmallIntegerField(blank=True, null=True)
+    # confirm recurring order day
+    order_day = models.PositiveSmallIntegerField(choices=WEEKDAY_CHOICES, default=0)
+
+    # recurring order delivery date
+    delivery_day = models.PositiveSmallIntegerField(choices=WEEKDAY_CHOICES, default=2)
     
+    # next recurring order status
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
     
+    # date of next scheduled order generation, index for quick search
     next_run_at = models.DateTimeField(db_index=True)
+
+    # starting at initial recurring order instance
     starts_at = models.DateTimeField(default=timezone.now)
+
+    # end recurring orders (could be, we want orders from )
     ends_at = models.DateTimeField(blank=True, null=True)
     
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self) -> str:
-        return f"RecurringOrder {self.name} ID: {self.id} for {self.organisation.name}"
+        return f"RecurringOrder {self.name} ID: {self.id} for {self.organisation.organisation_name}"
     
 class RecurringOrderItem(models.Model):
+
+    # Recurring order fk
     recurring_order = models.ForeignKey(
         RecurringOrder, on_delete=models.CASCADE, related_name="items"
     )
+
+    # products in order
     product = models.ForeignKey(
         Product, on_delete=models.PROTECT, related_name="recurring_order_items"
     )
+
+    # no. of items
     quantity = models.PositiveIntegerField(default=1)
     
     class Meta:
@@ -148,19 +178,26 @@ class RecurringOrderItem(models.Model):
     def __str__(self) -> str:
         return f"{self.quantity} x {self.product.name} for {self.recurring_order.name}"
     
-    
+# Note     
+
 class RecurringOrderEvent(models.Model):
+
+    # next order 
     STATUS_CHOICES = [
-        ("created", "Created"),
+        ("created", "Created"),     
         ("failed", "Failed"),
         ("skipped", "Skipped"),
     ]
     
+    # recurring order id
     recurring_order = models.ForeignKey(
         RecurringOrder, on_delete=models.CASCADE, related_name="events"
     )
     
+    # when order is scheduled for
     scheduled_for = models.DateTimeField()
+
+    # sch current status
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="created")
     
     # If order creation is successful, link to the created order

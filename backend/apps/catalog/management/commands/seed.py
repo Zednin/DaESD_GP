@@ -8,7 +8,7 @@ Usage:
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from datetime import date, datetime, timedelta
+from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from apps.accounts.models import Account
@@ -212,9 +212,6 @@ class Command(BaseCommand):
                 self.stdout.write(f"  [+] Producer: {producer.company_name}")
 
         # ── Products ────────────────────────────────────────────────────────
-        start = date(2026, 1, 1)
-        end   = date(2026, 12, 31)
-
         for prod in PRODUCTS:
             obj, created = Product.objects.get_or_create(
                 name=prod["name"],
@@ -225,9 +222,8 @@ class Command(BaseCommand):
                     "unit": prod["unit"],
                     "stock": prod["stock"],
                     "organic_certified": prod.get("organic_certified", False),
+                    "availability_mode": Product.AvailabilityMode.YEAR_ROUND,
                     "status": "available",
-                    "availability_start": start,
-                    "availability_end": end,
                     "description": f"Fresh {prod['name'].lower()} from {producer_map[prod['producer']].company_name}.",
                 },
             )

@@ -101,3 +101,85 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Recurring toggle checkbox */
+.recurringToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  user-select: none;
+}
+
+.recurringToggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+/* Error */
+.error {
+  padding: 0.6rem 0.75rem;
+  background: var(--error-muted);
+  border: 1px solid var(--error-border);
+  border-radius: 8px;
+  color: var(--error);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Recurring badge (shown when preferences are set) */
+.recurringBadge {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0.85rem 1rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.recurringBadgeInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recurringBadgeLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.recurringBadgeDetails {
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.recurringRemove {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px 8px;
+}
+
+.recurringRemove:hover {
+  background: var(--control-bg-hover);
+  color: var(--text);
+}

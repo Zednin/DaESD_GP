@@ -35,7 +35,19 @@ class Account(AbstractUser):
     def save(self, *args, **kwargs):
         if self.email:
             self.email = BaseUserManager.normalize_email(self.email).strip()
+        
+        # checks if account is new save 
+        is_new = self._state.adding
         super().save(*args, **kwargs)
+
+        # check new email, auto-create Organisation profile for .org email addresses when signed up
+        # temporary implementation idk, just to fill table
+        if is_new and self.email and self.email.endswith('.org'):
+            Organisation.objects.create(
+                customer=self,
+                organisation_name=self.email.split('@')[0],
+                organisation_email=self.email,
+            )
 
     def __str__(self):
         return self.username

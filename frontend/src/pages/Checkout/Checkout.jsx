@@ -1,12 +1,16 @@
 import { useMemo, useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import { readCart, getCartSubtotal } from "../../utils/cartStorage";
 import { ensureCsrf, getCookie } from "../../utils/auth";
+import RecurringOrderModal from "./RecurringOrderModal";
 import styles from "./Checkout.module.css";
 
 export default function Checkout() {
   const [items] = useState(() => readCart());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showRecurring, setShowRecurring] = useState(false);
+  const [recurringPrefs, setRecurringPrefs] = useState(null);
 
   const subtotal = useMemo(
     () => getCartSubtotal(items),
@@ -31,7 +35,9 @@ export default function Checkout() {
           "Content-Type": "application/json",
           "X-CSRFToken": csrf,
         },
-        body: JSON.stringify({}), // backend uses server-side cart
+        body: JSON.stringify(
+          recurringPrefs ? { recurring: recurringPrefs } : {}
+        ),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -83,6 +89,46 @@ export default function Checkout() {
 
           {error && <p className={styles.error}>{error}</p>}
 
+          // recurring order form 
+          {recurringPrefs && (
+            <div className={styles.recurringBadge}>
+              <div className={styles.recurringBadgeInfo}>
+                <span className={styles.recurringBadgeLabel}>Recurring Order</span>
+                <span className={styles.recurringBadgeDetails}>
+                  {recurringPrefs.frequency === "fortnightly" ? "Fortnightly" : "Weekly"}
+                  {" · "}
+                  Order every{" "}
+                  {["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"][recurringPrefs.order_day]}
+                  {" · "}
+                  Deliver every{" "}
+                  {["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"][recurringPrefs.delivery_day]}
+                </span>
+              </div>
+              <button
+                type="button"
+                className={styles.recurringRemove}
+                onClick={() => setRecurringPrefs(null)}
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          <label className={styles.recurringToggle}>
+            <input
+              type="checkbox"
+              checked={!!recurringPrefs}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setShowRecurring(true);
+                } else {
+                  setRecurringPrefs(null);
+                }
+              }}
+            />
+            <span>Set as Recurring Order</span>
+          </label>
+
           <button
             onClick={handleSubmit}
             className={styles.payBtn}
@@ -120,6 +166,19 @@ export default function Checkout() {
           </div>
         </aside>
       </div>
+      
+      <AnimatePresence>
+        {showRecurring && (
+          <RecurringOrderModal
+            items={items}
+            onClose={() => setShowRecurring(false)}
+            onConfirm={(prefs) => {
+              setRecurringPrefs(prefs);
+              setShowRecurring(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </main>
   );
 }

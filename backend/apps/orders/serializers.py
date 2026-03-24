@@ -1,6 +1,6 @@
 from decimal import Decimal, ROUND_HALF_UP
 from rest_framework import serializers
-from .models import Order, ProducerOrder, OrderItem
+from .models import Order, ProducerOrder, OrderItem, RecurringOrder, RecurringOrderItem, RecurringOrderEvent
 
 COMMISSION_RATE = Decimal('0.05')
 
@@ -67,3 +67,38 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "price_snapshot", "line_total", "created_at"]
+
+
+
+
+class RecurringOrderItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source="product.name", read_only=True)
+
+    class Meta:
+        model = RecurringOrderItem
+        fields = ["id", "recurring_order", "product", "product_name", "quantity"]
+        read_only_fields = ["id"]
+
+
+class RecurringOrderEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecurringOrderEvent
+        fields = ["id", "recurring_order", "scheduled_for", "status", "order", "created_at"]
+        read_only_fields = fields
+
+
+class RecurringOrderSerializer(serializers.ModelSerializer):
+    items = RecurringOrderItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = RecurringOrder
+        fields = [
+            "id", "organisation", "delivery_address", "name",
+            "frequency", "order_day", "delivery_day",
+            "status", "next_run_at", "starts_at", "ends_at",
+            "created_at", "updated_at", "items",
+        ]
+        read_only_fields = [
+            "id", "organisation", "delivery_address",
+            "next_run_at", "starts_at", "created_at", "updated_at", "items",
+        ]

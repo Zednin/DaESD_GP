@@ -13,9 +13,10 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from apps.cart.models import Cart
-from apps.orders.models import Order, OrderItem, ProducerOrder, CommissionLedger
+from apps.orders.models import (Order, OrderItem, ProducerOrder, CommissionLedger, RecurringOrder, RecurringOrderItem,)
 from apps.payments.models import Payment
 from apps.addresses.models import Address
+from apps.accounts.models import Account, Organisation
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -56,6 +57,21 @@ class CreateCheckoutSessionView(APIView):
 
         frontend_url = settings.FRONTEND_URL
 
+        # metadata from webhook
+        metadata = {
+            "user_id": str(request.user.id),
+            "cart_id": str(cart.id),
+        }
+
+        # if recurring order is selected in checkout, details are attached onto meta data
+        # passed downstairs to create_recurring_order
+        recurring = request.data.get("recurring")
+        if recurring and isinstance(recurring, dict):
+            metadata["recurring_name"] = str(recurring.get("name", ""))[:500]
+            metadata["recurring_frequency"] = str(recurring.get("frequency", ""))
+            metadata["recurring_order_day"] = str(recurring.get("order_day", ""))
+            metadata["recurring_delivery_day"] = str(recurring.get("delivery_day", ""))
+
         session = stripe.checkout.Session.create(
             mode="payment",
             line_items=line_items,
@@ -65,10 +81,7 @@ class CreateCheckoutSessionView(APIView):
             shipping_address_collection={
                 "allowed_countries": ["GB"],
             },
-            metadata={
-                "user_id": str(request.user.id),
-                "cart_id": str(cart.id),
-            },
+            metadata=metadata,
         )
 
         return Response({"url": session.url}, status=status.HTTP_200_OK)
@@ -217,3 +230,77 @@ def handle_checkout_session_completed(session):
         order.save(update_fields=["commission_amount"])
 
         cart.items.all().delete()
+
+        # create recurring order from meta data
+        recurring_frequency = session.get("metadata", {}).get("recurring_frequency")
+        if recurring_frequency in ("weekly", "fortnightly"):
+            create_recurring_order_from(session, order, cart_items)
+
+# map metadata from json to coljumns
+def create_recurring_order_from(session, order, cart_items):
+  
+    # receive data
+    meta = session.get("metadata", {})
+    user_id = meta.get("user_id")
+
+    # check frequency columns
+    frequency = meta.get("recurring_frequency", "weekly")
+
+    # get order day entry
+    order_day = int(meta.get("recurring_order_day", 0))
+
+    # delivery day entry
+    delivery_day = int(meta.get("recurring_delivery_day", 0))
+
+    # recurring order named by org
+    name = meta.get("recurring_name") or "My recurring order"
+
+    # if delivery is set  
+    now = timezone.now() 
+    # if weekly, days ahead = (order day / TODAY) = remainder / 7, 
+    days_ahead = (order_day - now.weekday()) % 7 or 7   #or 7 incase its today
+    # +7 for fortnightly
+    if frequency == "fortnightly":
+        days_ahead += 7
+    next_run = (now + timedelta(days=days_ahead)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+
+    # double check to see account exists
+    try:
+        account = Account.objects.get(id=user_id)
+    except Account.DoesNotExist:
+        print(f"No account belonging to {user_id}")
+        return
+    
+    # check it is organisation
+    if not account.email or not account.email.endswith('.org'):
+        print(f"{user_id} is not an .org account")
+        return
+    
+    # get instance of organisation
+    org = account.organisation
+
+    # creates objects
+    recurring = RecurringOrder.objects.create(
+        organisation=org,
+        delivery_address=order.delivery_address,
+        name=name,
+        frequency=frequency,
+        order_day=order_day,
+        delivery_day=delivery_day,
+        status="active",
+        next_run_at=next_run,
+        starts_at=now,
+    )
+
+    # build and link list of recurring order item for each item in cart and store in dbl
+    RecurringOrderItem.objects.bulk_create([
+        RecurringOrderItem(
+            recurring_order=recurring,
+            product=ci.product,
+            quantity=ci.quantity,
+        )
+        for ci in cart_items
+    ])
+    print(f"RecurringOrder {recurring.id} created ({frequency})")

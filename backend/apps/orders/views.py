@@ -1,11 +1,13 @@
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Order, ProducerOrder, OrderItem
+from .models import Order, ProducerOrder, OrderItem, RecurringOrder, RecurringOrderEvent
 from .serializers import (
     OrderSerializer,
     ProducerOrderSerializer,
     OrderItemSerializer,
+    RecurringOrderSerializer,
+    RecurringOrderEventSerializer,
 )
 
 
@@ -47,3 +49,31 @@ class OrderItemViewSet(ModelViewSet):
         return OrderItem.objects.filter(
             producer_order__order__account=user
         ).select_related("product", "producer_order")
+
+
+class RecurringOrderViewSet(ModelViewSet):
+    """CRUD for recurring orders scoped to the user's organisation."""
+    serializer_class = RecurringOrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if hasattr(user, "organisation"):
+            return RecurringOrder.objects.filter(
+                organisation=user.organisation
+            ).prefetch_related("items__product").order_by("-created_at")
+        return RecurringOrder.objects.none()
+
+
+class RecurringOrderEventViewSet(ReadOnlyModelViewSet):
+    """Read-only list of recurring order events."""
+    serializer_class = RecurringOrderEventSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if hasattr(user, "organisation"):
+            return RecurringOrderEvent.objects.filter(
+                recurring_order__organisation=user.organisation
+            ).order_by("-scheduled_for")
+        return RecurringOrderEvent.objects.none()

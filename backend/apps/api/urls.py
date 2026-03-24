@@ -11,6 +11,8 @@ from apps.orders.views import (
     OrderViewSet,
     ProducerOrderViewSet,
     OrderItemViewSet,
+    RecurringOrderViewSet,
+    RecurringOrderEventViewSet,
 )
 from apps.producers.views import ProducerViewSet
 from apps.traceability.views import AllergenViewSet
@@ -32,6 +34,8 @@ router.register(r'order-items', OrderItemViewSet, basename='order-item')
 router.register(r'producers', ProducerViewSet, basename='producer')
 router.register(r'allergens', AllergenViewSet, basename='allergen')
 router.register(r'categories', CategoryViewSet, basename='category')
+router.register(r'recurring-orders', RecurringOrderViewSet, basename='recurring-order')
+router.register(r'recurring-order-events', RecurringOrderEventViewSet, basename='recurring-order-event')
 
 urlpatterns = [
     path("auth/csrf/", csrf),
