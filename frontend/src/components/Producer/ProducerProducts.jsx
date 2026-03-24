@@ -232,7 +232,7 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
               <label>Product Image</label>
               <label className={styles.uploadBtn}>
                 <FiUpload size={18} />
-                Upload Image
+                {imageFile ? imageFile.name : 'Upload Image'}
                 <input name="image" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleChange}/>
               </label>
             </div>
