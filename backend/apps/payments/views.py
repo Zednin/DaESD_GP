@@ -193,6 +193,7 @@ def handle_checkout_session_completed(session):
                 producer_id=producer_id,
                 status="pending",
                 total_amount=subtotal,
+                delivery_date=delivery_date,
             )
 
             for cart_item in producer_items:
