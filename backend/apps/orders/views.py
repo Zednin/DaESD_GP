@@ -33,7 +33,7 @@ class ProducerOrderViewSet(ModelViewSet):
                 "producer",
             )
             .prefetch_related("items__product")
-            .order_by("-created_at")
+            .order_by("delivery_date", "-created_at")
         )
 
         # Admin/staff: allow filtering by ?producer=<id>

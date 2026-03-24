@@ -2,15 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import shared from '../../pages/Producer/ProducerShared.module.css';
 import local from './ProducerOrders.module.css';
 const styles = { ...shared, ...local };
-import { FiSearch, FiX, FiCheck, FiUser, FiMapPin, FiPackage, FiFileText, FiChevronUp, FiChevronDown, FiMail } from 'react-icons/fi';
-
-/* Helpers */
-function getCookie(name) {
-  return document.cookie
-    .split('; ')
-    .find(r => r.startsWith(name + '='))
-    ?.split('=')[1];
-}
+import { FiSearch, FiX, FiCheck, FiUser, FiMapPin, FiPackage, FiFileText, FiChevronUp, FiChevronDown, FiMail, FiClock } from 'react-icons/fi';
+import apiClient from '../../utils/apiClient';
 
 const ORDER_STATUS_CLASS = {
   pending:   styles.badgeWarning,
@@ -24,6 +17,15 @@ const ORDER_STATUS_CLASS = {
 };
 
 const STATUS_FILTERS = ['all', 'pending', 'accepted', 'preparing', 'ready', 'delivered', 'rejected', 'cancelled'];
+
+/** Calculate hours between order date and delivery date */
+function getLeadTimeHours(createdAt, deliveryDate) {
+  if (!createdAt || !deliveryDate) return null;
+  const created = new Date(createdAt);
+  const delivery = new Date(deliveryDate + 'T00:00:00');
+  const diffMs = delivery - created;
+  return Math.round(diffMs / (1000 * 60 * 60));
+}
 
 /** Returns the valid next statuses for the dropdown */
 function getNextStatuses(status) {
@@ -62,8 +64,8 @@ export default function ProducerOrders({ producerId }) {
   const [statusClosing, setStatusClosing]   = useState(false);
   const [cancelReason, setCancelReason]     = useState('');
   const [updating, setUpdating] = useState(null); // id of order being updated
-  const [sortKey, setSortKey]   = useState('created_at');
-  const [sortDir, setSortDir]   = useState('desc');
+  const [sortKey, setSortKey]   = useState('delivery_date');
+  const [sortDir, setSortDir]   = useState('asc');
 
   /* Fetch orders */
   useEffect(() => {
@@ -74,12 +76,9 @@ export default function ProducerOrders({ producerId }) {
 
     (async () => {
       try {
-        const res = await fetch(
-          `/api/producer-orders/?producer=${producerId}`,
-          { credentials: 'include' },
-        );
-        if (!res.ok) throw new Error('Failed to load orders');
-        const data = await res.json();
+        const { data } = await apiClient.get(`/producer-orders/`, {
+          params: { producer: producerId },
+        });
         if (cancelled) return;
 
         setOrders(
@@ -196,17 +195,10 @@ export default function ProducerOrders({ producerId }) {
   async function handleStatusChange(orderId, newStatus) {
     setUpdating(orderId);
     try {
-      const res = await fetch(`/api/producer-orders/${orderId}/`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken'),
-        },
-        credentials: 'include',
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (!res.ok) throw new Error('Update failed');
-      const updated = await res.json();
+      const { data: updated } = await apiClient.patch(
+        `/producer-orders/${orderId}/`,
+        { status: newStatus },
+      );
       setOrders(prev =>
         prev.map(o =>
           o.id === orderId
@@ -386,7 +378,17 @@ export default function ProducerOrders({ producerId }) {
                     <td><strong>£{order.subtotal.toFixed(2)}</strong></td>
                     <td className={styles.dateCell}>
                       {order.delivery_date
-                        ? new Date(order.delivery_date).toLocaleDateString('en-GB')
+                        ? <>
+                            {new Date(order.delivery_date).toLocaleDateString('en-GB')}
+                            {(() => {
+                              const hrs = getLeadTimeHours(order.created_at, order.delivery_date);
+                              return hrs !== null ? (
+                                <span className={`${styles.leadTimeBadge} ${hrs >= 48 ? styles.leadTimeOk : styles.leadTimeWarn}`}>
+                                  <FiClock size={10} /> {hrs}h
+                                </span>
+                              ) : null;
+                            })()}
+                          </>
                         : <span className={styles.muted}>—</span>}
                     </td>
                     <td>
@@ -484,6 +486,21 @@ export default function ProducerOrders({ producerId }) {
                     {selectedOrder.delivery_date
                       ? new Date(selectedOrder.delivery_date).toLocaleDateString('en-GB')
                       : <span className={styles.muted}>Not set</span>}
+                  </span>
+                </div>
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Lead Time</span>
+                  <span>
+                    {(() => {
+                      const hrs = getLeadTimeHours(selectedOrder.created_at, selectedOrder.delivery_date);
+                      if (hrs === null) return <span className={styles.muted}>—</span>;
+                      const minHrs = selectedOrder.lead_time_hours || 48;
+                      return (
+                        <span className={hrs >= minHrs ? styles.leadTimeOkText : styles.leadTimeWarnText}>
+                          <FiClock size={13} /> {hrs}h (min {minHrs}h required)
+                        </span>
+                      );
+                    })()}
                   </span>
                 </div>
                 <div className={styles.detailRow}>

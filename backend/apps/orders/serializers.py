@@ -45,6 +45,8 @@ class ProducerOrderSerializer(serializers.ModelSerializer):
     customer_email = serializers.SerializerMethodField()
     customer_phone = serializers.SerializerMethodField()
     delivery_address = serializers.SerializerMethodField()
+    special_instructions = serializers.SerializerMethodField()
+    lead_time_hours = serializers.SerializerMethodField()
     items = OrderItemSerializer(many=True, read_only=True)
     stripe_ref = serializers.SerializerMethodField()
 
@@ -63,6 +65,8 @@ class ProducerOrderSerializer(serializers.ModelSerializer):
             "customer_email",
             "customer_phone",
             "delivery_address",
+            "special_instructions",
+            "lead_time_hours",
             "items",
             "stripe_ref",
             "created_at",
@@ -106,3 +110,9 @@ class ProducerOrderSerializer(serializers.ModelSerializer):
             "city": addr.city,
             "postcode": addr.postcode,
         }
+
+    def get_special_instructions(self, obj):
+        return obj.order.special_instructions or ""
+
+    def get_lead_time_hours(self, obj):
+        return obj.producer.lead_time_hours
