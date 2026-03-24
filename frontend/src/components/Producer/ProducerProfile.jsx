@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import shared from '../../pages/Producer/ProducerShared.module.css';
 import local from './ProducerProfile.module.css';
 const styles = { ...shared, ...local };
-import { FiUpload, FiEdit2, FiTrash2, FiEye, FiEyeOff, FiClock, FiBookOpen, FiImage } from 'react-icons/fi';
+import { FiUpload, FiEdit2, FiTrash2, FiBookOpen, FiImage } from 'react-icons/fi';
 import apiClient from '../../utils/apiClient';
 
 const SEASONAL_OPTIONS = [
@@ -304,9 +304,9 @@ function RecipeModal({ recipe, producerId, onClose, onSaved }) {
           {producerProducts.length > 0 && (
             <div className={styles.field}>
               <label>Link to Products (from your inventory)</label>
-              <div className={styles.productsGrid}>
+              <div className={styles.checkboxGrid}>
                 {producerProducts.map(p => (
-                  <label key={p.id} className={styles.productCheckbox}>
+                  <label key={p.id} className={styles.checkboxChip}>
                     <input
                       type="checkbox"
                       checked={form.products.includes(p.id)}

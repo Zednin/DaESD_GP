@@ -309,7 +309,7 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
             </div>
             <div className={styles.field}>
               <label>Organic</label>
-              <label className={styles.allergenCheckbox}>
+              <label className={styles.checkboxChip}>
                 <input name="organic_certified" type="checkbox" checked={form.organic_certified} onChange={handleChange} />
                 Organic Certified
               </label>
@@ -320,9 +320,9 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
           {allergensList.length > 0 && (
             <div className={styles.field}>
               <label>Allergens</label>
-              <div className={styles.allergensGrid}>
+              <div className={styles.checkboxGrid}>
                 {allergensList.map((a) => (
-                  <label key={a.id} className={styles.allergenCheckbox}>
+                  <label key={a.id} className={styles.checkboxChip}>
                     <input
                       type="checkbox"
                       checked={form.allergens.includes(a.id)}
