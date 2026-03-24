@@ -3,14 +3,7 @@ import shared from '../../pages/Producer/ProducerShared.module.css';
 import local from './ProducerOrders.module.css';
 const styles = { ...shared, ...local };
 import { FiSearch, FiX, FiCheck, FiUser, FiMapPin, FiPackage, FiFileText, FiChevronUp, FiChevronDown, FiMail } from 'react-icons/fi';
-
-/* Helpers */
-function getCookie(name) {
-  return document.cookie
-    .split('; ')
-    .find(r => r.startsWith(name + '='))
-    ?.split('=')[1];
-}
+import apiClient from '../../utils/apiClient';
 
 const ORDER_STATUS_CLASS = {
   pending:   styles.badgeWarning,
@@ -74,12 +67,9 @@ export default function ProducerOrders({ producerId }) {
 
     (async () => {
       try {
-        const res = await fetch(
-          `/api/producer-orders/?producer=${producerId}`,
-          { credentials: 'include' },
-        );
-        if (!res.ok) throw new Error('Failed to load orders');
-        const data = await res.json();
+        const { data } = await apiClient.get('/producer-orders/', {
+          params: { producer: producerId },
+        });
         if (cancelled) return;
 
         setOrders(
@@ -196,17 +186,10 @@ export default function ProducerOrders({ producerId }) {
   async function handleStatusChange(orderId, newStatus) {
     setUpdating(orderId);
     try {
-      const res = await fetch(`/api/producer-orders/${orderId}/`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken'),
-        },
-        credentials: 'include',
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (!res.ok) throw new Error('Update failed');
-      const updated = await res.json();
+      const { data: updated } = await apiClient.patch(
+        `/producer-orders/${orderId}/`,
+        { status: newStatus },
+      );
       setOrders(prev =>
         prev.map(o =>
           o.id === orderId
