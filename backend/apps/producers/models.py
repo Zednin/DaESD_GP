@@ -64,6 +64,8 @@ class Producer(models.Model):
     # Meta - controls how models behave
     class Meta:
             indexes = [
-                # Index makes quicker company name searching 
+                # Index makes quicker company name searching
                 models.Index(fields=["company_name"]),
             ]
+
+
