@@ -8,6 +8,7 @@ import FilterPanel from "../components/FilterPanel/FilterPanel";
 import styles from "./Products.module.css";
 import { addToCart, getCartSubtotal, readCart } from "../utils/cartStorage";
 import { getAllergenInfo } from "../utils/allergenIcons";
+import apiClient from "../utils/apiClient";
 
 // Hardcoded recommendations — replace with API call later
 const HARDCODED_RECOMMENDATIONS = [
@@ -48,30 +49,27 @@ export default function Products() {
 
   // One-time fetch of all products to populate filter options
   useEffect(() => {
-    fetch("/api/products/?ordering=name")
-      .then((r) => r.json())
-      .then((data) => {
+    apiClient.get("/products/", { params: { ordering: "name" } })
+      .then(({ data }) => {
         const catNames = [...new Set(data.map((p) => p.category_name).filter(Boolean))].sort();
         const prodNames = [...new Set(data.map((p) => p.producer_name).filter(Boolean))].sort();
         setCategories(catNames);
         setProducers(prodNames);
       });
-    fetch("/api/allergens/")
-      .then((r) => r.json())
-      .then((data) => setAllergens(data.results ?? data));
+    apiClient.get("/allergens/")
+      .then(({ data }) => setAllergens(data.results ?? data));
   }, []);
 
   // Re-fetch from backend whenever server-side filters or sort change
   // (search handled client-side by Fuse.js)
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (selectedCategory) params.set("category__name", selectedCategory);
-    if (selectedProducer) params.set("producer__company_name", selectedProducer);
-    if (organicOnly) params.set("organic_certified", "true");
-    params.set("ordering", sortBy);
-    fetch(`/api/products/?${params}`)
-      .then((r) => r.json())
-      .then(setRawProducts);
+    const params = {};
+    if (selectedCategory) params.category__name = selectedCategory;
+    if (selectedProducer) params.producer__company_name = selectedProducer;
+    if (organicOnly) params.organic_certified = "true";
+    params.ordering = sortBy;
+    apiClient.get("/products/", { params })
+      .then(({ data }) => setRawProducts(data));
   }, [selectedCategory, selectedProducer, organicOnly, sortBy]);
 
   // Fuzzy-match the search term over the backend-filtered results

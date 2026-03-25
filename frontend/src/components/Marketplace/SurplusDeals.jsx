@@ -6,6 +6,7 @@ import { FiClock, FiCalendar, FiPackage } from 'react-icons/fi';
 import { LuLeaf } from 'react-icons/lu';
 import { addToCart, getCartSubtotal, readCart } from '../../utils/cartStorage';
 import { getAllergenInfo } from '../../utils/allergenIcons';
+import apiClient from '../../utils/apiClient';
 
 function formatTimeRemaining(endDate) {
   if (!endDate) return null;
@@ -48,9 +49,8 @@ export default function SurplusDeals() {
   }, []);
 
   useEffect(() => {
-    fetch('/api/products/surplus-deals/')
-      .then((r) => r.json())
-      .then((data) => {
+    apiClient.get('/products/surplus-deals/')
+      .then(({ data }) => {
         setProducts(data.results ?? data);
         setLoading(false);
       })
