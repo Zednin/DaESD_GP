@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import shared from '../../pages/Producer/ProducerShared.module.css';
 import local from './ProducerOverview.module.css';
 const styles = { ...shared, ...local };
+import apiClient from '../../utils/apiClient';
 
 /* Helpers */
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -82,14 +83,12 @@ export default function ProducerOverview({ producerId, producerName }) {
 
     (async () => {
       try {
-        const [ordersRes, productsRes] = await Promise.all([
-          fetch(`/api/producer-orders/?producer=${producerId}`, { credentials: 'include' }),
-          fetch(`/api/products/?producer=${producerId}`, { credentials: 'include' }),
+        const [ordersResponse, productsResponse] = await Promise.all([
+          apiClient.get('/producer-orders/', { params: { producer: producerId } }),
+          apiClient.get('/products/', { params: { producer: producerId } }),
         ]);
-        if (!ordersRes.ok) throw new Error('Failed to load orders');
-        if (!productsRes.ok) throw new Error('Failed to load products');
-        const ordersData   = await ordersRes.json();
-        const productsData = await productsRes.json();
+        const ordersData   = ordersResponse.data;
+        const productsData = productsResponse.data;
         if (cancelled) return;
 
         setOrders(

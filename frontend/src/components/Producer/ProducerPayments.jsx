@@ -5,6 +5,7 @@ import local from './ProducerPayments.module.css';
 const styles = { ...shared, ...local };
 import { downloadCSV, generatePaymentReportPDF } from '../../utils/exportHelpers';
 import leafLogo from '../../assets/leaf.png';
+import apiClient from '../../utils/apiClient';
 
 /* ── Helpers ── */
 function inferPaymentStatus(orderStatus) {
@@ -173,12 +174,9 @@ export default function ProducerPayments({ producerId, producerName }) {
 
     (async () => {
       try {
-        const ordersRes = await fetch(
-          `/api/producer-orders/?producer=${producerId}`,
-          { credentials: 'include' },
-        );
-        if (!ordersRes.ok) throw new Error('Failed to load orders');
-        const ordersData = await ordersRes.json();
+        const { data: ordersData } = await apiClient.get('/producer-orders/', {
+          params: { producer: producerId },
+        });
         if (cancelled) return;
 
         setOrders(
