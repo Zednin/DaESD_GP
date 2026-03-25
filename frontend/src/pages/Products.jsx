@@ -86,10 +86,20 @@ export default function Products() {
       });
     }
 
-    const term = search.trim();
+    let term = search.trim();
     if (!term) return filtered;
+
+    // If the user types "organic", filter to organic products first
+    const organicRegex = /\borganic\b/i;
+    if (organicRegex.test(term)) {
+      filtered = filtered.filter((p) => p.organic_certified);
+      term = term.replace(organicRegex, "").trim();
+    }
+
+    if (!term) return filtered;
+
     const fuse = new Fuse(filtered, {
-      keys: ["name", "description", "allergens.name"],
+      keys: ["name", "description", "category_name", "producer_name", "allergens.name"],
       threshold: 0.4,
     });
     return fuse.search(term).map((r) => r.item);
