@@ -16,6 +16,10 @@ from apps.cart.models import Cart
 from apps.orders.models import Order, OrderItem, ProducerOrder, CommissionLedger
 from apps.payments.models import Payment
 from apps.addresses.models import Address
+from apps.communications.email_service import (
+    send_customer_order_confirmation,
+    send_producer_new_order_notification,
+)
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -25,7 +29,18 @@ COMMISSION_RATE = Decimal("0.05")
 def money(value):
     return Decimal(value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
-stripe.api_key = settings.STRIPE_SECRET_KEY
+def safe_send_customer_email(order):
+    try:
+        send_customer_order_confirmation(order)
+    except Exception as e:
+        print(f"Customer order email failed for order {order.id}: {e}")
+
+
+def safe_send_producer_email(producer_order):
+    try:
+        send_producer_new_order_notification(producer_order)
+    except Exception as e:
+        print(f"Producer order email failed for producer order {producer_order.id}: {e}")
 
 
 class CreateCheckoutSessionView(APIView):
@@ -218,3 +233,16 @@ def handle_checkout_session_completed(session):
         order.save(update_fields=["commission_amount"])
 
         cart.items.all().delete()
+        
+        producer_orders = list(
+            order.producer_orders.all()
+            .select_related("producer")
+            .prefetch_related("items__product")
+        )
+
+        transaction.on_commit(lambda: safe_send_customer_email(order))
+
+        for producer_order in producer_orders:
+            transaction.on_commit(
+                lambda po=producer_order: safe_send_producer_email(po)
+            )
