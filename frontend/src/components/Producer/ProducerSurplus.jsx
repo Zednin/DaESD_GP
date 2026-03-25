@@ -115,14 +115,27 @@ function DiscountOfferModal({ product, onClose, onSaved }) {
             <div className={styles.sliderRow}>
               <input
                 type="range"
-                min="5"
-                max="80"
-                step="5"
+                min="1"
+                max="99"
+                step="1"
                 value={discountPercentage}
                 onChange={(e) => setDiscountPercentage(Number(e.target.value))}
                 className={styles.slider}
               />
-              <span className={styles.sliderValue}>{discountPercentage}%</span>
+              <div className={styles.sliderInputWrap}>
+                <input
+                  type="number"
+                  min="1"
+                  max="99"
+                  value={discountPercentage}
+                  onChange={(e) => {
+                    const val = Math.min(99, Math.max(1, Number(e.target.value) || 1));
+                    setDiscountPercentage(val);
+                  }}
+                  className={styles.sliderInput}
+                />
+                <span className={styles.sliderInputSuffix}>%</span>
+              </div>
             </div>
             <div className={styles.pricePreview}>
               <span className={styles.originalPrice}>£{originalPrice.toFixed(2)}</span>
