@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import QuickAddModal from '../QuickAddModal/QuickAddModal';
+import { fadeRight, fadeUp } from '../../animations/heroAnimations';
 import styles from './SurplusDeals.module.css';
 import { FiClock, FiCalendar, FiPackage } from 'react-icons/fi';
 import { LuLeaf } from 'react-icons/lu';
@@ -96,21 +97,43 @@ export default function SurplusDeals() {
     <main className={`container ${styles.page}`}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <h1 className={styles.title}>Surplus Deals</h1>
-          <p className={styles.subtitle}>
+          <motion.h1
+            className={styles.title}
+            variants={fadeRight(0.1)}
+            initial="hidden"
+            animate="visible"
+          >
+            Surplus Deals
+          </motion.h1>
+          <motion.p
+            className={styles.subtitle}
+            variants={fadeRight(0.2)}
+            initial="hidden"
+            animate="visible"
+          >
             Last-minute offers on fresh produce — grab a bargain and help reduce food waste
-          </p>
+          </motion.p>
         </div>
-        <div className={styles.wasteTag}>
+        <motion.div
+          className={styles.wasteTag}
+          variants={fadeUp(0.25)}
+          initial="hidden"
+          animate="visible"
+        >
           <LuLeaf className={styles.wasteIcon} />
           <span>Reducing food waste together</span>
-        </div>
+        </motion.div>
       </header>
 
       {/* Results count */}
-      <p className={styles.resultCount}>
+      <motion.p
+        className={styles.resultCount}
+        variants={fadeUp(0.3)}
+        initial="hidden"
+        animate="visible"
+      >
         {products.length} {products.length === 1 ? 'deal' : 'deals'} available
-      </p>
+      </motion.p>
 
       {products.length === 0 ? (
         <div className={styles.emptyState}>
@@ -119,7 +142,12 @@ export default function SurplusDeals() {
           <p>Check back soon — producers regularly add last-minute offers.</p>
         </div>
       ) : (
-        <section className={styles.grid}>
+        <motion.section
+          className={styles.grid}
+          variants={fadeUp(0.35)}
+          initial="hidden"
+          animate="visible"
+        >
           {products.map((product) => {
             const originalPrice = parseFloat(product.price);
             const surplusPrice = parseFloat(product.surplus_price);
@@ -218,7 +246,7 @@ export default function SurplusDeals() {
               </div>
             );
           })}
-        </section>
+        </motion.section>
       )}
 
       {/* Quick Add Modal */}
