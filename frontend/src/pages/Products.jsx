@@ -5,6 +5,7 @@ import { FiGrid, FiList } from "react-icons/fi";
 import { LuLeaf } from "react-icons/lu";
 import QuickAddModal from "../components/QuickAddModal/QuickAddModal";
 import FilterPanel from "../components/FilterPanel/FilterPanel";
+import { fadeRight, fadeUp } from "../animations/heroAnimations";
 import styles from "./Products.module.css";
 import { addToCart, getCartSubtotal, readCart } from "../utils/cartStorage";
 import { getAllergenInfo } from "../utils/allergenIcons";
@@ -143,13 +144,30 @@ export default function Products() {
   return (
     <main className={`container ${styles.page}`}>
       <header className={styles.header}>
-        <h1>Products</h1>
-        <p>Browse our selection of locally sourced goods.</p>
+        <motion.h1
+          variants={fadeRight(0.1)}
+          initial="hidden"
+          animate="visible"
+        >
+          Products
+        </motion.h1>
+        <motion.p
+          variants={fadeRight(0.2)}
+          initial="hidden"
+          animate="visible"
+        >
+          Browse our selection of locally sourced goods.
+        </motion.p>
       </header>
 
       {/* ── AI Recommendations (customers only) ── */}
       {HARDCODED_RECOMMENDATIONS.length > 0 && (
-        <section className={styles.recsSection}>
+        <motion.section
+          className={styles.recsSection}
+          variants={fadeUp(0.25)}
+          initial="hidden"
+          animate="visible"
+        >
           <button
             type="button"
             className={styles.recsToggle}
@@ -210,11 +228,16 @@ export default function Products() {
               </motion.div>
             )}
           </AnimatePresence>
-        </section>
+        </motion.section>
       )}
 
       {/* ── Toolbar ── */}
-      <div className={styles.toolbar}>
+      <motion.div
+        className={styles.toolbar}
+        variants={fadeUp(0.3)}
+        initial="hidden"
+        animate="visible"
+      >
         {/* Search */}
         <div className={styles.searchWrap}>
           <svg
@@ -276,13 +299,18 @@ export default function Products() {
             <FiList />
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Results count ── */}
-      <p className={styles.resultCount}>
+      <motion.p
+        className={styles.resultCount}
+        variants={fadeUp(0.35)}
+        initial="hidden"
+        animate="visible"
+      >
         {products.length}{" "}
         {products.length === 1 ? "product" : "products"} found
-      </p>
+      </motion.p>
 
       {/* ── Product grid / list ── */}
       {products.length === 0 ? (
@@ -293,7 +321,12 @@ export default function Products() {
           </button>
         </p>
       ) : viewMode === "grid" ? (
-        <section className={styles.grid}>
+        <motion.section
+          className={styles.grid}
+          variants={fadeUp(0.4)}
+          initial="hidden"
+          animate="visible"
+        >
           {products.map((product) => (
             <div key={product.id} className={`${styles.card} ${product.surplus_active ? styles.surplusCard : ''}`}>
               <div className={styles.imagePlaceholder}>
@@ -344,9 +377,14 @@ export default function Products() {
               </div>
             </div>
           ))}
-        </section>
+        </motion.section>
       ) : (
-        <section className={styles.list}>
+        <motion.section
+          className={styles.list}
+          variants={fadeUp(0.4)}
+          initial="hidden"
+          animate="visible"
+        >
           {products.map((product) => (
             <div key={product.id} className={styles.listCard}>
               <div className={styles.listImagePlaceholder}>
@@ -394,7 +432,7 @@ export default function Products() {
               </button>
             </div>
           ))}
-        </section>
+        </motion.section>
       )}
 
       {/* Modal */}
