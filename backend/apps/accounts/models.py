@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.contrib.auth.base_user import BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 
 from django.conf import settings
 #'AbstractUser' Built in django class for users
@@ -8,10 +8,42 @@ from django.conf import settings
 
 # Create your models here.
 
+''' # This should be deleted in the future if decided not to use it
+# Custom Account Class
+class AccountManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email: 
+            raise ValueError("Email required")
+    
+        email = self.normalize_email(email.strip())
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+    
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
+        
+        # Error handelling :
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True")
+        
+        return self.create_user(email, password, **extra_fields)
+'''    
+
+            
+    
+
+
+
+
+
 
 class Account(AbstractUser):
-    """#1 Account"""
-
     # Account types of created users
     ACCOUNT_TYPE_CHOICES = [
         ('customer', 'Customer'),
@@ -37,6 +69,11 @@ class Account(AbstractUser):
 
     def __str__(self):
         return self.username
+    
+    
+    
+    
+    
     
 class Customer(models.Model):
     """#2 Customer"""
@@ -89,7 +126,7 @@ class Organisation(models.Model):
 
     # Ensures that organisation is to a single customer account
     customer = models.OneToOneField(
-        'yourapp.Customer',
+        'accounts.Customer',
         on_delete=models.CASCADE,
         related_name='organisation'
     )
