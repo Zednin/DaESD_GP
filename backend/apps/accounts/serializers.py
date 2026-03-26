@@ -2,11 +2,13 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
 
-from .models import Customer, Organisation
+from .models import Customer, Organisation, Account
 from apps.producers.models import Producer
 
 Account = get_user_model()
 
+from dj_rest_auth.registration.serializers import RegisterSerializer
+from .utils import generate_unique_username
 
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:

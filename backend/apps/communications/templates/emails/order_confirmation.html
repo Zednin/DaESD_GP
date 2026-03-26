@@ -1,0 +1,293 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+
+<!-- Top visual block -->
+<tr>
+  <td align="center" style="padding:0 20px 0;">
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="
+        width:100%;
+        max-width:700px;
+        background:
+          linear-gradient(rgba(255,255,255,0.14), rgba(255,255,255,0.14)),
+          url('https://res.cloudinary.com/drwmcduef/image/upload/v1774285730/Firefly_Minimal_editorial_email_background_for_a_local_food_brand_soft_warm_off-white_backgr_655988_k1u5ss.png')
+          center center / cover no-repeat;
+        border-radius:28px 28px 0 0;
+        overflow:hidden;
+      "
+    >
+      <tr>
+        <td style="padding:52px 34px 46px;">
+          <div
+            style="
+              font-family:Georgia, 'Times New Roman', serif;
+              font-size:46px;
+              line-height:1.05;
+              color:#0b0f19;
+              font-weight:700;
+              letter-spacing:-0.03em;
+              text-align:center;
+              margin-bottom:14px;
+            "
+          >
+            Thank you for your order
+          </div>
+
+          <div
+            style="
+              max-width:500px;
+              margin:0 auto;
+              font-family:Arial, Helvetica, sans-serif;
+              font-size:17px;
+              line-height:1.8;
+              color:#4b5563;
+              text-align:center;
+            "
+          >
+            Your order has been confirmed and is now moving through the network.
+          </div>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+<!-- White receipt card -->
+<tr>
+  <td align="center" style="padding:0 20px 28px;">
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="
+        width:100%;
+        max-width:700px;
+        background:#ffffff;
+        border-radius:0 0 28px 28px;
+        box-shadow:0 20px 50px rgba(0,0,0,0.10);
+      "
+    >
+      <tr>
+        <td style="padding:34px 34px 18px;">
+
+          <!-- Intro -->
+          <div
+            style="
+              font-family:'Poppins', Arial, Helvetica, sans-serif;
+              font-size:17px;
+              line-height:1.8;
+              color:#4b5563;
+              margin-bottom:8px;
+            "
+          >
+            Hi {{ order.account.first_name|default:order.account.username }},
+          </div>
+
+          <div
+            style="
+              font-family:'Poppins', Arial, Helvetica, sans-serif;
+              font-size:17px;
+              line-height:1.8;
+              color:#4b5563;
+              margin-bottom:24px;
+            "
+          >
+            Thanks for shopping with BRFN. Here are the details of your purchase.
+          </div>
+
+          <!-- Meta row -->
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="width:100%; margin-bottom:26px;"
+          >
+            <tr>
+              <td valign="top" style="padding-right:12px;">
+                <div style="font-family:'Poppins', Arial, Helvetica, sans-serif; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#a4571f; margin-bottom:8px;">
+                  Order number
+                </div>
+                <div style="font-family:'Averia Serif Libre', Georgia, serif; font-size:28px; line-height:1.1; color:#6E2332;">
+                  #{{ order.id }}
+                </div>
+              </td>
+
+              <td valign="top" align="right">
+                <div
+                  style="
+                    display:inline-block;
+                    background:#faf6f7;
+                    border:1px solid #ece2e5;
+                    border-radius:16px;
+                    padding:10px 14px;
+                    font-family:'Poppins', Arial, Helvetica, sans-serif;
+                    font-size:13px;
+                    line-height:1.5;
+                    color:#6b7280;
+                  "
+                >
+                  <strong style="color:#0b0f19;">Status:</strong> Confirmed
+                </div>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Items heading -->
+          <div
+            style="
+              font-family:'Averia Serif Libre', Georgia, serif;
+              font-size:28px;
+              line-height:1.15;
+              color:#0b0f19;
+              margin-bottom:14px;
+            "
+          >
+            Order details
+          </div>
+
+          <!-- Items list -->
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="
+              width:100%;
+              border-top:1px solid #ebe2e5;
+              border-bottom:1px solid #ebe2e5;
+              margin-bottom:26px;
+            "
+          >
+            {% for producer_order in order.producer_orders.all %}
+              {% for item in producer_order.items.all %}
+                <tr>
+                  <td style="padding:16px 0; border-bottom:1px solid #f3ebed;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td valign="top">
+                          <div style="font-family:'Poppins', Arial, Helvetica, sans-serif; font-size:16px; line-height:1.5; font-weight:600; color:#0b0f19;">
+                            {{ item.product.name }}
+                          </div>
+                          <div style="font-family:'Poppins', Arial, Helvetica, sans-serif; font-size:14px; line-height:1.7; color:#6b7280;">
+                            Quantity: {{ item.quantity }}
+                          </div>
+                        </td>
+                        <td align="right" valign="top" style="white-space:nowrap;">
+                          <div style="font-family:'Poppins', Arial, Helvetica, sans-serif; font-size:16px; line-height:1.5; font-weight:700; color:#6E2332;">
+                            £{{ item.line_total }}
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% endfor %}
+          </table>
+
+          <!-- Two-column summary -->
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="width:100%; margin-bottom:28px;"
+          >
+            <tr>
+              <td valign="top" width="50%" style="padding-right:12px;">
+                <div style="font-family:'Poppins', Arial, Helvetica, sans-serif; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#a4571f; margin-bottom:12px;">
+                  Delivery
+                </div>
+                <div style="font-family:'Poppins', Arial, Helvetica, sans-serif; font-size:15px; line-height:1.8; color:#4b5563;">
+                  We’ll email you again when your order is ready and when it’s on the way.
+                </div>
+              </td>
+
+              <td valign="top" width="50%" style="padding-left:12px;">
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  style="
+                    width:100%;
+                    background:#fff8f3;
+                    border:1px solid #f0d7c6;
+                    border-radius:18px;
+                  "
+                >
+                  <tr>
+                    <td style="padding:18px 18px;">
+                      <div style="font-family:'Poppins', Arial, Helvetica, sans-serif; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#a4571f; margin-bottom:8px;">
+                        Order total
+                      </div>
+                      <div style="font-family:'Poppins', Arial, Helvetica, sans-serif; font-size:34px; line-height:1.1; font-weight:700; color:#6E2332;">
+                        £{{ order.total_amount }}
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <!-- CTA -->
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
+            <tr>
+              <td
+                style="
+                  background:linear-gradient(135deg, #6E2332 0%, #8c2f43 100%);
+                  border-radius:999px;
+                  box-shadow:0 12px 26px rgba(110,35,50,0.18);
+                "
+              >
+                <a
+                  href="{{ frontend_url }}/orders"
+                  style="
+                    display:inline-block;
+                    padding:16px 26px;
+                    font-family:'Poppins', Arial, Helvetica, sans-serif;
+                    font-size:14px;
+                    line-height:1;
+                    font-weight:700;
+                    color:#ffffff;
+                    text-decoration:none;
+                  "
+                >
+                  View order status
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Footer note -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%; border-top:1px solid #ebe2e5;">
+            <tr>
+              <td style="padding-top:18px; text-align:center; font-family:'Poppins', Arial, Helvetica, sans-serif; font-size:12px; line-height:1.9; color:#7d6d72;">
+                This is an automated BRFN email, so replies to this message are not monitored.
+                <br />
+                © Bristol Regional Food Network
+              </td>
+            </tr>
+          </table>
+
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+{% endblock %}

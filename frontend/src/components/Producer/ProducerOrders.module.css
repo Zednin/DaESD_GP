@@ -1,0 +1,618 @@
+/* ═══════════════════════════════════════════════════════════
+   FIXED COLUMN WIDTHS  (prevents layout shift on sort)
+═══════════════════════════════════════════════════════════ */
+
+.ordersTable {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.ordersTable th:nth-child(1) { width: 11%; }   /* Order Ref */
+.ordersTable th:nth-child(2) { width: 16%; }   /* Customer  */
+.ordersTable th:nth-child(3) { width: 11%; }   /* Date      */
+.ordersTable th:nth-child(4) { width: 8%;  }   /* Items     */
+.ordersTable th:nth-child(5) { width: 12%; }   /* Subtotal  */
+.ordersTable th:nth-child(6) { width: 13%; }   /* Delivery  */
+.ordersTable th:nth-child(7) { width: 12%; }   /* Status    */
+.ordersTable th:nth-child(8) { width: 17%; }   /* Actions   */
+
+/* ═══════════════════════════════════════════════════════════
+   ORDERS FILTER BAR
+═══════════════════════════════════════════════════════════ */
+
+.ordersFilterBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.searchField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 14px;
+  color: var(--muted);
+  flex: 1;
+  min-width: 220px;
+}
+
+.searchField input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  color: var(--text);
+  width: 100%;
+  font-family: inherit;
+}
+
+.dateLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.dateLabel input[type="date"] {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: inherit;
+  outline: none;
+}
+
+.dateLabel input[type="date"]:focus {
+  border-color: var(--primary);
+}
+
+.clearFiltersBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.clearFiltersBtn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STATUS BADGE WITH DOT  (Pending, Preparing etc)
+═══════════════════════════════════════════════════════════ */
+
+.orderStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.badgeDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: currentColor;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ACTION COLUMN
+═══════════════════════════════════════════════════════════ */
+
+/* Pending: direct ✓ / ✗ icon buttons */
+.actionIconBtns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.actionIconSafe,
+.actionIconDanger {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.actionIconSafe:disabled,
+.actionIconDanger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.actionIconSafe {
+  background: var(--success-muted);
+  color: var(--success);
+}
+
+.actionIconSafe:hover:not(:disabled) {
+  background: var(--success);
+  color: var(--bg);
+}
+
+.actionIconDanger {
+  background: var(--error-muted);
+  color: var(--error);
+}
+
+.actionIconDanger:hover:not(:disabled) {
+  background: var(--error);
+  color: var(--bg);
+}
+
+/* Single next step: pill chip + confirm tick */
+.statusPicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.nextStatusChip {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--primary-muted);
+  color: var(--primary);
+}
+
+.confirmIconBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.confirmIconBtn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.confirmIconBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ORDER DETAIL MODAL
+═══════════════════════════════════════════════════════════ */
+
+/* Sortable column header buttons */
+.sortBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sortBtn:hover {
+  color: var(--primary);
+}
+
+/* Modal animations */
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes overlayFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes modalFadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes modalFadeDown {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(24px); }
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+  animation: overlayFadeIn 0.2s ease-out;
+}
+
+.modalOverlayClosing {
+  animation: overlayFadeOut 0.2s ease-in forwards;
+}
+
+.modalContent {
+  background: var(--surface);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 900px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 28px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: modalFadeUp 0.25s ease-out;
+  scrollbar-gutter: stable;
+}
+
+/* Rounded scrollbar */
+.modalContent::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modalContent::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+.modalContent::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+}
+
+.modalContent::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+.modalContentClosing {
+  animation: modalFadeDown 0.2s ease-in forwards;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.modalTitle {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--text);
+}
+
+.modalClose {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--muted);
+  transition: color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.modalClose:hover {
+  color: var(--text);
+  border-color: var(--text);
+}
+
+/* Detail info grid */
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.detailCard {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.detailCardTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 0 0 12px 0;
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.detailRow + .detailRow {
+  border-top: 1px solid var(--border);
+}
+
+.detailLabel {
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Address lines */
+.addressLine {
+  margin: 0;
+  padding: 2px 0;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* Special instructions */
+.specialInstructions {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.specialInstructions p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* Items section inside modal */
+.modalItemsSection {
+  margin-top: 0;
+}
+
+/* Total row in items table */
+.totalRow td {
+  border-top: 2px solid var(--border);
+  padding-top: 10px;
+  font-size: 14px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UPDATE STATUS BUTTON  (in table actions column)
+═══════════════════════════════════════════════════════════ */
+
+.updateStatusBtn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  background: var(--primary);
+  color: var(--bg);
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.updateStatusBtn:hover {
+  opacity: 0.85;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STATUS-CHANGE MODAL
+═══════════════════════════════════════════════════════════ */
+
+.statusModalContent {
+  background: var(--surface);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 440px;
+  padding: 28px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: modalFadeUp 0.25s ease-out;
+}
+
+.statusModalSub {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.statusModalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.statusSelectLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.statusSelect {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.statusSelect:focus {
+  border-color: var(--primary);
+}
+
+.cancelReasonInput {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+  min-height: 60px;
+  transition: border-color 0.15s;
+}
+
+.cancelReasonInput:focus {
+  border-color: var(--danger);
+}
+
+.statusModalActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.statusSaveBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.statusSaveBtn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.statusSaveBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.notifyEmailBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.notifyEmailBtn:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LEAD TIME BADGES & TEXT
+═══════════════════════════════════════════════════════════ */
+
+.leadTimeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 999px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.leadTimeOk {
+  background: var(--success-muted, #e6f4ea);
+  color: var(--success, #1e7e34);
+}
+
+.leadTimeWarn {
+  background: var(--error-muted, #fce8e8);
+  color: var(--error, #d32f2f);
+}
+
+.leadTimeOkText {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--success, #1e7e34);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.leadTimeWarnText {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--error, #d32f2f);
+  font-weight: 600;
+  font-size: 13px;
+}

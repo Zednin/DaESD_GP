@@ -52,6 +52,7 @@ class Account(AbstractUser):
         ('community_group', 'Community Group'),
         ('admin', 'Admin'),
     ]
+
     # Defaults to customer 
     account_type = models.CharField(max_length=20, 
                                     choices=ACCOUNT_TYPE_CHOICES, 
@@ -65,9 +66,10 @@ class Account(AbstractUser):
     '''
     email = models.EmailField(unique=True)
 
-    # Auto add account created date
-    created_at = models.DateTimeField(auto_now_add=True)
-    
+    # Note - AbstractUser already provides 'date_joined' — use that instead of a custom created_at
+    # Access via: instance.date_joined
+
+    # Overides the django save, normalise save 
     def save(self, *args, **kwargs):
         if self.email:
             self.email = BaseUserManager.normalize_email(self.email).strip()
