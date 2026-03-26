@@ -6,6 +6,7 @@ import ProducerOrders from '../../components/Producer/ProducerOrders';
 import ProducerPayments from '../../components/Producer/ProducerPayments';
 import ProducerSurplus from '../../components/Producer/ProducerSurplus';
 import ProducerProfile from '../../components/Producer/ProducerProfile';
+import apiClient from '../../utils/apiClient';
 
 const navItems = [
   { key: 'overview',  label: 'Overview' },
@@ -22,9 +23,8 @@ export default function ProducerDashboard() {
   const [selectedProducerId, setSelectedProducerId] = useState('');
 
   useEffect(() => {
-    fetch('/api/producers/', { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => setAllProducers(data.results ?? data));
+    apiClient.get('/producers/')
+      .then(({ data }) => setAllProducers(data.results ?? data));
   }, []);
 
   const producerId = selectedProducerId ? parseInt(selectedProducerId, 10) : null;
@@ -80,7 +80,9 @@ export default function ProducerDashboard() {
           )}
         </div>
 
-        {renderSection()}
+        <div key={activeSection} className={styles.fadeIn}>
+          {renderSection()}
+        </div>
       </main>
     </div>
   );

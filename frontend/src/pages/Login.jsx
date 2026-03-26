@@ -24,6 +24,14 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const { refresh } = useAuth();
 
+  // Google Login
+  function handleGoogleLogin() {
+    const next = searchParams.get("next") || "/products";
+    sessionStorage.setItem("post_login_next", next);
+
+    window.location.href = "http://localhost:8000/api/accounts/google/login/?process=login";
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
@@ -155,7 +163,7 @@ export default function Login() {
         </div>
 
         {/* Social placeholders */}
-        <button className={styles.googleBtn} disabled>
+        <button className={styles.googleBtn} onClick={handleGoogleLogin}>
           <FaGoogle />
           Continue with Google
         </button>

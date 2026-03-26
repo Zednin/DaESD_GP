@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import environ
 from pathlib import Path
 import os
+import cloudinary
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,6 +32,7 @@ SECRET_KEY = 'django-insecure-35_^4dd_$fhd2s=q1ve45kcr=$*)*go340k1z4mas@(z%4lqa(
 DEBUG = True
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "web"]
+FRONTEND_URL="http://localhost:5173"
 
 
 # Application definition
@@ -49,6 +51,7 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
     "dj_rest_auth.registration",
     "corsheaders",
     "apps.catalog",
@@ -61,20 +64,12 @@ INSTALLED_APPS = [
     "apps.cart",
     "apps.community",
     "apps.sustainability",
+    'apps.payments.apps.PaymentsConfig',
+    "apps.communications",
 ]
-
-SITE_ID = 1
 
 #Custom account model to specify extended columns (phone_number, account_type)
 AUTH_USER_MODEL = 'accounts.Account' 
-
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
-]
-
-ACCOUNT_EMAIL_VERIFICATION = "none"   # no verify email required
-ACCOUNT_EMAIL_REQUIRED = True
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = "no-reply@localhost"
 
@@ -194,11 +189,18 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 ACCOUNT_USER_MODEL_USERNAME_FIELD = "username"
-ACCOUNT_AUTHENTICATION_METHOD = "email"
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_EMAIL_VERIFICATION = "none"       # temporarily false until verification is added
+ACCOUNT_LOGIN_REDIRECT_URL = f"{FRONTEND_URL}/auth/callback"
+LOGIN_REDIRECT_URL = f"{FRONTEND_URL}/auth/callback"
+ACCOUNT_SIGNUP_REDIRECT_URL = f"{FRONTEND_URL}/auth/callback"
+ACCOUNT_LOGOUT_REDIRECT_URL = FRONTEND_URL
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+SOCIALACCOUNT_ADAPTER = "apps.accounts.adapters.CustomSocialAccountAdapter"
+REST_AUTH_REGISTER_SERIALIZERS = {
+    "REGISTER_SERIALIZER": "apps.accounts.serializers.CustomRegisterSerializer",
+}
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
@@ -213,4 +215,34 @@ SESSION_COOKIE_SECURE = False
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
-FRONTEND_URL="http://localhost:5173"
+
+# Google OAuth
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "SCOPE": [
+            "profile",
+            "email",
+        ],
+        "AUTH_PARAMS": {
+            "access_type": "online",
+        },
+        "APP": {
+            "client_id": os.getenv("GOOGLE_CLIENT_ID"),
+            "secret": os.getenv("GOOGLE_CLIENT_SECRET"),
+            "key": "",
+        },
+    }
+}
+SOCIALACCOUNT_LOGIN_ON_GET = True
+
+# Cloudinary image cloud storage
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    secure=True,
+)
+
+# Resend email service
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "onboarding@resend.dev")

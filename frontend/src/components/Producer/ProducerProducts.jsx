@@ -1,34 +1,10 @@
-import { useState, useEffect } from 'react';
-import styles from '../../pages/Producer/ProducerDashboard.module.css';
-
-/*  Mock data 
-const MOCK_PRODUCERS = [
-  { id: 1, company_name: 'Green Valley Farm' },
-  { id: 2, company_name: 'Sunny Meadows Organics' },
-  { id: 3, company_name: 'Riverside Dairy' },
-];
-
-let nextId = 10;
-const MOCK_PRODUCTS = {
-  1: [
-    { id: 1, name: 'Carrots', description: 'Fresh garden carrots', price: '1.50', unit: 'kg', stock: 100, availability_start: '2026-03-01', availability_end: '2026-06-30', status: 'available', organic_certified: true, category_name: 'Vegetables' },
-    { id: 2, name: 'Potatoes', description: 'Maris Piper potatoes', price: '0.80', unit: 'kg', stock: 200, availability_start: '2026-03-01', availability_end: '2026-09-30', status: 'available', organic_certified: false, category_name: 'Vegetables' },
-  ],
-  2: [
-    { id: 3, name: 'Honey', description: 'Raw wildflower honey', price: '6.00', unit: 'unit', stock: 40, availability_start: '2026-04-01', availability_end: '2026-12-31', status: 'available', organic_certified: true, category_name: 'Honey & Preserves' },
-  ],
-  3: [
-    { id: 4, name: 'Whole Milk', description: 'Fresh whole milk', price: '1.20', unit: 'litre', stock: 80, availability_start: '2026-03-01', availability_end: '2026-12-31', status: 'available', organic_certified: false, category_name: 'Dairy' },
-    { id: 5, name: 'Cheddar Cheese', description: 'Mature cheddar', price: '4.50', unit: 'kg', stock: 0, availability_start: '2026-03-01', availability_end: '2026-12-31', status: 'unavailable', organic_certified: false, category_name: 'Dairy' },
-  ],
-};
-
-// In-memory store
-const mockProductStore = Object.fromEntries(
-  Object.entries(MOCK_PRODUCTS).map(([k, v]) => [k, v.map((p) => ({ ...p }))])
-);
-
-*/
+import { useState, useEffect, useCallback } from 'react';
+import shared from '../../pages/Producer/ProducerShared.module.css';
+import local from './ProducerProducts.module.css';
+const styles = { ...shared, ...local };
+import { FiUpload } from 'react-icons/fi';
+import apiClient from "../../utils/apiClient";
+import { uploadProductImage } from "../../utils/productUploads";
 
 const EMPTY_FORM = {
   name: '',
@@ -36,8 +12,10 @@ const EMPTY_FORM = {
   price: '',
   unit: 'unit',
   stock: '',
-  availability_start: '',
-  availability_end: '',
+  availability_mode: 'year_round',
+  season_start_month: '',
+  season_end_month: '',
+  harvest_date: '',
   status: 'available',
   organic_certified: false,
   category: '',
@@ -45,19 +23,38 @@ const EMPTY_FORM = {
   image: '',
 };
 
-// Cross-Site Request Forgery token
-function getCookie(name) {
-  return document.cookie.split('; ') 
-    .find(r => r.startsWith(name + '='))
-    ?.split('=')[1];
-}
 
 const UNIT_OPTIONS = ['kg', 'g', 'litre', 'ml', 'unit', 'dozen'];
 const STATUS_OPTIONS = ['available', 'unavailable'];
 
+const MONTH_OPTIONS = [
+  { value: 1, label: 'January' },
+  { value: 2, label: 'February' },
+  { value: 3, label: 'March' },
+  { value: 4, label: 'April' },
+  { value: 5, label: 'May' },
+  { value: 6, label: 'June' },
+  { value: 7, label: 'July' },
+  { value: 8, label: 'August' },
+  { value: 9, label: 'September' },
+  { value: 10, label: 'October' },
+  { value: 11, label: 'November' },
+  { value: 12, label: 'December' },
+];
+
+function formatAvailability(product) {
+  if (product.availability_mode === 'seasonal') {
+    const start = MONTH_OPTIONS.find(m => m.value === product.season_start_month)?.label ?? '?';
+    const end = MONTH_OPTIONS.find(m => m.value === product.season_end_month)?.label ?? '?';
+    return `${start} – ${end}`;
+  }
+  return 'Year Round';
+}
+
 /* Product form modal  */
 function ProductModal({ product, producerId, onClose, onSaved }) {
   const isEdit = Boolean(product?.id);
+  const [imageFile, setImageFile] = useState(null);
   const [form, setForm] = useState(
     isEdit
       ? {
@@ -66,12 +63,14 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
           price: product.price,
           unit: product.unit,
           stock: product.stock,
-          availability_start: product.availability_start,
-          availability_end: product.availability_end,
+          availability_mode: product.availability_mode ?? 'year_round',
+          season_start_month: product.season_start_month ?? '',
+          season_end_month: product.season_end_month ?? '',
+          harvest_date: product.harvest_date ? product.harvest_date.slice(0, 16) : '',
           status: product.status,
           organic_certified: product.organic_certified,
           category: product.category ?? '',
-          allergens: product.allergens ?? [],
+          allergens: (product.allergens ?? []).map((a) => (typeof a === 'object' ? a.id : a)),
           image: product.image ?? '',
         }
       : EMPTY_FORM
@@ -80,20 +79,44 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
   const [error, setError] = useState('');
   const [categories, setCategories] = useState([]);
   const [allergensList, setAllergensList] = useState([]);
+  const [closing, setClosing] = useState(false);
+
+  const handleClose = useCallback(() => {
+    setClosing(true);
+    setTimeout(onClose, 200);
+  }, [onClose]);
 
   // Fetch categories and allergens on mount
   useEffect(() => {
-    fetch('/api/categories/')
-      .then(res => res.json())
-      .then(data => setCategories(data.results ?? data));
-    fetch('/api/allergens/')
-      .then(res => res.json())
-      .then(data => setAllergensList(data.results ?? data));
+    async function loadFormData() {
+      try {
+        const [categoriesRes, allergensRes] = await Promise.all([
+          apiClient.get("/categories/"),
+          apiClient.get("/allergens/"),
+        ]);
+
+        setCategories(categoriesRes.data.results ?? categoriesRes.data);
+        setAllergensList(allergensRes.data.results ?? allergensRes.data);
+      } catch (err) {
+        setError("Failed to load form data.");
+      }
+    }
+
+    loadFormData();
   }, []);
 
   function handleChange(e) {
-    const { name, value, type, checked } = e.target;
-    setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
+    const { name, value, type, checked, files } = e.target;
+
+    if (type === "file") {
+      setImageFile(files?.[0] ?? null);
+      return;
+    }
+
+    setForm((f) => ({
+      ...f,
+      [name]: type === 'checkbox' ? checked : value
+    }));
   }
 
   function handleAllergenToggle(allergenId) {
@@ -111,62 +134,72 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
   // Prepares form for api response on 'add product' / 'save changes'
   async function handleSubmit(e) {
     e.preventDefault();
-
-    // disable submit (turns to saving) when user clicks Submit
     setSaving(true);
     setError('');
-    const payload = {
-      ...form,
-      producer: producerId,
-      price: parseFloat(form.price),
-      stock: parseInt(form.stock, 10),
-      category: form.category ? parseInt(form.category, 10) : null,
-      allergens: form.allergens,
-      image: form.image || null,
-    };
 
-    // Edit existing products
-    if (isEdit) {
+    try {
+      const { allergens: _allergens, ...rest } = form;
+      const payload = {
+        ...rest,
+        producer: producerId,
+        price: parseFloat(form.price),
+        stock: parseInt(form.stock, 10),
+        category: form.category ? parseInt(form.category, 10) : null,
+        allergen_ids: form.allergens,
+        image: form.image || null,
+        season_start_month:
+          form.availability_mode === 'seasonal' && form.season_start_month
+            ? parseInt(form.season_start_month, 10)
+            : null,
+        season_end_month:
+          form.availability_mode === 'seasonal' && form.season_end_month
+            ? parseInt(form.season_end_month, 10)
+            : null,
+        harvest_date: form.harvest_date || null,
+      };
 
-      // PUT = Updating existing record, product_id goes to url
-      const res = await fetch(`/api/products/${product.id}/`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-        
-        // Convert to JSON 
-        body: JSON.stringify(payload),
-      });
+      let savedProduct;
 
-      // Wait for django response and parse back into js object
-      const updated = await res.json();
+      if (isEdit) {
+        const res = await apiClient.put(`/products/${product.id}/`, payload);
+        savedProduct = res.data;
+      } else {
+        const res = await apiClient.post(`/products/`, payload);
+        savedProduct = res.data;
+      }
 
-      // replace old row with updated one
-      onSaved(updated, 'edit');
-    } else {
+      // Upload image after product exists / is updated
+      if (imageFile && savedProduct?.id) {
+        const uploadData = await uploadProductImage(savedProduct.id, imageFile);
 
-      // POST = create new record from scratch and generate id
-      const res = await fetch('/api/products/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-        body: JSON.stringify(payload),
-      });
+        savedProduct = {
+          ...savedProduct,
+          image: uploadData.image,
+        };
+      }
 
-      // pass new object to django
-      const created = await res.json();
 
       // add new product to list on screen
-      onSaved(created, 'add');
+      onSaved(savedProduct, isEdit ? 'edit' : 'add');
+    } catch (err) {
+      const message =
+        err.response?.data?.detail ||
+        err.response?.data?.image?.[0] ||
+        err.response?.data?.non_field_errors?.[0] ||
+        "Failed to save product.";
+      setError(message);
+    } finally {
+      // Re enable save buttone when form is submitted
+      setSaving(false);
     }
-    // Re enable save buttone when form is submitted
-    setSaving(false);
   }
 
   return (
-    <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className={`${styles.overlay} ${closing ? styles.overlayClosing : ''}`} onClick={(e) => e.target === e.currentTarget && handleClose()}>
       <div className={styles.modal}>
         <div className={styles.modalHeader}>
           <h3>{isEdit ? 'Edit Product' : 'Add New Product'}</h3>
-          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
+          <button className={styles.closeBtn} onClick={handleClose} aria-label="Close">✕</button>
         </div>
 
         {error && <p className={styles.errorBanner}>{error}</p>}
@@ -196,8 +229,12 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
               </select>
             </div>
             <div className={styles.field}>
-              <label>Image URL</label>
-              <input name="image" type="url" placeholder="https://..." value={form.image} onChange={handleChange} />
+              <label>Product Image</label>
+              <label className={styles.uploadBtn}>
+                <FiUpload size={18} />
+                {imageFile ? imageFile.name : 'Upload Image'}
+                <input name="image" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleChange}/>
+              </label>
             </div>
           </div>
 
@@ -221,17 +258,44 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
             </div>
           </div>
 
-          {/* Row: dates */}
+          {/* Row: availability mode + harvest date */}
           <div className={styles.formRow}>
             <div className={styles.field}>
-              <label>Availability Start *</label>
-              <input name="availability_start" type="date" value={form.availability_start} onChange={handleChange} required />
+              <label>Availability Mode *</label>
+              <select name="availability_mode" value={form.availability_mode} onChange={handleChange} required>
+                <option value="year_round">Year Round</option>
+                <option value="seasonal">Seasonal</option>
+              </select>
             </div>
             <div className={styles.field}>
-              <label>Availability End *</label>
-              <input name="availability_end" type="date" value={form.availability_end} onChange={handleChange} required />
+              <label>Harvest Date</label>
+              <input name="harvest_date" type="datetime-local" value={form.harvest_date} onChange={handleChange} />
             </div>
           </div>
+
+          {/* Conditional: season months (only when seasonal) */}
+          {form.availability_mode === 'seasonal' && (
+            <div className={styles.formRow}>
+              <div className={styles.field}>
+                <label>Season Start Month *</label>
+                <select name="season_start_month" value={form.season_start_month} onChange={handleChange} required>
+                  <option value="">-- Select --</option>
+                  {MONTH_OPTIONS.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.field}>
+                <label>Season End Month *</label>
+                <select name="season_end_month" value={form.season_end_month} onChange={handleChange} required>
+                  <option value="">-- Select --</option>
+                  {MONTH_OPTIONS.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* Row: status + organic */}
           <div className={styles.formRow}>
@@ -245,7 +309,7 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
             </div>
             <div className={styles.field}>
               <label>Organic</label>
-              <label className={styles.allergenCheckbox}>
+              <label className={styles.checkboxChip}>
                 <input name="organic_certified" type="checkbox" checked={form.organic_certified} onChange={handleChange} />
                 Organic Certified
               </label>
@@ -256,9 +320,9 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
           {allergensList.length > 0 && (
             <div className={styles.field}>
               <label>Allergens</label>
-              <div className={styles.allergensGrid}>
+              <div className={styles.checkboxGrid}>
                 {allergensList.map((a) => (
-                  <label key={a.id} className={styles.allergenCheckbox}>
+                  <label key={a.id} className={styles.checkboxChip}>
                     <input
                       type="checkbox"
                       checked={form.allergens.includes(a.id)}
@@ -289,6 +353,12 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
 function DeleteModal({ product, onClose, onDeleted }) {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
+  const [closing, setClosing] = useState(false);
+
+  const handleClose = useCallback(() => {
+    setClosing(true);
+    setTimeout(onClose, 200);
+  }, [onClose]);
 
   async function handleDelete() {
     setDeleting(true);
@@ -296,10 +366,7 @@ function DeleteModal({ product, onClose, onDeleted }) {
     try {
       
       // Send delete request to backend
-      const res = await fetch(`/api/products/${product.id}/`, {
-        method: 'DELETE',
-        headers: { 'X-CSRFToken': getCookie('csrftoken') },
-      });
+      await apiClient.delete(`/products/${product.id}/`);
 
       // Remove listed product from screen
       onDeleted(product.id);
@@ -310,7 +377,7 @@ function DeleteModal({ product, onClose, onDeleted }) {
   }
 
   return (
-    <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className={`${styles.overlay} ${closing ? styles.overlayClosing : ''}`} onClick={(e) => e.target === e.currentTarget && handleClose()}>
       <div className={`${styles.modal} ${styles.deleteModal}`}>
         <h3>Delete Product</h3>
         <p>
@@ -319,7 +386,7 @@ function DeleteModal({ product, onClose, onDeleted }) {
         </p>
         {error && <p className={styles.errorBanner}>{error}</p>}
         <div className={styles.modalActions}>
-          <button className={styles.cancelBtn} onClick={onClose} disabled={deleting}>Cancel</button>
+          <button className={styles.cancelBtn} onClick={handleClose} disabled={deleting}>Cancel</button>
           <button className={styles.deleteBtn} onClick={handleDelete} disabled={deleting}>
             {deleting ? 'Deleting…' : 'Delete'}
           </button>
@@ -339,15 +406,29 @@ export default function ProducerProducts({ producerId, producerName }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
-    if (!producerId) { setProducts([]); return; }
-    setLoading(true);
-    setError('');
-    fetch(`/api/products/?producer=${producerId}`, { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => setProducts(data.results ?? data))
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [producerId]);
+    async function loadProducts() {
+      if (!producerId) {
+        setProducts([]);
+        return;
+      }
+ 
+      setLoading(true);
+      setError('');
+
+      try {
+        const res = await apiClient.get(`/products/`, {
+          params: { producer: producerId },
+        });
+        setProducts(res.data.results ?? res.data);
+      } catch (err) {
+        setError(err.response?.data?.detail || err.message || "Failed to load products.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+  loadProducts();
+}, [producerId]);
 
   function handleSaved(product, mode) {
     setProducts((prev) =>
@@ -458,9 +539,7 @@ export default function ProducerProducts({ producerId, producerName }) {
                   </td>
                   <td className={styles.centredCell}>{p.organic_certified ? '✓' : '—'}</td>
                   <td className={styles.dateCell}>
-                    <span>{p.availability_start}</span>
-                    <span className={styles.dateSep}>→</span>
-                    <span>{p.availability_end}</span>
+                    <span>{formatAvailability(p)}</span>
                   </td>
                   <td className={styles.actionsCell}>
                     <div className={styles.actionsBtns}>
