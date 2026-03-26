@@ -397,38 +397,66 @@ function DeleteModal({ product, onClose, onDeleted }) {
 }
 
 /* Main component  */
-export default function ProducerProducts({ producerId, producerName }) {
+export default function ProducerProducts() {
+  const [producerName, setProducerName] = useState('');
+  const [producerId, setProducerId] = useState(null);
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
-    async function loadProducts() {
-      if (!producerId) {
-        setProducts([]);
-        return;
-      }
- 
+    async function loadProducerAndProducts() {
       setLoading(true);
       setError('');
 
       try {
-        const res = await apiClient.get(`/products/`, {
-          params: { producer: producerId },
+        const producerRes = await fetch('/api/producers/', {
+          credentials: 'include',
+          headers: { Accept: 'application/json' },
         });
-        setProducts(res.data.results ?? res.data);
+
+        if (!producerRes.ok) {
+          throw new Error('Failed to load producer profile');
+        }
+
+        const producerData = await producerRes.json();
+        const producerList = producerData.results ?? producerData;
+        const producer = producerList[0];
+
+        if (!producer) {
+          setProducerId(null);
+          setProducerName('');
+          setProducts([]);
+          setError('No producer profile found for this account.');
+          return;
+        }
+
+        setProducerId(producer.id);
+        setProducerName(producer.company_name ?? 'My Products');
+
+        const productsRes = await fetch(`/api/products/?producer=${producer.id}`, {
+          credentials: 'include',
+          headers: { Accept: 'application/json' },
+        });
+
+        if (!productsRes.ok) {
+          throw new Error('Failed to load products');
+        }
+
+        const productsData = await productsRes.json();
+        setProducts(productsData.results ?? productsData);
       } catch (err) {
-        setError(err.response?.data?.detail || err.message || "Failed to load products.");
+        setError(err.message || 'Something went wrong');
       } finally {
         setLoading(false);
       }
     }
 
-  loadProducts();
-}, [producerId]);
+    loadProducerAndProducts();
+  }, []);
 
   function handleSaved(product, mode) {
     setProducts((prev) =>
@@ -471,27 +499,21 @@ export default function ProducerProducts({ producerId, producerName }) {
 
   return (
     <section className={styles.section}>
-
-      {/* Header */}
       <div className={styles.sectionHeader}>
         <div>
           <h2 className={styles.sectionTitle}>
             {producerName ? `${producerName} — Products` : 'My Products'}
           </h2>
-          {producerId && (
-            <p className={styles.subtitle}>
-              {products.length} product{products.length !== 1 ? 's' : ''} listed
-            </p>
-          )}
+          <p className={styles.subtitle}>
+            {products.length} product{products.length !== 1 ? 's' : ''} listed
+          </p>
         </div>
-        {producerId && (
-          <button className={styles.addBtn} onClick={() => setEditTarget('new')}>
-            + Add Product
-          </button>
-        )}
+
+        <button className={styles.addBtn} onClick={() => setEditTarget('new')}>
+          + Add Product
+        </button>
       </div>
 
-      {/* Body */}
       {products.length === 0 ? (
         <div className={styles.empty}>
           <p>No products listed yet.</p>
@@ -543,10 +565,18 @@ export default function ProducerProducts({ producerId, producerName }) {
                   </td>
                   <td className={styles.actionsCell}>
                     <div className={styles.actionsBtns}>
-                      <button className={styles.editBtn} onClick={() => setEditTarget(p)} aria-label={`Edit ${p.name}`}>
+                      <button
+                        className={styles.editBtn}
+                        onClick={() => setEditTarget(p)}
+                        aria-label={`Edit ${p.name}`}
+                      >
                         Edit
                       </button>
-                      <button className={styles.deleteRowBtn} onClick={() => setDeleteTarget(p)} aria-label={`Delete ${p.name}`}>
+                      <button
+                        className={styles.deleteRowBtn}
+                        onClick={() => setDeleteTarget(p)}
+                        aria-label={`Delete ${p.name}`}
+                      >
                         Delete
                       </button>
                     </div>
@@ -558,7 +588,6 @@ export default function ProducerProducts({ producerId, producerName }) {
         </div>
       )}
 
-      {/* Add / Edit modal */}
       {editTarget !== null && (
         <ProductModal
           product={editTarget === 'new' ? null : editTarget}
@@ -568,7 +597,6 @@ export default function ProducerProducts({ producerId, producerName }) {
         />
       )}
 
-      {/* Delete confirmation modal */}
       {deleteTarget !== null && (
         <DeleteModal
           product={deleteTarget}

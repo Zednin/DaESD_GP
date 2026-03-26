@@ -18,9 +18,6 @@ class Producer(models.Model):
     
     # Company Name
     company_name = models.CharField(max_length=255)                  
-    
-    # Company email
-    company_email = models.EmailField()
 
     # Company number
     company_number = models.CharField(max_length=15)

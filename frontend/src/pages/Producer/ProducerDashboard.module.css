@@ -59,6 +59,12 @@
   font-weight: 600;
 }
 
+.active {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+
 /* Content area */
 .content {
   flex: 1;
