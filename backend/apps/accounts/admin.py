@@ -7,7 +7,7 @@ from .models import Account, Customer, Organisation
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
     # Settings to display columns
-    list_display = ['id', 'username', 'email', 'account_type', 'created_at']
+    list_display = ['id', 'username', 'email', 'account_type', 'date_joined']
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):

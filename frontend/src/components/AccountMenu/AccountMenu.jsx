@@ -13,7 +13,7 @@ const panels = {
           ? {
               type: "profile",
               leftIcon: <FiUser />,
-              title: user?.username || user?.email || "Account",
+              title: user?.first_name || user?.email || "Account",
               subtitle: "See your profile",
               action: "profile",
             }
