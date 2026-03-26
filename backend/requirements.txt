@@ -6,9 +6,13 @@ djangorestframework>=3.15
 django-cors-headers
 django-filter>=24.0
 
+PyJWT
+cryptography
+
 dj-rest-auth
 django-allauth
 requests
 
 stripe==10.8.0
 
+cloudinary

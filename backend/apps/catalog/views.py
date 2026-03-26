@@ -1,9 +1,15 @@
 from rest_framework.viewsets import ModelViewSet
-from rest_framework import filters
+from rest_framework import filters, status
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
+from django.utils import timezone
 from .models import Product, Category
 from .serializers import ProductSerializer, CategorySerializer
 from .filters import ProductFilter
+from apps.api.cloudinary_utils import upload_file_to_cloudinary
 
 
 class CategoryViewSet(ModelViewSet):
@@ -26,7 +32,7 @@ class ProductViewSet(ModelViewSet):
     ]
 
     # Fields the frontend can filter on
-    filterset_fields = ['category__name', 'status', 'producer', 'producer__company_name', 'organic_certified']
+    filterset_fields = ['category__name', 'status', 'producer', 'producer__company_name', 'organic_certified', 'is_surplus']
 
     # Fields searched by ?search=
     search_fields = ['name']
@@ -40,3 +46,51 @@ class ProductViewSet(ModelViewSet):
 
     # Default ordering
     ordering = ['name']
+
+    @action(detail=False, methods=["get"], url_path="surplus-deals")
+    def surplus_deals(self, request):
+        """Return only active surplus deals (not expired)."""
+        now = timezone.now()
+        surplus_products = Product.objects.filter(
+            is_surplus=True,
+            status='available',
+        ).exclude(
+            surplus_end_date__lt=now
+        )
+        serializer = self.get_serializer(surplus_products, many=True)
+        return Response(serializer.data)
+
+    
+# Used to whip up the image and whack it onto the cloud
+class ProductImageUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, product_id):
+        try:
+            product = Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            return Response({"detail": "Product not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        image_file = request.FILES.get("image")
+        if not image_file:
+            return Response({"detail": "No image file provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Stores the image in cloudinary under productid/main
+        image_url = upload_file_to_cloudinary(
+            file_obj=image_file,
+            folder=f"products/{product.id}",
+            public_id="main",
+            resource_type="image",
+        )
+
+        # Populates the cloudinary url into the image field in the database
+        product.image = image_url
+        product.save(update_fields=["image"])
+
+        return Response(
+            {
+                "id": product.id,
+                "image": product.image,
+            },
+            status=status.HTTP_200_OK,
+        )

@@ -7,6 +7,14 @@ from .models import CartItem, Cart
 from .serializers import CartSerializer
 from apps.catalog.models import Product
 
+
+def _get_effective_price(product):
+    """Return surplus_price if the product has an active surplus deal, else regular price."""
+    if product.surplus_active:
+        return product.surplus_price
+    return product.price
+
+
 class CartViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
     http_method_names = ["get", "post"]
@@ -37,12 +45,13 @@ class CartViewSet(ModelViewSet):
             cart_item, created = CartItem.objects.get_or_create(
                 cart=cart,
                 product=product,
-                defaults={"quantity": qty, "price_snapshot": product.price},
+                defaults={"quantity": qty, "price_snapshot": _get_effective_price(product)},
             )
 
             if not created:
                 cart_item.quantity += qty
-                cart_item.save()
+            cart_item.price_snapshot = _get_effective_price(product)
+            cart_item.save()
 
         return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
     
@@ -62,13 +71,14 @@ class CartItemViewSet(ModelViewSet):
             product=product,
             defaults={
                 "quantity": request.data.get("quantity", 1),
-                "price_snapshot": product.price,
+                "price_snapshot": _get_effective_price(product),
             },
         )
 
         if not created:
             item.quantity += int(request.data.get("quantity", 1))
-            item.save()
+        item.price_snapshot = _get_effective_price(product)
+        item.save()
 
         return Response({"status": "ok"})
     
