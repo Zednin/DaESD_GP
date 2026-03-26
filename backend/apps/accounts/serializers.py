@@ -20,9 +20,9 @@ class AccountSerializer(serializers.ModelSerializer):
             "account_type",
             "first_name",
             "last_name",
-            "created_at",
+            "date_joined",
         ]
-        read_only_fields = ["id", "created_at", "account_type"]
+        read_only_fields = ["id", "date_joined", "account_type"]
 
     def validate_email(self, value):
         return value.lower().strip()
