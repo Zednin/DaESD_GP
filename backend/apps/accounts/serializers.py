@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
 
-from .models import Customer
+from .models import Customer, Organisation
 from apps.producers.models import Producer
 
 Account = get_user_model()
@@ -59,8 +59,44 @@ class BaseRegisterSerializer(serializers.ModelSerializer):
 
 
 class CustomerRegisterSerializer(BaseRegisterSerializer):
+    organisation_type = serializers.ChoiceField(
+        choices=Organisation.ORGANISATION_TYPE_CHOICES,
+        required=False,
+        allow_blank=True,
+    )
+    organisation_name = serializers.CharField(
+        max_length=255,
+        required=False,
+        allow_blank=True,
+    )
+
+    class Meta(BaseRegisterSerializer.Meta):
+        fields = BaseRegisterSerializer.Meta.fields + [
+            "organisation_type",
+            "organisation_name",
+        ]
+
+    def validate(self, attrs):
+        organisation_type = attrs.get("organisation_type", "").strip() if attrs.get("organisation_type") else ""
+        organisation_name = attrs.get("organisation_name", "").strip() if attrs.get("organisation_name") else ""
+
+        if organisation_type and not organisation_name:
+            raise serializers.ValidationError({
+                "organisation_name": "Organisation name is required when organisation type is selected."
+            })
+
+        if organisation_name and not organisation_type:
+            raise serializers.ValidationError({
+                "organisation_type": "Organisation type is required when organisation name is provided."
+            })
+
+        return attrs
+
     @transaction.atomic
     def create(self, validated_data):
+        organisation_type = validated_data.pop("organisation_type", "").strip()
+        organisation_name = validated_data.pop("organisation_name", "").strip()
+
         account = Account.objects.create_user(
             username=validated_data["username"],
             email=validated_data["email"],
@@ -70,7 +106,16 @@ class CustomerRegisterSerializer(BaseRegisterSerializer):
             account_type="customer",
         )
 
-        Customer.objects.create(account=account)
+        customer = Customer.objects.create(account=account)
+
+        if organisation_type:
+            Organisation.objects.create(
+                customer=customer,
+                organisation_name=organisation_name,
+                organisation_email=account.email,
+                organisation_type=organisation_type,
+            )
+
         return account
 
 
@@ -87,9 +132,6 @@ class ProducerRegisterSerializer(BaseRegisterSerializer):
             "company_description",
             "lead_time_hours",
         ]
-
-    def validate_company_email(self, value):
-        return value.lower().strip()
 
     @transaction.atomic
     def create(self, validated_data):

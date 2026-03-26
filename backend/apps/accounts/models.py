@@ -48,15 +48,21 @@ class Account(AbstractUser):
     ACCOUNT_TYPE_CHOICES = [
         ('customer', 'Customer'),
         ('producer', 'Producer'),
+        ('restaurant', 'Restaurant'),
+        ('community_group', 'Community Group'),
         ('admin', 'Admin'),
     ]
     # Defaults to customer 
-    account_type = models.CharField(max_length=10, 
+    account_type = models.CharField(max_length=20, 
                                     choices=ACCOUNT_TYPE_CHOICES, 
                                     default='customer',
                                     db_index=True
                                     )
-    # Ensures email is unique
+    
+    
+    ''' Response to Khoa's feedback:
+    While AbstractUser does include an email field, the below overrides it to add email fiel unique=True.
+    '''
     email = models.EmailField(unique=True)
 
     # Auto add account created date

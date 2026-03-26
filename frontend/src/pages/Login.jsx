@@ -7,9 +7,19 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { migrateLocalCartToServerIfNeeded } from "../utils/cartStorage";
 
+const CUSTOMER_ORGANISATION_OPTIONS = [
+  { value: "", label: "Individual customer" },
+  { value: "restaurant", label: "Restaurant" },
+  { value: "community_group", label: "Community Group" },
+  { value: "charity", label: "Charity" },
+  { value: "education", label: "Education" },
+];
+
 export default function Login() {
   const [mode, setMode] = useState("login"); // "login" | "signup"
   const [accountType, setAccountType] = useState("customer"); // "customer" | "producer"
+  const [organisationType, setOrganisationType] = useState("");
+  const [organisationName, setOrganisationName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -23,6 +33,7 @@ export default function Login() {
 
   // producer-only
   const [companyName, setCompanyName] = useState("");
+  const [companyEmail, setCompanyEmail] = useState("");
   const [companyNumber, setCompanyNumber] = useState("");
   const [companyDescription, setCompanyDescription] = useState("");
   const [leadTimeHours, setLeadTimeHours] = useState("48");
@@ -37,9 +48,23 @@ export default function Login() {
 
   function resetProducerFields() {
     setCompanyName("");
+    setCompanyEmail("");
     setCompanyNumber("");
     setCompanyDescription("");
     setLeadTimeHours("48");
+  }
+
+  function resetCustomerFields() {
+    setOrganisationType("");
+    setOrganisationName("");
+  }
+
+  function resetSignupFields() {
+    setUsername("");
+    setPassword("");
+    setPassword2("");
+    resetProducerFields();
+    resetCustomerFields();
   }
 
   function switchMode(nextMode) {
@@ -49,19 +74,20 @@ export default function Login() {
     setPassword2("");
 
     if (nextMode === "login") {
-      setUsername("");
+      resetSignupFields();
       setAccountType("customer");
-      resetProducerFields();
     }
   }
 
   function handleAccountTypeChange(e) {
     const nextType = e.target.value;
     setAccountType(nextType);
-    setError("");
+    clearError();
 
     if (nextType === "customer") {
       resetProducerFields();
+    } else {
+      resetCustomerFields();
     }
   }
 
@@ -98,6 +124,24 @@ export default function Login() {
       return "Passwords do not match";
     }
 
+    if (accountType === "customer") {
+      const validOrganisationTypes = CUSTOMER_ORGANISATION_OPTIONS.map(
+        (option) => option.value
+      );
+
+      if (!validOrganisationTypes.includes(organisationType)) {
+        return "Invalid organisation type";
+      }
+
+      if (organisationType && !organisationName.trim()) {
+        return "Organisation name is required";
+      }
+
+      if (!organisationType && organisationName.trim()) {
+        return "Please select an organisation type";
+      }
+    }
+
     if (accountType === "producer") {
       if (!companyName.trim()) {
         return "Company name is required";
@@ -114,6 +158,22 @@ export default function Login() {
     }
 
     return "";
+  }
+
+  function getSignupSubtitle() {
+    if (accountType === "producer") {
+      return "Sign up to create your producer account";
+    }
+
+    if (organisationType === "restaurant") {
+      return "Sign up to place recurring orders";
+    }
+
+    if (organisationType === "community_group") {
+      return "Sign up to place bulk orders";
+    }
+
+    return "Sign up to start ordering";
   }
 
   async function handleSubmit(e) {
@@ -140,6 +200,10 @@ export default function Login() {
             username: username.trim(),
             email: email.trim(),
             password,
+            ...(organisationType ? { organisation_type: organisationType } : {}),
+            ...(organisationName.trim()
+              ? { organisation_name: organisationName.trim() }
+              : {}),
           });
         } else {
           await signupProducer({
@@ -147,6 +211,7 @@ export default function Login() {
             email: email.trim(),
             password,
             company_name: companyName.trim(),
+            company_email: companyEmail.trim(),
             company_number: companyNumber.trim(),
             company_description: companyDescription.trim(),
             lead_time_hours: Number(leadTimeHours),
@@ -168,7 +233,6 @@ export default function Login() {
       } else {
         navigate("/products", { replace: true });
       }
-      
     } catch (err) {
       setError(err?.message || "Something went wrong");
     } finally {
@@ -189,11 +253,7 @@ export default function Login() {
         </h1>
 
         <p className={styles.subtitle}>
-          {mode === "login"
-            ? "Sign in to your account"
-            : accountType === "producer"
-            ? "Sign up to create your producer account"
-            : "Sign up to start ordering"}
+          {mode === "login" ? "Sign in to your account" : getSignupSubtitle()}
         </p>
 
         {error && (
@@ -212,7 +272,11 @@ export default function Login() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className={styles.form} autoComplete="off">
+        <form
+          onSubmit={handleSubmit}
+          className={styles.form}
+          autoComplete="off"
+        >
           {mode === "signup" && (
             <>
               <div className={styles.inputGroup}>
@@ -251,6 +315,54 @@ export default function Login() {
             </>
           )}
 
+          {mode === "signup" && accountType === "customer" && (
+            <>
+              <div className={styles.inputGroup}>
+                <label className={styles.label} htmlFor="organisationType">
+                  Organisation type
+                </label>
+                <select
+                  id="organisationType"
+                  className={styles.input}
+                  value={organisationType}
+                  onChange={(e) => {
+                    setOrganisationType(e.target.value);
+                    if (!e.target.value) {
+                      setOrganisationName("");
+                    }
+                    clearError();
+                  }}
+                >
+                  {CUSTOMER_ORGANISATION_OPTIONS.map((option) => (
+                    <option key={option.value || "individual"} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {organisationType && (
+                <div className={styles.inputGroup}>
+                  <label className={styles.label} htmlFor="organisationName">
+                    Organisation name
+                  </label>
+                  <input
+                    id="organisationName"
+                    type="text"
+                    placeholder="Enter your organisation name"
+                    className={styles.input}
+                    value={organisationName}
+                    onChange={(e) => {
+                      setOrganisationName(e.target.value);
+                      clearError();
+                    }}
+                    required
+                  />
+                </div>
+              )}
+            </>
+          )}
+
           {mode === "signup" && accountType === "producer" && (
             <>
               <div className={styles.inputGroup}>
@@ -268,6 +380,23 @@ export default function Login() {
                     clearError();
                   }}
                   required
+                />
+              </div>
+
+              <div className={styles.inputGroup}>
+                <label className={styles.label} htmlFor="companyEmail">
+                  Company email
+                </label>
+                <input
+                  id="companyEmail"
+                  type="email"
+                  placeholder="Enter your company email"
+                  className={styles.input}
+                  value={companyEmail}
+                  onChange={(e) => {
+                    setCompanyEmail(e.target.value);
+                    clearError();
+                  }}
                 />
               </div>
 
@@ -398,7 +527,17 @@ export default function Login() {
               : mode === "login"
               ? "Sign In"
               : `Sign Up as ${
-                  accountType === "customer" ? "Customer" : "Producer"
+                  accountType === "producer"
+                    ? "Producer"
+                    : organisationType === "restaurant"
+                    ? "Restaurant Customer"
+                    : organisationType === "community_group"
+                    ? "Community Group"
+                    : organisationType === "charity"
+                    ? "Charity"
+                    : organisationType === "education"
+                    ? "Education"
+                    : "Customer"
                 }`}
           </button>
         </form>

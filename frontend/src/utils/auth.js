@@ -78,9 +78,33 @@ export async function login(email, password) {
   return data;
 }
 
-export async function signupCustomer({ username, email, password, first_name = "", last_name = "" }) {
+export async function signupCustomer({
+  username,
+  email,
+  password,
+  first_name = "",
+  last_name = "",
+  organisation_type = "",
+  organisation_name = "",
+}) {
   await ensureCsrf();
   const csrf = getCookie("csrftoken");
+
+  const payload = {
+    username,
+    email,
+    password,
+    first_name,
+    last_name,
+  };
+
+  if (organisation_type) {
+    payload.organisation_type = organisation_type;
+  }
+
+  if (organisation_name) {
+    payload.organisation_name = organisation_name;
+  }
 
   const res = await fetch("/api/auth/register/customer/", {
     method: "POST",
@@ -89,13 +113,7 @@ export async function signupCustomer({ username, email, password, first_name = "
       "Content-Type": "application/json",
       "X-CSRFToken": csrf,
     },
-    body: JSON.stringify({
-      username,
-      email,
-      password,
-      first_name,
-      last_name,
-    }),
+    body: JSON.stringify(payload),
   });
 
   const data = await res.json().catch(() => ({}));
@@ -114,7 +132,6 @@ export async function signupProducer({
   first_name = "",
   last_name = "",
   company_name,
-  company_email,
   company_number,
   company_description = "",
   lead_time_hours = 48,
@@ -136,7 +153,6 @@ export async function signupProducer({
       first_name,
       last_name,
       company_name,
-      company_email,
       company_number,
       company_description,
       lead_time_hours,
