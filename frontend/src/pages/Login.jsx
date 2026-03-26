@@ -174,12 +174,15 @@ export default function Login() {
     }
 
     return "Sign up to start ordering";
+  }
+
   // Google Login
   function handleGoogleLogin() {
     const next = searchParams.get("next") || "/products";
     sessionStorage.setItem("post_login_next", next);
 
-    window.location.href = "http://localhost:8000/api/accounts/google/login/?process=login";
+    window.location.href =
+      "http://localhost:8000/api/accounts/google/login/?process=login";
   }
 
   async function handleSubmit(e) {
