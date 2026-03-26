@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.contrib.auth.base_user import BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 
 from django.conf import settings
 #'AbstractUser' Built in django class for users
@@ -8,24 +8,62 @@ from django.conf import settings
 
 # Create your models here.
 
+''' # This should be deleted in the future if decided not to use it
+# Custom Account Class
+class AccountManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email: 
+            raise ValueError("Email required")
+    
+        email = self.normalize_email(email.strip())
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+    
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
+        
+        # Error handelling :
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True")
+        
+        return self.create_user(email, password, **extra_fields)
+'''    
+
+            
+    
+
+
+
+
+
 
 class Account(AbstractUser):
-    """#1 Account"""
-
-    # List of different account types of created users
+    # Account types of created users
     ACCOUNT_TYPE_CHOICES = [
         ('customer', 'Customer'),
         ('producer', 'Producer'),
+        ('restaurant', 'Restaurant'),
+        ('community_group', 'Community Group'),
         ('admin', 'Admin'),
     ]
 
     # Defaults to customer 
-    account_type = models.CharField(max_length=10, 
+    account_type = models.CharField(max_length=20, 
                                     choices=ACCOUNT_TYPE_CHOICES, 
                                     default='customer',
                                     db_index=True
                                     )
-    # Ensures email is unique (AbstractUser has email but not unique by default)
+    
+    
+    ''' Response to Khoa's feedback:
+    While AbstractUser does include an email field, the below overrides it to add email fiel unique=True.
+    '''
     email = models.EmailField(unique=True)
 
     # Note - AbstractUser already provides 'date_joined' — use that instead of a custom created_at
@@ -39,6 +77,11 @@ class Account(AbstractUser):
 
     def __str__(self):
         return self.username
+    
+    
+    
+    
+    
     
 class Customer(models.Model):
     """#2 Customer"""
@@ -91,10 +134,10 @@ class Organisation(models.Model):
 
     # Ensures that organisation is to a single customer account
     customer = models.OneToOneField(
-        settings.AUTH_USER_MODEL, 
-        on_delete=models.CASCADE, 
+        'accounts.Customer',
+        on_delete=models.CASCADE,
         related_name='organisation'
-        )
+    )
     
     # Org name
     organisation_name = models.CharField(max_length=255)
