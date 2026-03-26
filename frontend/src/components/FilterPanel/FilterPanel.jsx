@@ -13,12 +13,15 @@ const SORT_OPTIONS = [
 export default function FilterPanel({
   categories,
   producers,
+  allergens = [],
   selectedCategory,
   selectedProducer,
+  selectedAllergens = [],
   organicOnly,
   sortBy,
   onCategoryChange,
   onProducerChange,
+  onAllergenToggle,
   onOrganicChange,
   onSortChange,
   onClear,
@@ -139,6 +142,15 @@ export default function FilterPanel({
               </label>
             </FilterSection>
 
+            {/* Allergens */}
+            {allergens.length > 0 && (
+              <AllergenDropdown
+                allergens={allergens}
+                selectedAllergens={selectedAllergens}
+                onAllergenToggle={onAllergenToggle}
+              />
+            )}
+
             {/* Clear all */}
             {activeFilterCount > 0 && (
               <button
@@ -177,5 +189,54 @@ function Chip({ label, active, onClick }) {
     >
       {label}
     </button>
+  );
+}
+
+function AllergenDropdown({ allergens, selectedAllergens, onAllergenToggle }) {
+  const [open, setOpen] = useState(false);
+  const count = selectedAllergens.length;
+
+  return (
+    <div className={styles.section}>
+      <button
+        type="button"
+        className={styles.allergenTrigger}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <p className={styles.sectionLabel} style={{ margin: 0 }}>Allergens - Free From...</p>
+        <span className={styles.allergenMeta}>
+          {count > 0 && <span className={styles.allergenCount}>{count}</span>}
+          <motion.span
+            className={styles.chevron}
+            animate={{ rotate: open ? 180 : 0 }}
+            transition={{ duration: 0.18, ease: "easeInOut" }}
+          >
+            <FiChevronDown />
+          </motion.span>
+        </span>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className={styles.allergenList}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            {allergens.map((a) => (
+              <label key={a.id} className={styles.allergenItem}>
+                <input
+                  type="checkbox"
+                  checked={selectedAllergens.includes(a.id)}
+                  onChange={() => onAllergenToggle(a.id)}
+                />
+                <span>{a.name}</span>
+              </label>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

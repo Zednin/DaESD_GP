@@ -99,6 +99,9 @@ class Product(models.Model):
     # Organic certification
     organic_certified = models.BooleanField(default=False)           
     
+    # Image URL
+    image = models.URLField(max_length=500, blank=True, null=True)
+    
     # Product listing date
     created_at = models.DateTimeField(auto_now_add=True)             
 
