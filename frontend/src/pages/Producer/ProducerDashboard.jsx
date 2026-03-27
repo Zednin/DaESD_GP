@@ -18,14 +18,34 @@ const navItems = [
 ];
 
 export default function ProducerDashboard() {
+  const [user, setUser] = useState(null);
   const [activeSection, setActiveSection] = useState('overview');
   const [allProducers, setAllProducers] = useState([]);
   const [selectedProducerId, setSelectedProducerId] = useState('');
 
+  const isAdmin = user?.account_type === 'admin';
+
+  useEffect(() => {
+    apiClient.get('/accounts/me/')
+      .then(({ data }) => setUser(data))
+      .catch(() => setUser(null));
+  }, []);
+
   useEffect(() => {
     apiClient.get('/producers/')
-      .then(({ data }) => setAllProducers(data.results ?? data));
-  }, []);
+      .then(({ data }) => {
+        const producers = data.results ?? data;
+        setAllProducers(producers);
+
+        if (isAdmin || selectedProducerId) return;
+
+        const ownProducer = producers.find((p) => p.account === user?.id);
+        const fallbackProducer = ownProducer ?? producers[0];
+        if (fallbackProducer?.id) {
+          setSelectedProducerId(String(fallbackProducer.id));
+        }
+      });
+  }, [isAdmin, selectedProducerId, user?.id]);
 
   const producerId = selectedProducerId ? parseInt(selectedProducerId, 10) : null;
   const producerName = allProducers.find(p => p.id === producerId)?.company_name ?? '';
@@ -62,23 +82,24 @@ export default function ProducerDashboard() {
 
       {/* Main content */}
       <main className={styles.content}>
-        {/* Producer selector */}
-        <div className={styles.adminBanner}>
-          <span className={styles.adminLabel}>Producer:</span>
-          <select
-            className={styles.adminSelect}
-            value={selectedProducerId}
-            onChange={(e) => setSelectedProducerId(e.target.value)}
-          >
-            <option value="">— Choose a producer —</option>
-            {allProducers.map((p) => (
-              <option key={p.id} value={p.id}>{p.company_name}</option>
-            ))}
-          </select>
-          {allProducers.length === 0 && (
-            <span className={styles.adminHint}>No producers in the database yet.</span>
-          )}
-        </div>
+        {isAdmin && (
+          <div className={styles.adminBanner}>
+            <span className={styles.adminLabel}>Producer:</span>
+            <select
+              className={styles.adminSelect}
+              value={selectedProducerId}
+              onChange={(e) => setSelectedProducerId(e.target.value)}
+            >
+              <option value="">— Choose a producer —</option>
+              {allProducers.map((p) => (
+                <option key={p.id} value={p.id}>{p.company_name}</option>
+              ))}
+            </select>
+            {allProducers.length === 0 && (
+              <span className={styles.adminHint}>No producers in the database yet.</span>
+            )}
+          </div>
+        )}
 
         <div key={activeSection} className={styles.fadeIn}>
           {renderSection()}
