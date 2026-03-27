@@ -5,6 +5,7 @@ import Footer from "./components/Footer";
 
 // Auth
 import RequireAuth from "./auth/RequireAuth";
+import RequireProducer from "./auth/RequireProducer";
 import AuthCallback from "./auth/AuthCallback";
 
 // General pages
@@ -16,6 +17,10 @@ import About from "./pages/About";
 import Login from "./pages/Login";
 import Cart from "./pages/Cart";
 
+// New signup pages
+import SignupSelect from "./pages/SignupSelect";
+import Signup from "./pages/Signup";
+
 // Customer pages
 import Checkout from "./pages/Checkout/Checkout";
 import CustomerMyAccount from "./pages/Customer/MyAccount";
@@ -24,7 +29,6 @@ import CheckoutSuccess from "./pages/Checkout/CheckoutSuccess";
 // Producer pages
 import ProducerDashboard from "./pages/Producer/ProducerDashboard";
 import ProducerMyAccount from "./pages/Producer/ProducerMyAccount";
-import RequireProducer from "./auth/RequireProducer";
 
 export default function App() {
   return (
@@ -41,15 +45,30 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/cart" element={<Cart />} />
 
+        {/* Signup flow */}
+        <Route path="/signup/select" element={<SignupSelect />} />
+        <Route path="/signup/:accountType" element={<Signup />} />
+
         {/* Auth */}
         <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* Customer */}
-        <Route path="/checkout" element={
-        <RequireAuth>
-          <Checkout />
-        </RequireAuth>} />
-        <Route path="/my-account" element={<CustomerMyAccount />} />
+        <Route
+          path="/checkout"
+          element={
+            <RequireAuth>
+              <Checkout />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/my-account"
+          element={
+            <RequireAuth>
+              <CustomerMyAccount />
+            </RequireAuth>
+          }
+        />
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
 
         {/* Producer */}
