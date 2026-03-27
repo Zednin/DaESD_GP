@@ -1,0 +1,394 @@
+.section {
+  position: relative;
+  margin-top: 48px;
+  padding: 28px;
+  border-radius: 30px;
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(circle at top right, rgba(251, 146, 60, 0.08), transparent 28%),
+    radial-gradient(circle at bottom left, rgba(110, 35, 50, 0.06), transparent 28%),
+    var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.bgAccentA,
+.bgAccentB {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  pointer-events: none;
+}
+
+.bgAccentA {
+  width: 220px;
+  height: 220px;
+  background: rgba(251, 146, 60, 0.10);
+  top: -40px;
+  right: -30px;
+}
+
+.bgAccentB {
+  width: 180px;
+  height: 180px;
+  background: rgba(110, 35, 50, 0.08);
+  bottom: -30px;
+  left: -20px;
+}
+
+.headerRow {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 22px;
+}
+
+.eyebrow {
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--secondary);
+}
+
+.subtitle {
+  margin-top: 10px;
+  max-width: 760px;
+  line-height: 1.7;
+}
+
+.warningCard {
+  display: flex;
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(234, 179, 8, 0.10);
+  border: 1px solid rgba(234, 179, 8, 0.28);
+}
+
+.warningCard strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.75fr);
+  gap: 22px;
+}
+
+.mapCard,
+.metricCard,
+.methodCard,
+.postcodeForm,
+.compareCard {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+}
+
+.mapCard {
+  overflow: hidden;
+}
+
+.mapHeader {
+  padding: 18px 18px 0;
+}
+
+.mapMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.metaChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.mapWrap {
+  padding: 16px;
+}
+
+.map {
+  width: 100%;
+  height: 480px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.mapFallback {
+  height: 480px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.sidePanel {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.metricCard,
+.methodCard,
+.postcodeForm {
+  padding: 20px;
+}
+
+.metricTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  color: var(--muted);
+}
+
+.metricLabel {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 800;
+}
+
+.metricValue {
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1;
+  font-weight: 900;
+  color: var(--primary);
+  margin-bottom: 10px;
+}
+
+.metricSubtext {
+  line-height: 1.7;
+}
+
+.methodCard h3 {
+  margin-bottom: 10px;
+}
+
+.postcodeList {
+  margin-top: 16px;
+}
+
+.postcodeRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.postcodeLabel {
+  display: inline-block;
+  margin-bottom: 10px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.postcodeInputRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.postcodeInput {
+  height: 48px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  padding: 0 14px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+
+.postcodeInput:focus {
+  border-color: var(--primary);
+}
+
+.postcodeBtn {
+  height: 48px;
+  border: 0;
+  border-radius: 16px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--primary);
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.compareSection {
+  position: relative;
+  z-index: 1;
+  margin-top: 28px;
+}
+
+.compareHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.compareMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.compareLoading,
+.compareEmpty {
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.compareGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.compareCard {
+  overflow: hidden;
+}
+
+.compareCardCurrent {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(110, 35, 50, 0.10);
+}
+
+.compareImageWrap {
+  aspect-ratio: 4 / 3;
+  background: linear-gradient(135deg, var(--surface-2), var(--surface));
+  overflow: hidden;
+}
+
+.compareImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.compareImageFallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.compareBody {
+  padding: 14px;
+}
+
+.compareTop {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.compareTop h4 {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.closestBadge,
+.currentBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.closestBadge {
+  background: rgba(34, 197, 94, 0.14);
+  color: var(--success);
+}
+
+.currentBadge {
+  background: rgba(110, 35, 50, 0.10);
+  color: var(--primary);
+}
+
+.compareMiles {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+
+.compareStatus {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media (max-width: 1180px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .compareGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .section {
+    padding: 20px;
+  }
+
+  .postcodeInputRow,
+  .compareHeader {
+    grid-template-columns: 1fr;
+    display: grid;
+    align-items: stretch;
+  }
+
+  .map {
+    height: 360px;
+  }
+
+  .mapFallback {
+    height: 360px;
+  }
+
+  .compareGrid {
+    grid-template-columns: 1fr;
+  }
+}

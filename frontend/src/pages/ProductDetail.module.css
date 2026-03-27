@@ -1,0 +1,423 @@
+.page {
+  padding: 56px 32px 80px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 32px;
+  align-items: start;
+  margin-bottom: 40px;
+}
+
+.mediaCol,
+.infoCol {
+  min-width: 0;
+}
+
+.mainImageWrap {
+  aspect-ratio: 1 / 1;
+  border-radius: 24px;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.mainImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.noImage {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.topMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.metaPill,
+.organicPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.metaPill {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.organicPill {
+  background: var(--success-muted);
+  color: var(--success);
+}
+
+.title {
+  font-size: clamp(2.2rem, 4vw, 3.4rem);
+  line-height: 1.02;
+  margin-bottom: 10px;
+}
+
+.producerLine {
+  margin-bottom: 14px;
+  font-size: 1rem;
+}
+
+.priceLine {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.price {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.unit {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.description {
+  margin-bottom: 22px;
+  line-height: 1.75;
+  font-size: 1rem;
+}
+
+.quickFacts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.factCard {
+  display: flex;
+  gap: 12px;
+  align-items: start;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.factCard strong,
+.factCard span {
+  display: block;
+}
+
+.factCard strong {
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.factCard span {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.allergenBlock,
+.milesInfoCard,
+.storyCard,
+.reviewScoreCard,
+.reviewDistributionCard,
+.reviewCard {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+}
+
+.allergenBlock {
+  padding: 18px;
+  margin-bottom: 20px;
+}
+
+.allergenBlock h3 {
+  margin-bottom: 10px;
+}
+
+.allergenContains {
+  margin-bottom: 12px;
+  color: var(--warning);
+  font-weight: 700;
+}
+
+.noAllergens {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.allergenTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.allergenTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: var(--warning-muted);
+  color: var(--warning);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.buyRow {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.qtyBox {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.qtyBox button,
+.qtyBox span {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+}
+
+.qtyBox button {
+  background: transparent;
+  border: none;
+  color: var(--text);
+}
+
+.addBtn,
+.compareBtn {
+  border: none;
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+.addBtn {
+  height: 48px;
+  padding: 0 22px;
+  background: var(--primary);
+  color: white;
+}
+
+.foodMilesSection,
+.storySection,
+.reviewsSection {
+  margin-top: 48px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: end;
+  margin-bottom: 18px;
+}
+
+.compareBtn {
+  height: 42px;
+  padding: 0 16px;
+  background: var(--primary-muted);
+  color: var(--primary);
+}
+
+.foodMilesGrid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 18px;
+}
+
+.milesHeroCard {
+  padding: 28px;
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top right, rgba(251, 146, 60, 0.18), transparent 35%),
+    radial-gradient(circle at bottom left, rgba(110, 35, 50, 0.14), transparent 35%),
+    var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.milesValue {
+  font-size: clamp(2.2rem, 4vw, 3.8rem);
+  font-weight: 900;
+  color: var(--primary);
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.milesSubtext {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.milesInfoCard,
+.storyCard,
+.reviewScoreCard,
+.reviewDistributionCard {
+  padding: 22px;
+}
+
+.postcodeRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.reviewNote {
+  color: var(--muted);
+}
+
+.reviewSummaryGrid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.reviewScoreCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.averageScore {
+  font-size: 3rem;
+  font-weight: 900;
+  color: var(--primary);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.ratingStars {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.starFilled {
+  color: var(--secondary);
+}
+
+.starEmpty {
+  color: var(--border-strong);
+}
+
+.distRow {
+  display: grid;
+  grid-template-columns: 42px 1fr 30px;
+  gap: 10px;
+  align-items: center;
+}
+
+.distRow + .distRow {
+  margin-top: 10px;
+}
+
+.distBar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.distFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--secondary), var(--primary));
+}
+
+.reviewCards {
+  display: grid;
+  gap: 14px;
+}
+
+.reviewCard {
+  padding: 20px;
+}
+
+.reviewTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 12px;
+}
+
+.reviewTop h3 {
+  margin-bottom: 6px;
+}
+
+.reviewBody {
+  line-height: 1.75;
+  margin-bottom: 14px;
+}
+
+.reviewMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.verifiedBadge {
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: var(--success-muted);
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 980px) {
+  .hero,
+  .foodMilesGrid,
+  .reviewSummaryGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: 40px 16px 72px;
+  }
+
+  .buyRow,
+  .sectionHeader,
+  .reviewTop {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

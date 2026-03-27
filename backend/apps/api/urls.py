@@ -8,8 +8,11 @@ from apps.accounts.views import (
     ProducerRegisterView,
 )
 
-from apps.accounts.views import AccountsViewSet
-from apps.catalog.views import ProductViewSet, CategoryViewSet
+from apps.catalog.views import ProductViewSet, CategoryViewSet, ProductImageUploadView
+from apps.catalog.api.food_miles_views import (
+    ProductFoodMilesView,
+    ProductFoodMilesComparisonView,
+)
 from apps.addresses.views import AddressViewSet
 from apps.cart.views import CartViewSet, CartItemViewSet
 from apps.orders.views import (
@@ -26,7 +29,6 @@ from apps.producers.views import (
 )
 from apps.traceability.views import AllergenViewSet
 from apps.payments.views import CreateCheckoutSessionView, stripe_webhook
-from apps.catalog.views import ProductImageUploadView
 
 
 
@@ -60,5 +62,10 @@ urlpatterns = [
     path("products/<int:product_id>/upload-image/", ProductImageUploadView.as_view(), name="product-upload-image"),
     path("recipes/<int:recipe_id>/upload-image/", RecipeImageUploadView.as_view(), name="recipe-upload-image"),
     path("farm-stories/<int:story_id>/upload-image/", FarmStoryImageUploadView.as_view(), name="farm-story-upload-image"),
+    
+    # Food Miles
+    path("food-miles/products/<int:product_id>/", ProductFoodMilesView.as_view(), name="product-food-miles",),
+    path("food-miles/products/<int:product_id>/compare/",ProductFoodMilesComparisonView.as_view(), name="product-food-miles-compare",
+    ),
 ]
 
