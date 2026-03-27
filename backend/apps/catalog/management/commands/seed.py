@@ -11,12 +11,13 @@ from django.utils import timezone
 from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
-from apps.accounts.models import Account
+from apps.accounts.models import Account, Customer
 from apps.addresses.models import Address
 from apps.producers.models import Producer
 from apps.catalog.models import Category, Product
 from apps.orders.models import Order, ProducerOrder, OrderItem
 from apps.cart.models import CartItem
+
 
 
 CATEGORIES = [
@@ -33,7 +34,6 @@ PRODUCERS = [
         "username": "greenfarm",
         "email": "greenfarm@example.com",
         "company_name": "Green Farm Co.",
-        "company_email": "orders@greenfarm.example.com",
         "company_number": "07700900001",
         "company_description": "Family-run organic farm in Devon.",
         "address": {
@@ -46,7 +46,6 @@ PRODUCERS = [
         "username": "sunriseorchard",
         "email": "sunrise@example.com",
         "company_name": "Sunrise Orchard",
-        "company_email": "orders@sunriseorchard.example.com",
         "company_number": "07700900002",
         "company_description": "Award-winning fruit and juice producers.",
         "address": {
@@ -225,7 +224,6 @@ class Command(BaseCommand):
                 account=account,
                 defaults={
                     "company_name": p["company_name"],
-                    "company_email": p["company_email"],
                     "company_number": p["company_number"],
                     "company_description": p["company_description"],
                     "lead_time_hours": 48,
@@ -255,7 +253,7 @@ class Command(BaseCommand):
                 self.stdout.write(f"  [+] Product: {obj.name}")
 
         # Customers
-        customer_map = {}   # username -> (account, address)
+        customer_map = {}   # username -> (account, customer, address)
         for c in CUSTOMERS:
             account, created = Account.objects.get_or_create(
                 username=c["username"],
@@ -269,7 +267,16 @@ class Command(BaseCommand):
             if created:
                 account.set_password("testpass123")
                 account.save()
-                self.stdout.write(f"  [+] Customer: {account.username}")
+                self.stdout.write(f"  [+] Customer account: {account.username}")
+
+            customer, customer_created = Customer.objects.get_or_create(
+                account=account,
+                defaults={
+                    "phone_number": "",
+                },
+            )
+            if customer_created:
+                self.stdout.write(f"  [+] Customer profile: {account.username}")
 
             addr, _ = Address.objects.get_or_create(
                 account=account,
@@ -281,14 +288,19 @@ class Command(BaseCommand):
                     "is_default": True,
                 },
             )
-            customer_map[c["username"]] = (account, addr)
+
+            if customer.default_delivery_address_id != addr.id:
+                customer.default_delivery_address = addr
+                customer.save(update_fields=["default_delivery_address"])
+
+            customer_map[c["username"]] = (account, customer, addr)
 
         # Orders, ProducerOrders, OrderItems
         product_map = {p.name: p for p in Product.objects.all()}
         now = timezone.now()
 
         for cust_user, prod_user, items, status, days_ago, del_days in SEED_ORDERS:
-            customer_account, customer_addr = customer_map[cust_user]
+            customer_account, customer, customer_addr = customer_map[cust_user]
             producer = producer_map[prod_user]
 
             # Calculate totals

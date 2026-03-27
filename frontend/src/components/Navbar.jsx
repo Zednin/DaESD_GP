@@ -90,6 +90,7 @@ export default function Navbar() {
   const subtotal = getCartSubtotal(cartItems);
 
   const navigate = useNavigate();
+  const isProducer = user?.account_type === "producer";
 
   function handleCheckoutClick(e) {
     if (!user) {
@@ -146,6 +147,13 @@ export default function Navbar() {
                 </Link>
               </li>
             ))}
+            {isProducer && (
+              <li>
+                <Link className={styles.link} to="/producer/dashboard">
+                Dashboard
+                </Link>
+              </li>
+            )}
           </ul>
         </div>
 
