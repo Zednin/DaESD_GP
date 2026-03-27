@@ -1,119 +1,111 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
-
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(";").shift();
-  return null;
-}
+import apiClient from "./apiClient";
 
 async function ensureCsrf() {
-  await fetch(`${API_BASE}/api/auth/csrf/`, {
-    method: "GET",
-    credentials: "include",
-  });
+  await apiClient.get("/auth/csrf/");
 }
 
-function csrfHeaders() {
-  const csrf = getCookie("csrftoken");
-  return csrf ? { "X-CSRFToken": csrf } : {};
+function getErrorMessage(data, fallback = "Something went wrong") {
+  if (!data) return fallback;
+
+  if (typeof data === "string") return data;
+
+  if (data.detail) return data.detail;
+
+  if (data.non_field_errors?.length) {
+    return data.non_field_errors[0];
+  }
+
+  const firstValue = Object.values(data)[0];
+
+  if (Array.isArray(firstValue) && firstValue.length > 0) {
+    return firstValue[0];
+  }
+
+  if (typeof firstValue === "string") {
+    return firstValue;
+  }
+
+  return fallback;
+}
+
+function normaliseAxiosError(error, fallback) {
+  const data = error?.response?.data;
+  return new Error(getErrorMessage(data, fallback));
 }
 
 export async function fetchServerCart() {
-  console.log("[cartApi] GET /api/carts/");
-  const res = await fetch(`${API_BASE}/api/carts/`, {
-    method: "GET",
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  });
-  console.log("[cartApi] fetchServerCart status:", res.status);
-  if (!res.ok) throw new Error("Failed to fetch cart");
-  return res.json();
+  try {
+    console.log("[cartApi] GET /carts/");
+    const { data } = await apiClient.get("/carts/");
+    return data;
+  } catch (error) {
+    console.error("[cartApi] fetchServerCart failed:", error);
+    throw normaliseAxiosError(error, "Failed to fetch cart");
+  }
 }
 
 export async function mergeServerCart(items) {
-  console.log("[cartApi] POST /api/carts/merge/", items);
-  await ensureCsrf();
+  try {
+    console.log("[cartApi] POST /carts/merge/", items);
+    await ensureCsrf();
 
-  const res = await fetch(`${API_BASE}/api/carts/merge/`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...csrfHeaders(),
-    },
-    body: JSON.stringify({ items }),
-  });
-
-  console.log("[cartApi] mergeServerCart status:", res.status);
-  if (!res.ok) throw new Error("Failed to merge cart");
-  return res.json();
+    const { data } = await apiClient.post("/carts/merge/", { items });
+    return data;
+  } catch (error) {
+    console.error("[cartApi] mergeServerCart failed:", error);
+    throw normaliseAxiosError(error, "Failed to merge cart");
+  }
 }
 
 export async function addServerItem(productId, quantity) {
-  console.log("[cartApi] POST /api/cart-items/", { productId, quantity });
-  await ensureCsrf();
+  try {
+    console.log("[cartApi] POST /cart-items/", { productId, quantity });
+    await ensureCsrf();
 
-  const res = await fetch(`${API_BASE}/api/cart-items/`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...csrfHeaders(),
-    },
-    body: JSON.stringify({ product_id: productId, quantity }),
-  });
-
-  console.log("[cartApi] addServerItem status:", res.status);
-  if (!res.ok) throw new Error("Failed to add item");
+    await apiClient.post("/cart-items/", {
+      product_id: productId,
+      quantity,
+    });
+  } catch (error) {
+    console.error("[cartApi] addServerItem failed:", error);
+    throw normaliseAxiosError(error, "Failed to add item");
+  }
 }
 
 export async function updateServerItem(cartItemId, quantity) {
-  console.log("[cartApi] PATCH /api/cart-items/", { cartItemId, quantity });
-  await ensureCsrf();
+  try {
+    console.log("[cartApi] PATCH /cart-items/", { cartItemId, quantity });
+    await ensureCsrf();
 
-  const res = await fetch(`${API_BASE}/api/cart-items/${cartItemId}/`, {
-    method: "PATCH",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...csrfHeaders(),
-    },
-    body: JSON.stringify({ quantity }),
-  });
-
-  console.log("[cartApi] updateServerItem status:", res.status);
-  if (!res.ok) throw new Error("Failed to update item");
+    await apiClient.patch(`/cart-items/${cartItemId}/`, {
+      quantity,
+    });
+  } catch (error) {
+    console.error("[cartApi] updateServerItem failed:", error);
+    throw normaliseAxiosError(error, "Failed to update item");
+  }
 }
 
 export async function removeServerItem(cartItemId) {
-  console.log("[cartApi] DELETE /api/cart-items/", cartItemId);
-  await ensureCsrf();
+  try {
+    console.log("[cartApi] DELETE /cart-items/", cartItemId);
+    await ensureCsrf();
 
-  const res = await fetch(`${API_BASE}/api/cart-items/${cartItemId}/`, {
-    method: "DELETE",
-    credentials: "include",
-    headers: {
-      ...csrfHeaders(),
-    },
-  });
-
-  console.log("[cartApi] removeServerItem status:", res.status);
-  if (!res.ok) throw new Error("Failed to remove item");
+    await apiClient.delete(`/cart-items/${cartItemId}/`);
+  } catch (error) {
+    console.error("[cartApi] removeServerItem failed:", error);
+    throw normaliseAxiosError(error, "Failed to remove item");
+  }
 }
 
 export async function clearServerCart() {
-  console.log("[cartApi] POST /api/cart-items/clear/");
-  await ensureCsrf();
+  try {
+    console.log("[cartApi] POST /cart-items/clear/");
+    await ensureCsrf();
 
-  const res = await fetch(`${API_BASE}/api/cart-items/clear/`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      ...csrfHeaders(),
-    },
-  });
-
-  console.log("[cartApi] clearServerCart status:", res.status);
-  if (!res.ok) throw new Error("Failed to clear cart");
+    await apiClient.post("/cart-items/clear/");
+  } catch (error) {
+    console.error("[cartApi] clearServerCart failed:", error);
+    throw normaliseAxiosError(error, "Failed to clear cart");
+  }
 }

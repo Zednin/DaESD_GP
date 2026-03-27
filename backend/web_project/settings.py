@@ -246,3 +246,8 @@ cloudinary.config(
 # Resend email service
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "onboarding@resend.dev")
+
+# Geoapify food miles map
+GEOAPIFY_API_KEY = os.getenv("VITE_GEOAPIFY_API_KEY", "")
+FOOD_MILES_FALLBACK_POSTCODE = "BS1 5JG"
+FOOD_MILES_LOCAL_RADIUS_MILES = 20

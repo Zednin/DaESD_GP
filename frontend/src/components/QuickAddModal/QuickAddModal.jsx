@@ -13,15 +13,13 @@ export default function QuickAddModal({
   const [qty, setQty] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
 
-  // Dummy images for the time being
   const images = useMemo(() => {
-    return [0, 1, 2]; // placeholders
+    return product?.image ? [product.image] : [];
   }, [product]);
 
   const progress = Math.min(cartSubtotal / freeShippingThreshold, 1);
   const remaining = Math.max(freeShippingThreshold - cartSubtotal, 0);
 
-  // ESC to close
   useEffect(() => {
     function onKeyDown(e) {
       if (e.key === "Escape") onClose();
@@ -33,7 +31,7 @@ export default function QuickAddModal({
   useEffect(() => {
     setQty(1);
     setActiveImage(0);
-    }, [product]);
+  }, [product]);
 
   return (
     <motion.div
@@ -55,34 +53,41 @@ export default function QuickAddModal({
         aria-label={`Quick add ${product.name}`}
       >
         <div className={styles.modalHeader}>
-            <button className={styles.close} onClick={onClose} aria-label="Close">
-                ×
-            </button>
+          <button className={styles.close} onClick={onClose} aria-label="Close">
+            ×
+          </button>
         </div>
 
         <div className={styles.content}>
-          {/* LEFT: image area */}
           <div className={styles.media}>
             <div className={styles.imageStage}>
-              <div className={styles.mainImagePlaceholder} />
+              {images.length > 0 ? (
+                <img
+                  src={images[activeImage]}
+                  alt={product.name}
+                  className={styles.mainImage}
+                />
+              ) : (
+                <div className={styles.mainImagePlaceholder}>No image available</div>
+              )}
 
-              {/* Carousel indicators (lines/dots) */}
-              <div className={styles.dots} aria-label="Image carousel">
-                {images.map((_, idx) => (
+              {images.length > 1 && (
+                <div className={styles.dots} aria-label="Image carousel">
+                  {images.map((_, idx) => (
                     <button
-                    key={idx}
-                    type="button"
-                    className={`${styles.dot} ${idx === activeImage ? styles.dotActive : ""}`}
-                    onClick={() => setActiveImage(idx)}
-                    aria-label={`View image ${idx + 1}`}
-                    aria-current={idx === activeImage ? "true" : "false"}
+                      key={idx}
+                      type="button"
+                      className={`${styles.dot} ${idx === activeImage ? styles.dotActive : ""}`}
+                      onClick={() => setActiveImage(idx)}
+                      aria-label={`View image ${idx + 1}`}
+                      aria-current={idx === activeImage ? "true" : "false"}
                     />
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* RIGHT: info */}
           <div className={styles.info}>
             <div className={styles.titleBlock}>
               <h2 className={styles.title}>{product.name}</h2>
@@ -115,7 +120,6 @@ export default function QuickAddModal({
               <p className={styles.descMuted}>Fresh, locally sourced produce.</p>
             )}
 
-            {/* Allergen information */}
             <div className={styles.allergenSection}>
               <h4 className={styles.allergenHeading}>Allergen Information</h4>
               {product.allergens && product.allergens.length > 0 ? (
@@ -142,7 +146,7 @@ export default function QuickAddModal({
 
             <div className={styles.controls}>
               <label className={styles.qtyLabel}>Quantity</label>
-              <br/>
+              <br />
               <div className={styles.qtyRow}>
                 <button
                   type="button"
@@ -158,8 +162,8 @@ export default function QuickAddModal({
                   className={styles.qtyInput}
                   value={qty}
                   onChange={(e) => {
-                      const n = Number(e.target.value);
-                      setQty(Number.isFinite(n) ? Math.max(1, n) : 1);
+                    const n = Number(e.target.value);
+                    setQty(Number.isFinite(n) ? Math.max(1, n) : 1);
                   }}
                 />
 
@@ -180,13 +184,18 @@ export default function QuickAddModal({
                 Add to basket — £{(Number(product.price) * qty).toFixed(2)}
                 {product.original_price && (
                   <span className={styles.btnSaving}>
-                    {' '}(save £{((Number(product.original_price) - Number(product.price)) * qty).toFixed(2)})
+                    {" "}
+                    (save £
+                    {(
+                      (Number(product.original_price) - Number(product.price)) *
+                      qty
+                    ).toFixed(2)}
+                    )
                   </span>
                 )}
               </button>
             </div>
 
-            {/* Free shipping progress bar */}
             <div className={styles.shipping}>
               <div className={styles.shippingText}>
                 {remaining > 0 ? (

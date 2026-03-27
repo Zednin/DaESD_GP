@@ -573,3 +573,14 @@
   color: var(--success);
   font-weight: 700;
 }
+
+.card,
+.listCard {
+  cursor: pointer;
+}
+
+.card:focus-visible,
+.listCard:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}

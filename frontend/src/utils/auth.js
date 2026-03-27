@@ -1,3 +1,5 @@
+import apiClient from "./apiClient";
+
 function emitAuthUpdated() {
   window.dispatchEvent(new Event("auth:updated"));
 }
@@ -10,10 +12,7 @@ export function getCookie(name) {
 }
 
 export async function ensureCsrf() {
-  await fetch("/api/auth/csrf/", {
-    method: "GET",
-    credentials: "include",
-  });
+  await apiClient.get("/auth/csrf/");
 }
 
 function getErrorMessage(data, fallback = "Something went wrong") {
@@ -40,42 +39,40 @@ function getErrorMessage(data, fallback = "Something went wrong") {
   return fallback;
 }
 
+function normaliseAxiosError(error, fallback) {
+  const data = error?.response?.data;
+  return new Error(getErrorMessage(data, fallback));
+}
+
 /**
  * Returns the current logged-in user, or null if not authenticated.
  */
 export async function fetchMe() {
-  const res = await fetch("/api/accounts/me/", {
-    method: "GET",
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  });
-
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    const { data } = await apiClient.get("/accounts/me/");
+    return data;
+  } catch (error) {
+    if (error?.response?.status === 401 || error?.response?.status === 403) {
+      return null;
+    }
+    return null;
+  }
 }
 
 export async function login(email, password) {
-  await ensureCsrf();
-  const csrf = getCookie("csrftoken");
+  try {
+    await ensureCsrf();
 
-  const res = await fetch("/api/auth/login/", {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrf,
-    },
-    body: JSON.stringify({ email, password }),
-  });
+    const { data } = await apiClient.post("/auth/login/", {
+      email,
+      password,
+    });
 
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    throw new Error(getErrorMessage(data, "Login failed"));
+    emitAuthUpdated();
+    return data;
+  } catch (error) {
+    throw normaliseAxiosError(error, "Login failed");
   }
-
-  emitAuthUpdated();
-  return data;
 }
 
 export async function signupCustomer({
@@ -87,42 +84,30 @@ export async function signupCustomer({
   organisation_type = "",
   organisation_name = "",
 }) {
-  await ensureCsrf();
-  const csrf = getCookie("csrftoken");
+  try {
+    await ensureCsrf();
 
-  const payload = {
-    username,
-    email,
-    password,
-    first_name,
-    last_name,
-  };
+    const payload = {
+      username,
+      email,
+      password,
+      first_name,
+      last_name,
+    };
 
-  if (organisation_type) {
-    payload.organisation_type = organisation_type;
+    if (organisation_type) {
+      payload.organisation_type = organisation_type;
+    }
+
+    if (organisation_name) {
+      payload.organisation_name = organisation_name;
+    }
+
+    const { data } = await apiClient.post("/auth/register/customer/", payload);
+    return data;
+  } catch (error) {
+    throw normaliseAxiosError(error, "Customer signup failed");
   }
-
-  if (organisation_name) {
-    payload.organisation_name = organisation_name;
-  }
-
-  const res = await fetch("/api/auth/register/customer/", {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrf,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    throw new Error(getErrorMessage(data, "Customer signup failed"));
-  }
-
-  return data;
 }
 
 export async function signupProducer({
@@ -136,17 +121,10 @@ export async function signupProducer({
   company_description = "",
   lead_time_hours = 48,
 }) {
-  await ensureCsrf();
-  const csrf = getCookie("csrftoken");
+  try {
+    await ensureCsrf();
 
-  const res = await fetch("/api/auth/register/producer/", {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrf,
-    },
-    body: JSON.stringify({
+    const { data } = await apiClient.post("/auth/register/producer/", {
       username,
       email,
       password,
@@ -156,58 +134,34 @@ export async function signupProducer({
       company_number,
       company_description,
       lead_time_hours,
-    }),
-  });
+    });
 
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    throw new Error(getErrorMessage(data, "Producer signup failed"));
+    return data;
+  } catch (error) {
+    throw normaliseAxiosError(error, "Producer signup failed");
   }
-
-  return data;
 }
 
 export async function logout() {
-  await ensureCsrf();
-  const csrf = getCookie("csrftoken");
+  try {
+    await ensureCsrf();
+    await apiClient.post("/auth/logout/");
 
-  const res = await fetch("/api/auth/logout/", {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "X-CSRFToken": csrf,
-    },
-  });
-
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    throw new Error(getErrorMessage(data, "Logout failed"));
+    emitAuthUpdated();
+  } catch (error) {
+    throw normaliseAxiosError(error, "Logout failed");
   }
-
-  emitAuthUpdated();
 }
 
 export async function syncCartItem(productId, qty) {
-  await ensureCsrf();
-  const csrf = getCookie("csrftoken");
+  try {
+    await ensureCsrf();
 
-  const res = await fetch("/api/cart-items/", {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrf,
-    },
-    body: JSON.stringify({
+    await apiClient.post("/cart-items/", {
       product_id: productId,
       quantity: qty,
-    }),
-  });
-
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(getErrorMessage(data, "Failed to sync cart item"));
+    });
+  } catch (error) {
+    throw normaliseAxiosError(error, "Failed to sync cart item");
   }
 }
