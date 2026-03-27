@@ -397,9 +397,7 @@ function DeleteModal({ product, onClose, onDeleted }) {
 }
 
 /* Main component  */
-export default function ProducerProducts() {
-  const [producerName, setProducerName] = useState('');
-  const [producerId, setProducerId] = useState(null);
+export default function ProducerProducts({ producerId, producerName }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -408,45 +406,21 @@ export default function ProducerProducts() {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
-    async function loadProducerAndProducts() {
+    if (!producerId) {
+      setProducts([]);
+      setLoading(false);
+      return;
+    }
+
+    async function loadProducts() {
       setLoading(true);
       setError('');
 
       try {
-        const producerRes = await fetch('/api/producers/', {
-          credentials: 'include',
-          headers: { Accept: 'application/json' },
+        const productsRes = await apiClient.get(`/products/`, {
+          params: { producer: producerId }
         });
-
-        if (!producerRes.ok) {
-          throw new Error('Failed to load producer profile');
-        }
-
-        const producerData = await producerRes.json();
-        const producerList = producerData.results ?? producerData;
-        const producer = producerList[0];
-
-        if (!producer) {
-          setProducerId(null);
-          setProducerName('');
-          setProducts([]);
-          setError('No producer profile found for this account.');
-          return;
-        }
-
-        setProducerId(producer.id);
-        setProducerName(producer.company_name ?? 'My Products');
-
-        const productsRes = await fetch(`/api/products/?producer=${producer.id}`, {
-          credentials: 'include',
-          headers: { Accept: 'application/json' },
-        });
-
-        if (!productsRes.ok) {
-          throw new Error('Failed to load products');
-        }
-
-        const productsData = await productsRes.json();
+        const productsData = productsRes.data;
         setProducts(productsData.results ?? productsData);
       } catch (err) {
         setError(err.message || 'Something went wrong');
@@ -455,8 +429,8 @@ export default function ProducerProducts() {
       }
     }
 
-    loadProducerAndProducts();
-  }, []);
+    loadProducts();
+  }, [producerId]);
 
   function handleSaved(product, mode) {
     setProducts((prev) =>
