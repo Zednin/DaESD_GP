@@ -42,6 +42,8 @@ export default function App() {
         <Route path="/products/:productId" element={<ProductDetail />} />
         <Route path="/surplus-deals" element={<SurplusDeals />} />
         <Route path="/about" element={<About />} />
+        
+
         <Route path="/login" element={<Login />} />
         <Route path="/cart" element={<Cart />} />
 
