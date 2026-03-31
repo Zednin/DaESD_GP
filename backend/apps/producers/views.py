@@ -1,13 +1,42 @@
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import permissions
 from rest_framework.viewsets import ModelViewSet
+
+from .models import Producer
+from apps.accounts.permissions import IsProducer
+
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 from rest_framework import status
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Producer
 from apps.community.models import Recipe, FarmStory
 from .serializers import ProducerSerializer, RecipeSerializer, FarmStorySerializer
 from apps.api.cloudinary_utils import upload_file_to_cloudinary
+
+class IsProducerOwnerOrAdmin(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return request.user.is_authenticated and (
+            request.user.is_staff or obj.account == request.user
+        )
+
+
+class ProducerViewSet(ModelViewSet):
+    serializer_class = ProducerSerializer
+    permission_classes = [permissions.IsAuthenticated, IsProducerOwnerOrAdmin]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Producer.objects.all()
+        return Producer.objects.filter(account=user)
+
+    @action(detail=False, methods=["get"], permission_classes=[IsProducer])
+    def dashboard(self, request):
+        return Response({
+            "message": "Producer dashboard data"
+        })
+
 
 
 class ProducerViewSet(ModelViewSet):

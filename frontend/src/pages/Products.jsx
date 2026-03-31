@@ -10,6 +10,7 @@ import styles from "./Products.module.css";
 import { addToCart, getCartSubtotal, readCart } from "../utils/cartStorage";
 import { getAllergenInfo } from "../utils/allergenIcons";
 import apiClient from "../utils/apiClient";
+import { useNavigate } from "react-router-dom";
 
 // Hardcoded recommendations — replace with API call later
 const HARDCODED_RECOMMENDATIONS = [
@@ -29,6 +30,7 @@ export default function Products() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [recsOpen, setRecsOpen] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
+  const navigate = useNavigate();
 
   // --- Filter / sort state ---
   const [search, setSearch] = useState("");
@@ -39,6 +41,8 @@ export default function Products() {
   const [sortBy, setSortBy] = useState("name");
 
   const [cartSubtotal, setCartSubtotal] = useState(() => getCartSubtotal(readCart()));
+
+  
 
   useEffect(() => {
     function syncSubtotal() {
@@ -86,10 +90,20 @@ export default function Products() {
       });
     }
 
-    const term = search.trim();
+    let term = search.trim();
     if (!term) return filtered;
+
+    // If the user types "organic", filter to organic products first
+    const organicRegex = /\borganic\b/i;
+    if (organicRegex.test(term)) {
+      filtered = filtered.filter((p) => p.organic_certified);
+      term = term.replace(organicRegex, "").trim();
+    }
+
+    if (!term) return filtered;
+
     const fuse = new Fuse(filtered, {
-      keys: ["name", "description", "allergens.name"],
+      keys: ["name", "description", "category_name", "producer_name", "allergens.name"],
       threshold: 0.4,
     });
     return fuse.search(term).map((r) => r.item);
@@ -115,6 +129,10 @@ export default function Products() {
     setSelectedAllergens([]);
     setOrganicOnly(false);
     setSortBy("name");
+  }
+
+  function goToProduct(productId) {
+    navigate(`/products/${productId}`);
   }
 
   function openQuickAdd(product) {
@@ -328,7 +346,20 @@ export default function Products() {
           animate="visible"
         >
           {products.map((product) => (
-            <div key={product.id} className={`${styles.card} ${product.surplus_active ? styles.surplusCard : ''}`}>
+              <div
+                key={product.id}
+                className={`${styles.card} ${product.surplus_active ? styles.surplusCard : ""}`}
+                onClick={() => goToProduct(product.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    goToProduct(product.id);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label={`View ${product.name}`}
+              >
               <div className={styles.imagePlaceholder}>
                 {product.image && (
                   <img src={product.image} alt={product.name} className={styles.cardImage} />
@@ -370,7 +401,10 @@ export default function Products() {
                 <button
                   type="button"
                   className={styles.quickAddBtn}
-                  onClick={() => openQuickAdd(product)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openQuickAdd(product);
+                  }}
                 >
                   Quick add
                 </button>
@@ -386,7 +420,20 @@ export default function Products() {
           animate="visible"
         >
           {products.map((product) => (
-            <div key={product.id} className={styles.listCard}>
+            <div
+              key={product.id}
+              className={styles.listCard}
+              onClick={() => goToProduct(product.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  goToProduct(product.id);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={`View ${product.name}`}
+            >
               <div className={styles.listImagePlaceholder}>
                 {product.image && (
                   <img src={product.image} alt={product.name} className={styles.listImage} />
@@ -426,7 +473,10 @@ export default function Products() {
               <button
                 type="button"
                 className={styles.listQuickAddBtn}
-                onClick={() => openQuickAdd(product)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openQuickAdd(product);
+                }}
               >
                 Quick add
               </button>

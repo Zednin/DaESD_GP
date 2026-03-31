@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     "apps.community",
     "apps.sustainability",
     'apps.payments.apps.PaymentsConfig',
+    "apps.communications",
 ]
 
 #Custom account model to specify extended columns (phone_number, account_type)
@@ -241,3 +242,12 @@ cloudinary.config(
     api_secret=os.getenv("CLOUDINARY_API_SECRET"),
     secure=True,
 )
+
+# Resend email service
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "onboarding@resend.dev")
+
+# Geoapify food miles map
+GEOAPIFY_API_KEY = os.getenv("VITE_GEOAPIFY_API_KEY", "")
+FOOD_MILES_FALLBACK_POSTCODE = "BS1 5JG"
+FOOD_MILES_LOCAL_RADIUS_MILES = 20
