@@ -27,15 +27,11 @@ class ProductViewSet(ModelViewSet):
     # Enable filtering + ordering
     filter_backends = [
         DjangoFilterBackend,
-        filters.SearchFilter,
         filters.OrderingFilter,
     ]
 
     # Fields the frontend can filter on
     filterset_fields = ['category__name', 'status', 'producer', 'producer__company_name', 'organic_certified', 'is_surplus']
-
-    # Fields searched by ?search=
-    search_fields = ['name']
 
     # Fields the frontend can sort by
     ordering_fields = [

@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import Fuse from "fuse.js";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { FiGrid, FiList } from "react-icons/fi";
 import { LuLeaf } from "react-icons/lu";
@@ -33,6 +32,7 @@ export default function Products() {
   const navigate = useNavigate();
 
   // --- Filter / sort state ---
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedProducer, setSelectedProducer] = useState("");
@@ -42,8 +42,6 @@ export default function Products() {
 
   const [cartSubtotal, setCartSubtotal] = useState(() => getCartSubtotal(readCart()));
 
-  
-
   useEffect(() => {
     function syncSubtotal() {
       setCartSubtotal(getCartSubtotal(readCart()));
@@ -51,6 +49,12 @@ export default function Products() {
     window.addEventListener("cart:updated", syncSubtotal);
     return () => window.removeEventListener("cart:updated", syncSubtotal);
   }, []);
+
+  // Debounce search input doesnt request on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(searchInput), 500);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // One-time fetch of all products to populate filter options
   useEffect(() => {
@@ -65,49 +69,20 @@ export default function Products() {
       .then(({ data }) => setAllergens(data.results ?? data));
   }, []);
 
-  // Re-fetch from backend whenever server-side filters or sort change
-  // (search handled client-side by Fuse.js)
+  // All filtering now handled by the backend
   useEffect(() => {
     const params = {};
     if (selectedCategory) params.category__name = selectedCategory;
     if (selectedProducer) params.producer__company_name = selectedProducer;
     if (organicOnly) params.organic_certified = "true";
+    if (search.trim()) params.search = search.trim();
+    if (selectedAllergens.length > 0) params.exclude_allergens = selectedAllergens.join(",");
     params.ordering = sortBy;
     apiClient.get("/products/", { params })
       .then(({ data }) => setRawProducts(data));
-  }, [selectedCategory, selectedProducer, organicOnly, sortBy]);
+  }, [selectedCategory, selectedProducer, organicOnly, sortBy, search, selectedAllergens]);
 
-  // Fuzzy-match the search term over the backend-filtered results
-  // then filter by selected allergens (client-side)
-  const products = useMemo(() => {
-    let filtered = rawProducts;
-
-    // Allergen filter: keep products FREE FROM all selected allergens
-    if (selectedAllergens.length > 0) {
-      filtered = filtered.filter((p) => {
-        const productAllergenIds = (p.allergens ?? []).map((a) => a.id);
-        return selectedAllergens.every((id) => !productAllergenIds.includes(id));
-      });
-    }
-
-    let term = search.trim();
-    if (!term) return filtered;
-
-    // If the user types "organic", filter to organic products first
-    const organicRegex = /\borganic\b/i;
-    if (organicRegex.test(term)) {
-      filtered = filtered.filter((p) => p.organic_certified);
-      term = term.replace(organicRegex, "").trim();
-    }
-
-    if (!term) return filtered;
-
-    const fuse = new Fuse(filtered, {
-      keys: ["name", "description", "category_name", "producer_name", "allergens.name"],
-      threshold: 0.4,
-    });
-    return fuse.search(term).map((r) => r.item);
-  }, [search, rawProducts, selectedAllergens]);
+  const products = rawProducts;
 
   const activeFilterCount =
     (selectedCategory ? 1 : 0) +
@@ -123,7 +98,7 @@ export default function Products() {
   }
 
   function clearFilters() {
-    setSearch("");
+    setSearchInput("");
     setSelectedCategory("");
     setSelectedProducer("");
     setSelectedAllergens([]);
@@ -274,8 +249,8 @@ export default function Products() {
             className={styles.searchInput}
             type="text"
             placeholder="Search products…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
 
