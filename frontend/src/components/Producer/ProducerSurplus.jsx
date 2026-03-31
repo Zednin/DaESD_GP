@@ -27,11 +27,11 @@ function DiscountOfferModal({ product, onClose, onSaved }) {
   const [error, setError] = useState('');
 
   const [discountPercentage, setDiscountPercentage] = useState(
-    product.discount_percentage || 30
+    product.discount_percentage || ''
   );
-  const [dealDuration, setDealDuration] = useState(48);
+  const [dealDuration, setDealDuration] = useState(48 * 60);
   const [isCustomDuration, setIsCustomDuration] = useState(false);
-  const [customHours, setCustomHours] = useState('');
+  const [customMinutes, setCustomMinutes] = useState('');
   const [surplusNote, setSurplusNote] = useState(
     product.surplus_note || ''
   );
@@ -40,7 +40,10 @@ function DiscountOfferModal({ product, onClose, onSaved }) {
   );
 
   const originalPrice = parseFloat(product.price);
-  const discountedPrice = (originalPrice * (1 - discountPercentage / 100)).toFixed(2);
+  const hasDiscount = discountPercentage !== '' && discountPercentage >= 1;
+  const discountedPrice = hasDiscount
+    ? (originalPrice * (1 - discountPercentage / 100)).toFixed(2)
+    : '—';
 
   const handleClose = useCallback(() => {
     setClosing(true);
@@ -54,7 +57,7 @@ function DiscountOfferModal({ product, onClose, onSaved }) {
 
     try {
       const surplusEndDate = new Date();
-      surplusEndDate.setHours(surplusEndDate.getHours() + dealDuration);
+      surplusEndDate.setMinutes(surplusEndDate.getMinutes() + dealDuration);
 
       const payload = {
         is_surplus: true,
@@ -115,20 +118,45 @@ function DiscountOfferModal({ product, onClose, onSaved }) {
             <div className={styles.sliderRow}>
               <input
                 type="range"
-                min="5"
-                max="80"
-                step="5"
-                value={discountPercentage}
+                min="1"
+                max="99"
+                step="1"
+                value={discountPercentage || 1}
                 onChange={(e) => setDiscountPercentage(Number(e.target.value))}
                 className={styles.slider}
               />
-              <span className={styles.sliderValue}>{discountPercentage}%</span>
+              <div className={styles.sliderInputWrap}>
+                <input
+                  type="number"
+                  min="1"
+                  max="99"
+                  value={discountPercentage}
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === '') {
+                      setDiscountPercentage('');
+                      return;
+                    }
+                    const num = Number(raw);
+                    if (num > 99 || num < 0) return;
+                    setDiscountPercentage(num);
+                  }}
+                  onBlur={() => {
+                    if (discountPercentage !== '' && discountPercentage < 1) {
+                      setDiscountPercentage(1);
+                    }
+                  }}
+                  className={styles.sliderInput}
+                />
+                <span className={styles.sliderInputSuffix}>%</span>
+              </div>
             </div>
             <div className={styles.pricePreview}>
               <span className={styles.originalPrice}>£{originalPrice.toFixed(2)}</span>
               <span className={styles.arrow}>→</span>
-              <span className={styles.discountedPrice}>£{discountedPrice}</span>
-              <span className={styles.savingsBadge}>Save {discountPercentage}%</span>
+              <span className={styles.discountedPrice}>{hasDiscount ? `£${discountedPrice}` : '—'}</span>
+              {hasDiscount && <span className={styles.savingsBadge}>Save {discountPercentage}%</span>}
             </div>
           </div>
 
@@ -140,33 +168,36 @@ function DiscountOfferModal({ product, onClose, onSaved }) {
               onChange={(e) => {
                 if (e.target.value === 'custom') {
                   setIsCustomDuration(true);
-                  setCustomHours('');
+                  setCustomMinutes('');
                 } else {
                   setIsCustomDuration(false);
-                  setCustomHours('');
+                  setCustomMinutes('');
                   setDealDuration(Number(e.target.value));
                 }
               }}
             >
-              <option value={6}>6 hours</option>
-              <option value={12}>12 hours</option>
-              <option value={24}>24 hours</option>
-              <option value={48}>48 hours</option>
-              <option value={72}>72 hours (3 days)</option>
-              <option value={120}>120 hours (5 days)</option>
-              <option value={168}>168 hours (7 days)</option>
+              <option value={15}>15 minutes</option>
+              <option value={30}>30 minutes</option>
+              <option value={60}>1 hour</option>
+              <option value={6 * 60}>6 hours</option>
+              <option value={12 * 60}>12 hours</option>
+              <option value={24 * 60}>24 hours</option>
+              <option value={48 * 60}>48 hours</option>
+              <option value={72 * 60}>72 hours (3 days)</option>
+              <option value={120 * 60}>120 hours (5 days)</option>
+              <option value={168 * 60}>168 hours (7 days)</option>
               <option value="custom">Custom duration…</option>
             </select>
             {isCustomDuration && (
               <input
                 type="number"
                 min="1"
-                max="720"
-                placeholder="Enter hours (1–720)"
-                value={customHours}
+                max="43200"
+                placeholder="Enter minutes (1–43200)"
+                value={customMinutes}
                 onChange={(e) => {
                   const val = e.target.value;
-                  setCustomHours(val);
+                  setCustomMinutes(val);
                   const num = Number(val);
                   if (num >= 1) setDealDuration(num);
                 }}
@@ -204,7 +235,7 @@ function DiscountOfferModal({ product, onClose, onSaved }) {
             >
               Cancel
             </button>
-            <button type="submit" className={styles.saveBtn} disabled={saving}>
+            <button type="submit" className={styles.saveBtn} disabled={saving || !hasDiscount}>
               {saving ? 'Saving…' : isEdit ? 'Update Offer' : 'Create Offer'}
             </button>
           </div>
