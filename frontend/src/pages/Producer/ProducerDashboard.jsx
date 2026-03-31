@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import styles from './ProducerDashboard.module.css';
 import ProducerOverview from '../../components/Producer/ProducerOverview';
 import ProducerProducts from '../../components/Producer/ProducerProducts';
@@ -17,7 +17,23 @@ const navItems = [
   { key: 'profile',   label: 'Profile' },
 ];
 
+const SPLASH_LETTERS = ['B', 'R', 'F', 'N'];
+
 export default function ProducerDashboard() {
+  const [showSplash, setShowSplash] = useState(true);
+  const [splashFading, setSplashFading] = useState(false);
+
+  const endSplash = useCallback(() => {
+    setSplashFading(true);
+    setTimeout(() => setShowSplash(false), 600);
+  }, []);
+
+  useEffect(() => {
+    if (!showSplash) return;
+    const timer = setTimeout(endSplash, 2000);
+    return () => clearTimeout(timer);
+  }, [showSplash, endSplash]);
+
   const [user, setUser] = useState(null);
   const [activeSection, setActiveSection] = useState('overview');
   const [allProducers, setAllProducers] = useState([]);
@@ -62,8 +78,28 @@ export default function ProducerDashboard() {
     }
   };
 
+  if (showSplash) {
+    return (
+      <div className={`${styles.splash} ${splashFading ? styles.splashFading : ''}`}>
+        <div className={styles.splashLetters}>
+          {SPLASH_LETTERS.map((letter, i) => (
+            <span
+              key={i}
+              className={styles.splashLetter}
+              style={{ animationDelay: `${i * 0.2}s` }}
+            >
+              {letter}
+            </span>
+          ))}
+          <span className={styles.splashSubtitle}>Producer Dashboard</span>
+          <span className={styles.splashUnderline} />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={styles.dashboardWrapper}>
+    <div className={`${styles.dashboardWrapper} ${styles.dashboardEnter}`}>
       {/* Sidebar */}
       <aside className={styles.sidebar}>
         <h2 className={styles.sidebarTitle}>Dashboard</h2>
