@@ -91,6 +91,7 @@ export default function Navbar() {
 
   const navigate = useNavigate();
   const isProducer = user?.account_type === "producer";
+  const isAdmin = user?.account_type === "admin";
 
   function handleCheckoutClick(e) {
     if (!user) {
@@ -150,6 +151,13 @@ export default function Navbar() {
             {isProducer && (
               <li>
                 <Link className={styles.link} to="/producer/dashboard">
+                Dashboard
+                </Link>
+              </li>
+            )}
+            {isAdmin && (
+              <li>
+                <Link className={styles.link} to="/admin/dashboard">
                 Dashboard
                 </Link>
               </li>
