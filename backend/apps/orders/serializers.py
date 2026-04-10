@@ -41,6 +41,7 @@ class ProducerOrderSerializer(serializers.ModelSerializer):
     )
     commission = serializers.SerializerMethodField()
     payout_amount = serializers.SerializerMethodField()
+    producer_name = serializers.CharField(source='producer.company_name', read_only=True)
     customer_name = serializers.SerializerMethodField()
     customer_email = serializers.SerializerMethodField()
     customer_phone = serializers.SerializerMethodField()
@@ -60,6 +61,7 @@ class ProducerOrderSerializer(serializers.ModelSerializer):
             "subtotal",
             "commission",
             "payout_amount",
+            "producer_name",
             "delivery_date",
             "customer_name",
             "customer_email",
