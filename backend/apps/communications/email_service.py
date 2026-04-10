@@ -49,7 +49,7 @@ def send_customer_order_confirmation(order):
     
 def send_producer_new_order_notification(producer_order):
     return send_template_email(
-        to_email=producer_order.producer.company_email,
+        to_email=producer_order.producer.account.email,
         subject=f"New BRFN producer order #{producer_order.id}",
         template_name="emails/producer_notification.html",
         context={
@@ -57,3 +57,32 @@ def send_producer_new_order_notification(producer_order):
             "frontend_url": settings.FRONTEND_URL,
         },
     )
+
+
+def send_announcement_to_producers(announcement):
+    from apps.producers.models import Producer
+
+    recipients = (
+        Producer.objects
+        .select_related("account")
+        .filter(account__email__isnull=False)
+        .exclude(account__email="")
+    )
+
+    results = []
+    for producer in recipients:
+        try:
+            result = send_template_email(
+                to_email=producer.account.email,
+                subject=f"BRFN announcement: {announcement.title}",
+                template_name="emails/announcement.html",
+                context={
+                    "announcement": announcement,
+                    "recipient": producer.account,
+                    "frontend_url": settings.FRONTEND_URL,
+                },
+            )
+            results.append((producer.account.email, result))
+        except Exception as exc:
+            results.append((producer.account.email, {"error": str(exc)}))
+    return results
