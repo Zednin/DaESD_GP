@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState, useEffect } from 'react';
 import shared from '../../pages/Producer/ProducerShared.module.css';
 import local from './AdminAIModels.module.css';
 const styles = { ...shared, ...local };
@@ -9,167 +9,192 @@ const MODELS = [
     title: 'Product Recommendations',
     description:
       'Personalised product suggestions shown to customers based on browsing and order history.',
-    accepts: '.pkl,.joblib,.onnx,.h5,.pt,.bin,.zip',
-    acceptsLabel: '.pkl, .joblib, .onnx, .h5, .pt, .zip',
   },
   {
     key: 'freshness',
     title: 'Product Freshness',
     description:
       'Predicts remaining shelf life and flags at-risk stock so producers can mark items as surplus.',
-    accepts: '.pkl,.joblib,.onnx,.h5,.pt,.bin,.zip',
-    acceptsLabel: '.pkl, .joblib, .onnx, .h5, .pt, .zip',
   },
 ];
 
-function formatSize(bytes) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-}
-
-function ModelUploadCard({ model }) {
-  const inputRef = useRef(null);
-  const [file, setFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploaded, setUploaded] = useState(null);
+function ModelConfigCard({ model, current, onSaved }) {
+  const [endpointUrl, setEndpointUrl] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [modelIdentifier, setModelIdentifier] = useState('');
+  const [isEnabled, setIsEnabled] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [savedFlash, setSavedFlash] = useState(false);
 
-  function handleFilePick(e) {
-    const picked = e.target.files?.[0];
-    if (!picked) return;
-    setFile(picked);
-    setError('');
-  }
+  useEffect(() => {
+    if (!current) return;
+    setEndpointUrl(current.endpoint_url || '');
+    setModelIdentifier(current.model_identifier || '');
+    setIsEnabled(Boolean(current.is_enabled));
+    setApiKey('');
+  }, [current]);
 
-  async function handleUpload() {
-    if (!file) return;
-    setUploading(true);
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setSaving(true);
     setError('');
     try {
-      // TODO: replace with real upload once the backend endpoint exists.
-      // POST /ai-models/<model.key>/ with multipart form data { file }
-      await new Promise(r => setTimeout(r, 700));
-      setUploaded({
-        name: file.name,
-        size: file.size,
-        uploadedAt: new Date().toISOString(),
+      // TODO: wire up real backend once the AI-as-a-Service endpoint exists.
+      // Expected: POST /ai-models/<model.key>/ with JSON
+      //   { endpoint_url, api_key (optional), model_identifier, is_enabled }
+      await new Promise(r => setTimeout(r, 500));
+      onSaved({
+        key: model.key,
+        endpoint_url: endpointUrl.trim(),
+        model_identifier: modelIdentifier.trim(),
+        is_enabled: isEnabled,
+        api_key_set: apiKey.trim().length > 0 || Boolean(current?.api_key_set),
+        updated_at: new Date().toISOString(),
       });
-      setFile(null);
-      if (inputRef.current) inputRef.current.value = '';
+      setApiKey('');
+      setSavedFlash(true);
+      setTimeout(() => setSavedFlash(false), 2000);
     } catch (err) {
-      setError(err.message || 'Upload failed.');
+      setError(err.message || 'Save failed. Please try again.');
     } finally {
-      setUploading(false);
+      setSaving(false);
     }
   }
 
-  function handleClear() {
-    setFile(null);
-    setError('');
-    if (inputRef.current) inputRef.current.value = '';
-  }
+  const isActive = current?.is_enabled && current?.endpoint_url;
 
   return (
-    <div className={styles.card}>
-      <div>
-        <h3 className={`${styles.subheading} ${styles.cardTitle}`}>
-          {model.title}
-        </h3>
-        <p className={styles.cardDescription}>{model.description}</p>
-      </div>
-
-      <div className={styles.currentPanel}>
-        <div className={styles.currentLabel}>Current model</div>
-        {uploaded ? (
-          <div className={styles.currentRow}>
-            <div className={styles.currentInfo}>
-              <div className={styles.currentName}>{uploaded.name}</div>
-              <div className={styles.currentMeta}>
-                {formatSize(uploaded.size)} • uploaded{' '}
-                {new Date(uploaded.uploadedAt).toLocaleString('en-GB', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </div>
-            </div>
-            <span className={styles.activePill}>Active</span>
-          </div>
-        ) : (
-          <div className={styles.currentEmpty}>No model uploaded yet.</div>
-        )}
-      </div>
-
-      <div className={styles.uploadGroup}>
-        <label className={styles.filePicker}>
-          <span
-            className={`${styles.filePickerLabel} ${
-              file ? styles.filePickerLabelSelected : ''
-            }`}
-          >
-            {file ? file.name : `Choose a file (${model.acceptsLabel})`}
-          </span>
-          <span className={styles.browseBtn}>Browse</span>
-          <input
-            ref={inputRef}
-            type="file"
-            accept={model.accepts}
-            onChange={handleFilePick}
-            className={styles.hiddenInput}
-          />
-        </label>
-
-        {file && (
-          <div className={styles.selectedMeta}>
-            Selected: {formatSize(file.size)}
-          </div>
-        )}
-
-        {error && <p className={styles.errorBanner}>{error}</p>}
-
-        <div className={styles.actionsRow}>
-          <button
-            type="button"
-            className={styles.addBtn}
-            onClick={handleUpload}
-            disabled={!file || uploading}
-          >
-            {uploading ? 'Uploading…' : 'Upload model'}
-          </button>
-          {file && !uploading && (
-            <button
-              type="button"
-              className={styles.deleteRowBtn}
-              onClick={handleClear}
-            >
-              Cancel
-            </button>
-          )}
+    <form className={styles.card} onSubmit={handleSubmit}>
+      <div className={styles.cardHeader}>
+        <div>
+          <h3 className={`${styles.subheading} ${styles.cardTitle}`}>
+            {model.title}
+          </h3>
+          <p className={styles.cardDescription}>{model.description}</p>
         </div>
+        <span
+          className={`${styles.statusPill} ${
+            isActive ? styles.statusPillActive : styles.statusPillInactive
+          }`}
+        >
+          {isActive ? 'Active' : 'Inactive'}
+        </span>
       </div>
-    </div>
+
+      <div className={styles.formGroup}>
+        <label className={styles.label}>Endpoint URL</label>
+        <input
+          type="url"
+          className={styles.input}
+          placeholder="https://api.example.com/v1/predict"
+          value={endpointUrl}
+          onChange={e => setEndpointUrl(e.target.value)}
+        />
+      </div>
+
+      <div className={styles.formGroup}>
+        <label className={styles.label}>Model Identifier</label>
+        <input
+          type="text"
+          className={styles.input}
+          placeholder="e.g. openai/gpt-4o-mini or my-org/freshness-v2"
+          value={modelIdentifier}
+          onChange={e => setModelIdentifier(e.target.value)}
+        />
+        <span className={styles.helpText}>
+          The model name the provider expects in its request payload. Leave
+          blank if not required.
+        </span>
+      </div>
+
+      <div className={styles.formGroup}>
+        <label className={styles.label}>
+          API Key {current?.api_key_set && '(currently set)'}
+        </label>
+        <input
+          type="password"
+          className={styles.input}
+          placeholder={
+            current?.api_key_set
+              ? '•••••••• (leave blank to keep existing)'
+              : 'Enter provider API key'
+          }
+          value={apiKey}
+          onChange={e => setApiKey(e.target.value)}
+          autoComplete="new-password"
+        />
+        <span className={styles.helpText}>
+          Stored server-side and never returned in API responses.
+        </span>
+      </div>
+
+      <div className={styles.toggleRow}>
+        <input
+          id={`enabled-${model.key}`}
+          type="checkbox"
+          checked={isEnabled}
+          onChange={e => setIsEnabled(e.target.checked)}
+        />
+        <label
+          htmlFor={`enabled-${model.key}`}
+          className={styles.toggleLabel}
+        >
+          Enable this AI feature
+        </label>
+      </div>
+
+      {error && <p className={styles.errorBanner}>{error}</p>}
+
+      {current?.updated_at && (
+        <div className={styles.metaLine}>
+          Last updated{' '}
+          {new Date(current.updated_at).toLocaleString('en-GB', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </div>
+      )}
+
+      <div className={styles.actionsRow}>
+        <button type="submit" className={styles.addBtn} disabled={saving}>
+          {saving ? 'Saving…' : savedFlash ? 'Saved ✓' : 'Save configuration'}
+        </button>
+      </div>
+    </form>
   );
 }
 
 export default function AdminAIModels() {
+  const [currentByKey, setCurrentByKey] = useState({});
+
+  function handleSaved(data) {
+    setCurrentByKey(prev => ({ ...prev, [data.key]: data }));
+  }
+
   return (
     <section className={styles.section}>
       <div className={styles.sectionHeader}>
         <div>
           <h2 className={styles.sectionTitle}>AI Models</h2>
           <p className={styles.subtitle}>
-            Upload and manage the model files powering BRFN's AI-driven features
+            Configure the external AI services powering BRFN's AI-driven
+            features
           </p>
         </div>
       </div>
 
       <div className={styles.grid}>
         {MODELS.map(model => (
-          <ModelUploadCard key={model.key} model={model} />
+          <ModelConfigCard
+            key={model.key}
+            model={model}
+            current={currentByKey[model.key] || null}
+            onSaved={handleSaved}
+          />
         ))}
       </div>
     </section>
