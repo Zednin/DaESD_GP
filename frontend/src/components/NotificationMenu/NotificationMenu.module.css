@@ -1,0 +1,104 @@
+.bellBtn {
+  position: relative;
+  font-size: 24px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 9999px;
+  padding: 8px;
+  cursor: pointer;
+
+  transition: background 200ms ease, color 200ms ease, transform 200ms ease;
+}
+
+.bellBtn:hover {
+  background: var(--surface-2);
+  transform: translateY(-1px);
+}
+
+.bellBtn:active {
+  transform: translateY(0px);
+}
+
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 28px 18px 22px;
+}
+
+.emptyTitle {
+  font-weight: 900;
+  font-size: 16px;
+  color: var(--text);
+  margin-top: 4px;
+}
+
+.emptySub {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+  max-width: 260px;
+}
+
+.notificationText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  text-align: left;
+}
+
+.notificationBody {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.notificationTime {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.rowUnread {
+  background: var(--control-bg);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #6E2332;
+  align-self: start;
+  margin-top: 10px;
+}

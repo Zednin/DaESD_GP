@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import {MdOutlineShoppingCart} from "react-icons/md";
 import { AnimatePresence, motion } from "framer-motion";
 import styles from "./Navbar.module.css";
-import SearchBar from "./SearchBar";
 import AccountMenu from "./AccountMenu/AccountMenu";
+import NotificationMenu from "./NotificationMenu/NotificationMenu";
 import { Link } from "react-router-dom";
 import { readCart, getCartCount, getCartSubtotal } from "../utils/cartStorage";
 import { useAuth } from "../auth/AuthContext";
@@ -159,7 +159,8 @@ export default function Navbar() {
 
         {/* RIGHT SIDE */}
         <div className={styles.right}>
-          <SearchBar />
+          {/* Notifications (logged-in only) */}
+          {!loading && user && <NotificationMenu notifications={[]} />}
 
           {/* Cart */}
           <div className={styles.cartWrap} ref={cartWrapRef}>
