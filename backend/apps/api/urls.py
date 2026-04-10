@@ -29,6 +29,7 @@ from apps.producers.views import (
 )
 from apps.traceability.views import AllergenViewSet
 from apps.payments.views import CreateCheckoutSessionView, stripe_webhook
+from apps.communications.views import AnnouncementViewSet
 
 
 
@@ -47,6 +48,7 @@ router.register(r'recipes', RecipeViewSet, basename='recipe')
 router.register(r'farm-stories', FarmStoryViewSet, basename='farm-story')
 router.register(r'allergens', AllergenViewSet, basename='allergen')
 router.register(r'categories', CategoryViewSet, basename='category')
+router.register(r'announcements', AnnouncementViewSet, basename='announcement')
 
 urlpatterns = [
     path("auth/csrf/", csrf),

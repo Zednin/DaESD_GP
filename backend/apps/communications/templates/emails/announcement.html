@@ -1,0 +1,201 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+
+<!-- Top visual block -->
+<tr>
+  <td align="center" style="padding:0 20px 0;">
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="
+        width:100%;
+        max-width:700px;
+        background:
+          linear-gradient(rgba(255,255,255,0.14), rgba(255,255,255,0.14)),
+          url('https://res.cloudinary.com/drwmcduef/image/upload/v1774285730/Firefly_Minimal_editorial_email_background_for_a_local_food_brand_soft_warm_off-white_backgr_655988_k1u5ss.png')
+          center center / cover no-repeat;
+        border-radius:28px 28px 0 0;
+        overflow:hidden;
+      "
+    >
+      <tr>
+        <td style="padding:52px 34px 46px;">
+          <div
+            style="
+              font-family:Georgia, 'Times New Roman', serif;
+              font-size:46px;
+              line-height:1.05;
+              color:#0b0f19;
+              font-weight:700;
+              letter-spacing:-0.03em;
+              text-align:center;
+              margin-bottom:14px;
+            "
+          >
+            Announcement
+          </div>
+
+          <div
+            style="
+              max-width:500px;
+              margin:0 auto;
+              font-family:Arial, Helvetica, sans-serif;
+              font-size:17px;
+              line-height:1.8;
+              color:#4b5563;
+              text-align:center;
+            "
+          >
+            A message from the BRFN team to all producers.
+          </div>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+<!-- White announcement card -->
+<tr>
+  <td align="center" style="padding:0 20px 28px;">
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="
+        width:100%;
+        max-width:700px;
+        background:#ffffff;
+        border-radius:0 0 28px 28px;
+        box-shadow:0 20px 50px rgba(0,0,0,0.10);
+      "
+    >
+      <tr>
+        <td style="padding:34px 34px 18px;">
+
+          <!-- Greeting -->
+          <div
+            style="
+              font-family:'Poppins', Arial, Helvetica, sans-serif;
+              font-size:17px;
+              line-height:1.8;
+              color:#4b5563;
+              margin-bottom:8px;
+            "
+          >
+            Hi {{ recipient.first_name|default:recipient.username }},
+          </div>
+
+          <div
+            style="
+              font-family:'Poppins', Arial, Helvetica, sans-serif;
+              font-size:17px;
+              line-height:1.8;
+              color:#4b5563;
+              margin-bottom:24px;
+            "
+          >
+            The BRFN admin team has posted a new announcement for producers.
+          </div>
+
+          <!-- Title -->
+          <div
+            style="
+              font-family:'Averia Serif Libre', Georgia, serif;
+              font-size:28px;
+              line-height:1.15;
+              color:#0b0f19;
+              margin-bottom:14px;
+            "
+          >
+            {{ announcement.title }}
+          </div>
+
+          <!-- Message body -->
+          <div
+            style="
+              border-top:1px solid #ebe2e5;
+              border-bottom:1px solid #ebe2e5;
+              padding:22px 0;
+              margin-bottom:26px;
+              font-family:'Poppins', Arial, Helvetica, sans-serif;
+              font-size:16px;
+              line-height:1.75;
+              color:#4b5563;
+              white-space:pre-wrap;
+            "
+          >{{ announcement.body }}</div>
+
+          <!-- Posted-at pill -->
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="width:100%; margin-bottom:28px;"
+          >
+            <tr>
+              <td valign="top">
+                <div style="font-family:'Poppins', Arial, Helvetica, sans-serif; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#a4571f; margin-bottom:8px;">
+                  Posted
+                </div>
+                <div style="font-family:'Poppins', Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#6E2332;">
+                  {{ announcement.created_at|date:"j M Y, H:i" }}
+                </div>
+              </td>
+            </tr>
+          </table>
+
+          <!-- CTA -->
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
+            <tr>
+              <td
+                style="
+                  background:linear-gradient(135deg, #6E2332 0%, #8c2f43 100%);
+                  border-radius:999px;
+                  box-shadow:0 12px 26px rgba(110,35,50,0.18);
+                "
+              >
+                <a
+                  href="{{ frontend_url }}/producer/dashboard"
+                  style="
+                    display:inline-block;
+                    padding:16px 26px;
+                    font-family:'Poppins', Arial, Helvetica, sans-serif;
+                    font-size:14px;
+                    line-height:1;
+                    font-weight:700;
+                    color:#ffffff;
+                    text-decoration:none;
+                  "
+                >
+                  Open producer dashboard
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Footer note -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%; border-top:1px solid #ebe2e5;">
+            <tr>
+              <td style="padding-top:18px; text-align:center; font-family:'Poppins', Arial, Helvetica, sans-serif; font-size:12px; line-height:1.9; color:#7d6d72;">
+                This is an automated BRFN email, so replies to this message are not monitored.
+                <br />
+                © Bristol Regional Food Network
+              </td>
+            </tr>
+          </table>
+
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+{% endblock %}
