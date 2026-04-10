@@ -8,6 +8,7 @@ import AdminProducts from '../../components/Admin/AdminProducts';
 import AdminSurplus from '../../components/Admin/AdminSurplus';
 import AdminCommission from '../../components/Producer/AdminCommission';
 import AdminAnnouncements from '../../components/Admin/AdminAnnouncements';
+import AdminAIModels from '../../components/Admin/AdminAIModels';
 import AdminSettings from '../../components/Admin/AdminSettings';
 
 const navItems = [
@@ -19,6 +20,7 @@ const navItems = [
   { key: 'commission',    label: 'Commission' },
   { key: 'surplus',       label: 'Surplus' },
   { key: 'announcements', label: 'Announcements' },
+  { key: 'ai-models',     label: 'AI Models' },
   { key: 'settings',      label: 'Settings' },
 ];
 
@@ -50,6 +52,7 @@ export default function AdminDashboard() {
       case 'commission':    return <AdminCommission />;
       case 'surplus':       return <AdminSurplus />;
       case 'announcements': return <AdminAnnouncements />;
+      case 'ai-models':     return <AdminAIModels />;
       case 'settings':      return <AdminSettings />;
       default:              return <AdminOverview />;
     }
