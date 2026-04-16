@@ -263,3 +263,47 @@ class InventoryAdjustment(models.Model):
 
     def __str__(self):
         return f"{self.product} | {self.delta_quantity} | {self.reason}"
+
+
+class RecommendationInteraction(models.Model):
+    """Records each time a user acts on an AI recommendation.
+
+    satisfies the AAI Case Study Requirement 3:
+    "AI engineers should be able to access a database of all end-user
+    interactions to refine the ML model."
+    """
+
+    EVENT_CHOICES = [
+        ("viewed", "Clicked to View Product from Recommendations"),
+        ("added_to_cart", "Added to Cart from Recommendations"),
+        ("purchased", "Purchased after Recommendation"),
+    ]
+
+    account = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="rec_interactions",
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="rec_interactions",
+    )
+    event_type = models.CharField(max_length=20, choices=EVENT_CHOICES)
+    # Zero-based rank of the product in the recommendations list
+    recommendation_rank = models.PositiveSmallIntegerField()
+    # Final blended score returned to the user (ML + CF + seasonal)
+    reorder_probability = models.FloatField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["account", "created_at"]),
+            models.Index(fields=["product", "event_type"]),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.account} | {self.product} | "
+            f"{self.event_type} | rank {self.recommendation_rank}"
+        )
