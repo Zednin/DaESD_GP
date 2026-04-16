@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { FiGrid, FiList } from "react-icons/fi";
+import { FiGrid, FiList, FiChevronDown, FiSearch } from "react-icons/fi";
 import { LuLeaf } from "react-icons/lu";
 import QuickAddModal from "../components/QuickAddModal/QuickAddModal";
 import FilterPanel from "../components/FilterPanel/FilterPanel";
@@ -11,23 +11,17 @@ import { getAllergenInfo } from "../utils/allergenIcons";
 import apiClient from "../utils/apiClient";
 import { useNavigate } from "react-router-dom";
 
-// Hardcoded recommendations — replace with API call later
-const HARDCODED_RECOMMENDATIONS = [
-  { id: 901, name: "Organic Carrots", price: "2.50", unit: "kg", organic_certified: true, category_name: "Vegetables", producer_name: "Green Acres" },
-  { id: 902, name: "Free Range Eggs", price: "3.80", unit: "dozen", organic_certified: false, category_name: "Dairy & Eggs", producer_name: "Sunrise Farm" },
-  { id: 903, name: "Sourdough Loaf", price: "4.20", unit: "loaf", organic_certified: false, category_name: "Bakery", producer_name: "Village Bakery" },
-  { id: 904, name: "Raw Honey", price: "6.50", unit: "jar", organic_certified: true, category_name: "Pantry", producer_name: "Meadow Apiaries" },
-  { id: 905, name: "Fresh Strawberries", price: "3.00", unit: "punnet", organic_certified: true, category_name: "Fruit", producer_name: "Berry Fields" },
-];
-
 export default function Products() {
   const [rawProducts, setRawProducts] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
   const [categories, setCategories] = useState([]);
   const [producers, setProducers] = useState([]);
   const [allergens, setAllergens] = useState([]);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [recsOpen, setRecsOpen] = useState(false);
+  const [lastOrder, setLastOrder] = useState(null);
+  const [reorderAdding, setReorderAdding] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
   const navigate = useNavigate();
 
@@ -67,6 +61,22 @@ export default function Products() {
       });
     apiClient.get("/allergens/")
       .then(({ data }) => setAllergens(data.results ?? data));
+  }, []);
+
+  // Personalised recommendations for logged-in users.
+  useEffect(() => {
+    apiClient
+      .get("/products/recommendations/", { params: { limit: 5 } })
+      .then(({ data }) => setRecommendations(Array.isArray(data) ? data : []))
+      .catch(() => setRecommendations([]));
+  }, []);
+
+  // Last completed order for quick re-order banner (logged-in users only).
+  useEffect(() => {
+    apiClient
+      .get("/orders/last-completed/")
+      .then(({ data }) => setLastOrder(data))
+      .catch(() => setLastOrder(null));
   }, []);
 
   // All filtering now handled by the backend
@@ -128,10 +138,46 @@ export default function Products() {
     setQuickAddOpen(false);
   }
 
-  // later this becomes a POST to /api/cart-items/
   async function handleAddToBasket(product, qty) {
     await addToCart(product, qty);
+    // Log the cart-add only when it was a recommendation card
+    if (product._rec_score !== undefined) {
+      logRecommendationInteraction(product, "added_to_cart");
+    }
     setQuickAddOpen(false);
+  }
+
+  // interaction log for recommendation cards
+  function logRecommendationInteraction(product, eventType) {
+    apiClient
+      .post("/products/recommendations/log/", {
+        product_id: product.id,
+        event_type: eventType,
+        recommendation_rank: product._rec_rank ?? 0,
+        reorder_probability: product._rec_score ?? 0,
+      })
+      .catch(() => {});
+  }
+
+  // Add all available items from the last order back into the basket.
+  async function handleReorder() {
+    if (!lastOrder || reorderAdding) return;
+    setReorderAdding(true);
+    for (const item of lastOrder.items) {
+      if (item.available) {
+        await addToCart(
+          {
+            id: item.product_id,
+            name: item.name,
+            unit: item.unit,
+            price: item.price,
+            image: item.image,
+          },
+          item.quantity,
+        );
+      }
+    }
+    setReorderAdding(false);
   }
 
   return (
@@ -153,8 +199,44 @@ export default function Products() {
         </motion.p>
       </header>
 
-      {/* ── AI Recommendations (customers only) ── */}
-      {HARDCODED_RECOMMENDATIONS.length > 0 && (
+      {lastOrder && lastOrder.items && lastOrder.items.length > 0 && (
+        <motion.div
+          className={styles.reorderBanner}
+          variants={fadeUp(0.2)}
+          initial="hidden"
+          animate="visible"
+        >
+          <div className={styles.reorderHeader}>
+            <div>
+              <p className={styles.reorderTitle}>Re-order from your last visit</p>
+              <p className={styles.reorderSubtext}>
+                Quickly add the same items back to your basket.
+              </p>
+            </div>
+            <button
+              type="button"
+              className={styles.reorderAddBtn}
+              onClick={handleReorder}
+              disabled={reorderAdding}
+            >
+              {reorderAdding ? "Adding…" : "Add all to basket"}
+            </button>
+          </div>
+          <div className={styles.reorderItems}>
+            {lastOrder.items.map((item) => (
+              <span
+                key={item.product_id}
+                className={`${styles.reorderItem} ${!item.available ? styles.reorderItemUnavailable : ""}`}
+                title={!item.available ? "Currently unavailable" : undefined}
+              >
+                {item.name} × {item.quantity}
+              </span>
+            ))}
+          </div>
+        </motion.div>
+      )}
+      
+      {recommendations.length > 0 && (
         <motion.section
           className={styles.recsSection}
           variants={fadeUp(0.25)}
@@ -170,18 +252,9 @@ export default function Products() {
               Recommended for You
               <span className={styles.recsSubtext}>Based on your recent orders, we have curated a selection just for you.</span>
             </span>
-            <svg
+            <FiChevronDown
               className={`${styles.recsArrow} ${recsOpen ? styles.recsArrowOpen : ""}`}
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M5.22 8.22a.75.75 0 011.06 0L10 11.94l3.72-3.72a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.22 9.28a.75.75 0 010-1.06z"
-                clipRule="evenodd"
-              />
-            </svg>
+            />
           </button>
 
           <AnimatePresence initial={false}>
@@ -195,12 +268,47 @@ export default function Products() {
                 style={{ overflow: "hidden" }}
               >
                 <div className={styles.recsGrid}>
-                  {HARDCODED_RECOMMENDATIONS.map((product) => (
-                    <div key={product.id} className={styles.recCard}>
+                  {recommendations.map((product) => (
+                    <div
+                      key={product.id}
+                      className={styles.recCard}
+                      onClick={() => {
+                        logRecommendationInteraction(product, "viewed");
+                        goToProduct(product.id);
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          logRecommendationInteraction(product, "viewed");
+                          goToProduct(product.id);
+                        }
+                      }}
+                    >
                       <div className={styles.recImagePlaceholder}>
+                        {product.image && (
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className={styles.cardImage}
+                          />
+                        )}
                         {product.organic_certified && (
                           <span className={styles.recOrganicBadge}><LuLeaf size={14} /></span>
                         )}
+                        <button
+                          type="button"
+                          className={styles.recAddBtn}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            logRecommendationInteraction(product, "viewed");
+                            openQuickAdd(product);
+                          }}
+                          aria-label={`Quick add ${product.name}`}
+                        >
+                          +
+                        </button>
                       </div>
                       <div className={styles.recCardBody}>
                         <h4 className={styles.recName}>{product.name}</h4>
@@ -208,13 +316,15 @@ export default function Products() {
                           £{Number(product.price).toFixed(2)} / {product.unit}
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        className={styles.recQuickAddBtn}
-                        onClick={() => openQuickAdd(product)}
-                      >
-                        Quick add
-                      </button>
+                      {product.recommendation_reasons?.length > 0 && (
+                        <div className={styles.recReasons}>
+                          {product.recommendation_reasons.map((reason) => (
+                            <span key={reason} className={styles.recReason}>
+                              {reason}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -233,18 +343,7 @@ export default function Products() {
       >
         {/* Search */}
         <div className={styles.searchWrap}>
-          <svg
-            className={styles.searchIcon}
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.45 4.39l4.26 4.26a.75.75 0 11-1.06 1.06l-4.26-4.26A7 7 0 012 9z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <FiSearch className={styles.searchIcon} />
           <input
             className={styles.searchInput}
             type="text"
