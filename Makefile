@@ -8,13 +8,15 @@ export
 endif
 
 
-# start Postgres + Django containers in background
+# start Postgres + Django containers in background, and starts stripe listener
 up:
 	$(DC) up -d
+	stripe listen --forward-to localhost:8000/api/stripe/webhook/
 
-# Start containers WITH rebuild
+# Start containers WITH rebuild, and starts stripe listener
 up-build:
 	$(DC) up --build -d
+	stripe listen --forward-to localhost:8000/api/stripe/webhook/
 
 # stop and remove containers, but keep volumes (preserves DB data)
 down:
