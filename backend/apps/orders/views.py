@@ -1,5 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Order, ProducerOrder, OrderItem
 from .serializers import (
@@ -14,7 +16,53 @@ class OrderViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Order.objects.filter(account=self.request.user).order_by("-created_at")
+        """Returns all orders belonging to the authenticated user."""
+        return Order.objects.filter(
+            account=self.request.user).order_by("-created_at")
+
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="last-completed",
+        permission_classes=[IsAuthenticated],
+    )
+    def last_completed(self, request):
+        """Returns items from the user's most recent non-cancelled order."""
+        completed_statuses = [
+            "confirmed",
+            "in transit",
+            "ready for collection",
+            "completed",
+        ]
+        order = (
+            Order.objects
+            .filter(account=request.user, status__in=completed_statuses)
+            .prefetch_related("producer_orders__items__product")
+            .order_by("-created_at")
+            .first()
+        )
+        if order is None:
+            return Response({"items": []})
+
+        items = []
+        for producer_order in order.producer_orders.all():
+            for item in producer_order.items.all():
+                product = item.product
+                items.append({
+                    "product_id": product.id,
+                    "name": product.name,
+                    "unit": product.unit,
+                    "price": str(product.price),
+                    "image": product.image or None,
+                    "quantity": item.quantity,
+                    "available": product.status == "available",
+                })
+
+        return Response({
+            "order_id": order.id,
+            "created_at": order.created_at,
+            "items": items,
+        })
 
 
 class ProducerOrderViewSet(ModelViewSet):
