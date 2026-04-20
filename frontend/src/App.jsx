@@ -6,6 +6,7 @@ import Footer from "./components/Footer";
 // Auth
 import RequireAuth from "./auth/RequireAuth";
 import RequireProducer from "./auth/RequireProducer";
+import RequireAdmin from "./auth/RequireAdmin";
 import AuthCallback from "./auth/AuthCallback";
 
 // General pages
@@ -29,6 +30,9 @@ import CheckoutSuccess from "./pages/Checkout/CheckoutSuccess";
 // Producer pages
 import ProducerDashboard from "./pages/Producer/ProducerDashboard";
 import ProducerMyAccount from "./pages/Producer/ProducerMyAccount";
+
+// Admin pages
+import AdminDashboard from "./pages/Admin/AdminDashboard";
 
 export default function App() {
   return (
@@ -88,6 +92,15 @@ export default function App() {
             <RequireProducer>
               <ProducerMyAccount />
             </RequireProducer>
+          }
+        />
+        {/* Admin */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <RequireAdmin>
+              <AdminDashboard />
+            </RequireAdmin>
           }
         />
       </Routes>
