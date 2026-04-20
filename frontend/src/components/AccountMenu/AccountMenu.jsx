@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { FiChevronRight, FiArrowLeft, FiLogOut, FiHelpCircle, FiMoon, FiSettings, FiUser } from "react-icons/fi";
+import { FiChevronRight, FiArrowLeft, FiLogOut, FiHelpCircle, FiMoon, FiSettings, FiUser, FiGrid } from "react-icons/fi";
 import styles from "./AccountMenu.module.css";
 import { useNavigate } from "react-router-dom";
 
@@ -28,8 +28,20 @@ const panels = {
         { type: "divider" },
       ];
 
+      const dashboardItems =
+        user?.account_type === "producer" || user?.account_type === "admin"
+          ? [
+              {
+                leftIcon: <FiGrid />,
+                title: "Dashboard",
+                action: "dashboard",
+              },
+            ]
+          : [];
+
       const authOnlyItems = user
         ? [
+            ...dashboardItems,
             {
               leftIcon: <FiSettings />,
               title: "Settings & privacy",
@@ -214,6 +226,16 @@ export default function AccountMenu({ user, onLogout }) {
         navigate("/my-account");
       }
 
+      return;
+    }
+
+    if (item.action === "dashboard") {
+      close();
+      if (user?.account_type === "admin") {
+        navigate("/admin/dashboard");
+      } else if (user?.account_type === "producer") {
+        navigate("/producer/dashboard");
+      }
       return;
     }
 
