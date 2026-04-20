@@ -159,7 +159,7 @@ export default function Navbar() {
 
         {/* RIGHT SIDE */}
         <div className={styles.right}>
-          <SearchBar />
+          
 
           {/* Cart */}
           <div className={styles.cartWrap} ref={cartWrapRef}>
