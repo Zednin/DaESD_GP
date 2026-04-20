@@ -38,7 +38,8 @@ def send_template_email(to_email, subject, template_name, context):
 
 def send_customer_order_confirmation(order):
     return send_template_email(
-        to_email=order.account.email,
+        # to_email=order.account.email,
+        to_email="bristolregionalfoodnetwork@gmail.com",
         subject=f"BRFN order confirmation #{order.id}",
         template_name="emails/order_confirmation.html",
         context={
@@ -49,7 +50,8 @@ def send_customer_order_confirmation(order):
     
 def send_producer_new_order_notification(producer_order):
     return send_template_email(
-        to_email=producer_order.producer.company_email,
+        # to_email=producer_order.producer.company_email,
+        to_email="bristolregionalfoodnetwork@gmail.com",
         subject=f"New BRFN producer order #{producer_order.id}",
         template_name="emails/producer_notification.html",
         context={

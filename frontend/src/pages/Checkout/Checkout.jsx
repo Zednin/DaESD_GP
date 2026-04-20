@@ -21,20 +21,7 @@ export default function Checkout() {
     setError(null);
 
     try {
-      await ensureCsrf();
-      const csrf = getCookie("csrftoken");
-
-      const res = await fetch("/api/checkout/create-session/", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": csrf,
-        },
-        body: JSON.stringify({}), // backend uses server-side cart
-      });
-
-      const data = await res.json().catch(() => ({}));
+      const { data } = await apiClient.post("/checkout/create-session/", {});
 
       if (!res.ok) {
         console.error("Checkout failed:", data);
