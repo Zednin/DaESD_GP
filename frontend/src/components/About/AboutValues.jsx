@@ -1,12 +1,13 @@
 import { motion } from "framer-motion";
 import styles from "./AboutValues.module.css";
 import aboutImage from "../../assets/farmer_cow.png";
+import aboutImageTwo from "../../assets/farmer_hat.png";
 
 const values = [
   {
     id: 1,
     title: "Local first",
-    text: "We prioritise food networks rooted in Bristol and the surrounding region, helping local producers reach local buyers more directly.",
+    text: "Here at BRFN we prioritise local producers and shorter supply relationships to support a more resilient and transparent food system.",
   },
   {
     id: 2,
@@ -27,6 +28,11 @@ const values = [
     id: 5,
     title: "Growth with purpose",
     text: "As the platform grows, the goal is to strengthen producer resilience and community value without losing the local focus.",
+  },
+  {
+    id: 6,
+    title: "Connected ecosystem",
+    text: "BRFN is designed to connect producers, households, and community groups in a way that builds trust and supports a more resilient local food system.",
   },
 ];
 
@@ -127,23 +133,44 @@ export default function AboutValues() {
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             viewport={{ once: true, amount: 0.25 }}
           >
-            <motion.div
-              className={styles.imageFrame}
-              whileHover={{
-                scale: 1.03,
-                rotate: -2,
-              }}
-              transition={{ duration: 0.35, ease: "easeOut" }}
-            >
-              <div className={styles.imageHalo} />
-              <div className={styles.imageRing} />
+            <div className={styles.imageStack}>
+              <motion.div
+                className={`${styles.imageFrame} ${styles.imageFramePrimary}`}
+                whileHover={{
+                  scale: 1.03,
+                  rotate: -2,
+                }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+              >
+                <div className={styles.imageHalo} />
+                <div className={styles.imageRing} />
+                <img
+                  className={styles.image}
+                  src={aboutImage}
+                  alt="Local food producers and community food network"
+                  loading="lazy"
+                />
+              </motion.div>
 
-              <img
-                className={styles.image}
-                src={aboutImage}
-                alt="Local food producers and community food network"
-              />
-            </motion.div>
+              <motion.div
+                className={`${styles.imageFrame} ${styles.imageFrameSecondary}`}
+                whileHover={{
+                  scale: 1.04,
+                  rotate: 3,
+                  y: -4,
+                }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+              >
+                <div className={styles.imageHalo} />
+                <div className={styles.imageRing} />
+                <img
+                  className={styles.image}
+                  src={aboutImageTwo}
+                  alt="Bristol food community and local produce"
+                  loading="lazy"
+                />
+              </motion.div>
+            </div>
           </motion.div>
         </div>
       </div>
