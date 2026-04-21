@@ -1,0 +1,514 @@
+.wrapper {
+  display: grid;
+  gap: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+}
+
+.title {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: clamp(2rem, 3vw, 2.6rem);
+  line-height: 1.02;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.reviewList {
+  display: grid;
+  gap: 18px;
+}
+
+.reviewCard {
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(251, 146, 60, 0.08), transparent 25%),
+    var(--surface);
+  box-shadow: var(--shadow);
+  padding: 22px;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.reviewCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+}
+
+.reviewTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.reviewProductName {
+  font-size: 0.9rem;
+  color: var(--secondary);
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.reviewTop h3 {
+  margin: 0 0 6px;
+  color: var(--text);
+  font-size: 1.2rem;
+}
+
+.reviewDate {
+  color: var(--muted);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.reviewText {
+  color: var(--text);
+  line-height: 1.75;
+  margin: 0 0 14px;
+}
+
+.ratingStars {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.starFilled {
+  color: var(--secondary);
+  filter: drop-shadow(0 0 4px rgba(251, 146, 60, 0.25));
+  transition: transform 120ms ease;
+}
+
+.starEmpty {
+  color: var(--border-strong);
+  opacity: 0.6;
+}
+
+.reviewCard:hover .starFilled {
+  transform: scale(1.05);
+}
+
+.reviewMeta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.verifiedBadge,
+.editedBadge {
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.verifiedBadge {
+  background: var(--success-muted);
+  color: var(--success);
+}
+
+.editedBadge {
+  background: var(--neutral-badge-bg);
+  color: var(--neutral-badge);
+}
+
+.responseBox {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 16px;
+  padding: 14px 16px;
+}
+
+.responseBox strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+.responseBox p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.editBtn,
+.deleteBtn,
+.retryBtn,
+.primaryBtn,
+.dangerBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    opacity 180ms ease;
+}
+
+.editBtn,
+.retryBtn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.editBtn:hover,
+.retryBtn:hover {
+  background: var(--control-bg-hover);
+  transform: translateY(-1px);
+}
+
+.deleteBtn,
+.dangerBtn {
+  border: 1px solid var(--error-border);
+  background: var(--error-muted);
+  color: var(--error);
+}
+
+.deleteBtn:hover,
+.dangerBtn:hover {
+  transform: translateY(-1px);
+}
+
+.primaryBtn {
+  border: none;
+  background: var(--primary);
+  color: white;
+}
+
+.primaryBtn:hover {
+  transform: translateY(-1px);
+}
+
+.primaryBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.emptyState,
+.errorState {
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 28px;
+  text-align: center;
+}
+
+.emptyState h3,
+.errorState h3 {
+  margin: 0 0 8px;
+  color: var(--text);
+}
+
+.emptyState p,
+.errorState p {
+  color: var(--muted);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.errorIconWrap {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: var(--error-muted);
+  color: var(--error);
+}
+
+.loadingState,
+.inlineLoading {
+  color: var(--muted);
+}
+
+.loadingState {
+  padding: 40px;
+  text-align: center;
+}
+
+.inlineLoading {
+  margin-top: 18px;
+  padding: 16px 6px 4px;
+}
+
+.editorShell {
+  overflow: hidden;
+}
+
+.editorInner {
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+}
+
+.editorHeader {
+  margin-bottom: 18px;
+}
+
+.editorEyebrow {
+  margin: 0 0 6px;
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.editorTitle {
+  margin: 0 0 10px;
+  color: var(--text);
+  font-size: 1.35rem;
+  line-height: 1.15;
+}
+
+.editorMeta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.metaChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+}
+
+.editorForm {
+  display: grid;
+  gap: 18px;
+}
+
+.ratingBlock {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 20px;
+  padding: 18px;
+}
+
+.sectionLabel {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text);
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.sectionHint {
+  margin: 0 0 14px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.starPicker {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.starPickerBtn {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.starPickerBtn:hover {
+  background: var(--control-bg-hover);
+}
+
+.starPickerFilled {
+  color: var(--secondary);
+}
+
+.starPickerEmpty {
+  color: var(--border-strong);
+}
+
+.ratingFeedback {
+  color: var(--secondary);
+  font-weight: 800;
+  font-size: 0.98rem;
+  min-height: 1.4em;
+  display: inline-flex;
+  align-items: center;
+  transform-origin: left center;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field span {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.input,
+.textarea {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 16px;
+  padding: 14px 16px;
+  font: inherit;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--primary-border);
+  box-shadow: var(--focus);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 160px;
+}
+
+.fieldHint {
+  color: var(--muted-2);
+  line-height: 1.5;
+}
+
+.toggleRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface-2);
+  padding: 16px;
+}
+
+.toggleRow strong {
+  display: block;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.toggleRow p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.editorActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.editorActionsRight {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 900px) {
+  .reviewTop {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .reviewDate {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 720px) {
+  .actions {
+    justify-content: flex-start;
+  }
+
+  .editorActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .editorActionsRight {
+    width: 100%;
+  }
+
+  .primaryBtn,
+  .dangerBtn {
+    width: 100%;
+  }
+
+  .toggleRow {
+    align-items: flex-start;
+  }
+
+  .starPicker {
+    gap: 8px;
+  }
+
+  .starPickerBtn {
+    width: 42px;
+    height: 42px;
+  }
+}
