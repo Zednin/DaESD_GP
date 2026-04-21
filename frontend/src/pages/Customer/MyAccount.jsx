@@ -1,5 +1,5 @@
 import { useState } from "react";
-import styles from "../../pages/Producer/ProducerDashboard.module.css";
+import styles from "./MyAccount.module.css";
 
 import OrderHistory from "../../components/Customer/OrderHistory";
 import RecurringOrders from "../../components/Customer/RecurringOrders";

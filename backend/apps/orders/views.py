@@ -14,7 +14,16 @@ class OrderViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Order.objects.filter(account=self.request.user).order_by("-created_at")
+        return (
+            Order.objects
+            .filter(account=self.request.user)
+            .select_related("delivery_address")
+            .prefetch_related(
+                "producer_orders__producer",
+                "producer_orders__items__product",
+            )
+            .order_by("-created_at")
+        )
 
 
 class ProducerOrderViewSet(ModelViewSet):

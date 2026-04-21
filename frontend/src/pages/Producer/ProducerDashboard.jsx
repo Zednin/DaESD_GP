@@ -6,15 +6,17 @@ import ProducerOrders from '../../components/Producer/ProducerOrders';
 import ProducerPayments from '../../components/Producer/ProducerPayments';
 import ProducerSurplus from '../../components/Producer/ProducerSurplus';
 import ProducerProfile from '../../components/Producer/ProducerProfile';
+import ProducerBrfnAi from '../../components/Producer/ProducerBrfnAi';
 import apiClient from '../../utils/apiClient';
 
 const navItems = [
-  { key: 'overview',  label: 'Overview' },
-  { key: 'products',  label: 'Products' },
-  { key: 'orders',    label: 'Orders' },
-  { key: 'payments',  label: 'Payments' },
-  { key: 'surplus',   label: 'Surplus' },
-  { key: 'profile',   label: 'Profile' },
+  { key: 'overview', label: 'Overview' },
+  { key: 'products', label: 'Products' },
+  { key: 'orders', label: 'Orders' },
+  { key: 'payments', label: 'Payments' },
+  { key: 'surplus', label: 'Surplus' },
+  { key: 'brfn-ai', label: 'BRFN AI' },
+  { key: 'profile', label: 'Profile' },
 ];
 
 const SPLASH_LETTERS = ['B', 'R', 'F', 'N'];
@@ -64,17 +66,26 @@ export default function ProducerDashboard() {
   }, [isAdmin, selectedProducerId, user?.id]);
 
   const producerId = selectedProducerId ? parseInt(selectedProducerId, 10) : null;
-  const producerName = allProducers.find(p => p.id === producerId)?.company_name ?? '';
+  const producerName = allProducers.find((p) => p.id === producerId)?.company_name ?? '';
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'overview':  return <ProducerOverview producerId={producerId} producerName={producerName} />;
-      case 'products':  return <ProducerProducts producerId={producerId} producerName={producerName} />;
-      case 'orders':    return <ProducerOrders producerId={producerId} producerName={producerName} />;
-      case 'payments':  return <ProducerPayments producerId={producerId} producerName={producerName} />;
-      case 'surplus':   return <ProducerSurplus producerId={producerId} producerName={producerName} />;
-      case 'profile':   return <ProducerProfile producerId={producerId} producerName={producerName} />;
-      default:          return <ProducerOverview producerId={producerId} producerName={producerName} />;
+      case 'overview':
+        return <ProducerOverview producerId={producerId} producerName={producerName} />;
+      case 'products':
+        return <ProducerProducts producerId={producerId} producerName={producerName} />;
+      case 'orders':
+        return <ProducerOrders producerId={producerId} producerName={producerName} />;
+      case 'payments':
+        return <ProducerPayments producerId={producerId} producerName={producerName} />;
+      case 'surplus':
+        return <ProducerSurplus producerId={producerId} producerName={producerName} />;
+      case 'brfn-ai':
+        return <ProducerBrfnAi producerId={producerId} producerName={producerName} />;
+      case 'profile':
+        return <ProducerProfile producerId={producerId} producerName={producerName} />;
+      default:
+        return <ProducerOverview producerId={producerId} producerName={producerName} />;
     }
   };
 
@@ -100,7 +111,6 @@ export default function ProducerDashboard() {
 
   return (
     <div className={`${styles.dashboardWrapper} ${styles.dashboardEnter}`}>
-      {/* Sidebar */}
       <aside className={styles.sidebar}>
         <h2 className={styles.sidebarTitle}>Dashboard</h2>
         <nav className={styles.nav}>
@@ -116,7 +126,6 @@ export default function ProducerDashboard() {
         </nav>
       </aside>
 
-      {/* Main content */}
       <main className={styles.content}>
         {isAdmin && (
           <div className={styles.adminBanner}>
@@ -128,7 +137,9 @@ export default function ProducerDashboard() {
             >
               <option value="">— Choose a producer —</option>
               {allProducers.map((p) => (
-                <option key={p.id} value={p.id}>{p.company_name}</option>
+                <option key={p.id} value={p.id}>
+                  {p.company_name}
+                </option>
               ))}
             </select>
             {allProducers.length === 0 && (
