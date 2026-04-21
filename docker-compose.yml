@@ -35,6 +35,22 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      recommender:
+        condition: service_healthy
+
+  recommender:
+    build:
+      context: ./recommender
+    container_name: recommender
+    restart: unless-stopped
+    ports:
+      - "5001:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 5m
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   frontend:
     build: ./frontend
