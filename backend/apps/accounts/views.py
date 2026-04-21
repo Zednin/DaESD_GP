@@ -3,11 +3,14 @@ from rest_framework import generics, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 
 from .serializers import (
     AccountSerializer,
     CustomerRegisterSerializer,
     ProducerRegisterSerializer,
+    AccountSettingsSerializer,
 )
 
 Account = get_user_model()
@@ -35,6 +38,24 @@ class AccountsViewSet(ModelViewSet):
     def me(self, request):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
+    
+class AccountSettingsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = AccountSettingsSerializer(request.user)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        serializer = AccountSettingsSerializer(
+            request.user,
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 # Registration views 
 class CustomerRegisterView(generics.CreateAPIView):

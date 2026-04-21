@@ -6,6 +6,7 @@ from apps.accounts.views import (
     AccountsViewSet,
     CustomerRegisterView,
     ProducerRegisterView,
+    AccountSettingsView,
 )
 
 from apps.catalog.views import ProductViewSet, CategoryViewSet, ProductImageUploadView
@@ -56,6 +57,8 @@ router.register(r'reviews', ReviewViewSet, basename='review')
 urlpatterns = [
     path("auth/csrf/", csrf),
     path("", include(router.urls)),
+    
+    
     # Registration endpoints
     path("auth/", include("dj_rest_auth.urls")),
     
@@ -65,6 +68,9 @@ urlpatterns = [
     # Custom registration endpoints
     path("auth/register/customer/", CustomerRegisterView.as_view(), name="customer-register"),
     path("auth/register/producer/", ProducerRegisterView.as_view(), name="producer-register"),
+    
+    # Account settings
+    path("account/settings/", AccountSettingsView.as_view(), name="account-settings"),
     
     
     path("checkout/create-session/", CreateCheckoutSessionView.as_view()),
