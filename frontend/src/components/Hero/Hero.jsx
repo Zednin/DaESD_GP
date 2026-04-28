@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { IoBagHandleOutline } from "react-icons/io5";
 import styles from "./Hero.module.css";
+import { useNavigate } from "react-router-dom";
 
 import HeroPng from "../../assets/hero.png";
 import LeafPng from "../../assets/leaf.png";
@@ -8,6 +9,8 @@ import LeafPng from "../../assets/leaf.png";
 import { fadeLeft, fadeRight, fadeUp } from "../../animations/heroAnimations";
 
 export default function Hero() {
+  const navigate = useNavigate();
+
   return (
     <section className={styles.section}>
       <div className={`container ${styles.grid}`}>
@@ -37,7 +40,6 @@ export default function Hero() {
             initial="hidden"
             animate="visible"
           >
-            Random text lol
           </motion.p>
 
           <motion.p
@@ -46,7 +48,6 @@ export default function Hero() {
             initial="hidden"
             animate="visible"
           >
-            More random text lol
           </motion.p>
 
           {/* Button */}
@@ -56,7 +57,10 @@ export default function Hero() {
             initial="hidden"
             animate="visible"
           >
-            <button className={styles.primaryBtn}>
+            <button 
+              className={styles.primaryBtn} 
+              onClick={() => navigate("/products")}
+            >
               <IoBagHandleOutline />
               Browse Products
             </button>
