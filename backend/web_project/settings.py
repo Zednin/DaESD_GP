@@ -35,7 +35,7 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", "web"]
 FRONTEND_URL="http://localhost:5173"
 
 
-# Application definition
+# Application definition 
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

@@ -1,5 +1,16 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { migrateLocalCartToServerIfNeeded, setCartAuthed, clearCartLocal } from "../utils/cartStorage";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import {
+  migrateLocalCartToServerIfNeeded,
+  setCartAuthed,
+  clearCartLocal,
+} from "../utils/cartStorage";
 import { fetchMe, logout as apiLogout } from "../utils/auth";
 
 const AuthContext = createContext(null);
@@ -8,22 +19,33 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     setLoading(true);
+
     try {
-      const me = await fetchMe(); // returns null if not logged in
+      const me = await fetchMe(); // returns user or null if unauthenticated
       setUser(me);
       return me;
+    } catch (error) {
+      console.error("[auth] failed to refresh user:", error);
+      setUser(null);
+      return null;
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  async function logout() {
-    await apiLogout();
-    await refresh();
-    await clearCartLocal();
-  }
+  const logout = useCallback(async () => {
+    try {
+      await apiLogout();
+    } catch (error) {
+      console.error("[auth] logout failed:", error);
+    } finally {
+      setUser(null);
+      await clearCartLocal();
+      window.dispatchEvent(new Event("auth:updated"));
+    }
+  }, []);
 
   useEffect(() => {
     refresh();
@@ -31,31 +53,49 @@ export function AuthProvider({ children }) {
     function onAuthUpdated() {
       refresh();
     }
+
     window.addEventListener("auth:updated", onAuthUpdated);
-    return () => window.removeEventListener("auth:updated", onAuthUpdated);
-  }, []);
+
+    return () => {
+      window.removeEventListener("auth:updated", onAuthUpdated);
+    };
+  }, [refresh]);
 
   useEffect(() => {
     setCartAuthed(Boolean(user));
 
     if (!user) return;
 
-    (async () => {
+    async function migrateCartAfterLogin() {
       try {
-        await migrateLocalCartToServerIfNeeded(true); // force migration right after login
-      } catch (e) {
-        console.error("[auth] cart migration failed:", e);
+        await migrateLocalCartToServerIfNeeded(true);
+      } catch (error) {
+        console.error("[auth] cart migration failed:", error);
       }
-    })();
+    }
+
+    migrateCartAfterLogin();
   }, [user]);
 
-  const value = useMemo(() => ({ user, loading, refresh, logout }), [user, loading]);
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      refresh,
+      logout,
+    }),
+    [user, loading, refresh, logout]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
+
+  if (!ctx) {
+    throw new Error("useAuth must be used inside <AuthProvider>");
+  }
+
   return ctx;
 }
