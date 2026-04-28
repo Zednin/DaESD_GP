@@ -21,7 +21,7 @@ export default function Home() {
 
       {/* keep the backend status section below if you want */}
             <p style={{ fontSize: 18, marginTop: 12, lineHeight: 1.5 }}>
-        Welcome to BRFN iytdfi
+              Developer section below. This is where you can check if the backend is running and see its health status. 
       </p>
 
       <section style={{ marginTop: 24 }}>
