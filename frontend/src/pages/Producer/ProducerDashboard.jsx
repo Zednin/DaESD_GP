@@ -17,7 +17,7 @@ const navItems = [
   { key: "payments", label: "Payments" },
   { key: "surplus", label: "Surplus" },
   { key: "brfn-ai", label: "BRFN AI" },
-  { key: "profile", label: "Profile" },
+  { key: "profile", label: "Content" },
 ];
 
 const SPLASH_LETTERS = ["B", "R", "F", "N"];
