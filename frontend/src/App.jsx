@@ -75,7 +75,14 @@ export default function App() {
             </RequireAuth>
           }
         />
-        <Route path="/checkout/success" element={<CheckoutSuccess />} />
+        <Route
+          path="/checkout/success"
+          element={
+            <RequireAuth>
+              <CheckoutSuccess />
+            </RequireAuth>
+          }
+        />
 
         {/* Producer */}
         <Route
