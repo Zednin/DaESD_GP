@@ -3,6 +3,7 @@ from .utils import generate_unique_username
 
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
+    """Customises social account user creation for internally generated usernames."""
     def populate_user(self, request, sociallogin, data):
         user = super().populate_user(request, sociallogin, data)
 
