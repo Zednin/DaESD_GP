@@ -16,130 +16,9 @@ const SEASONAL_OPTIONS = [
 ];
 
 const TABS = [
-  { key: 'profile', label: 'Profile & Settings' },
   { key: 'recipes', label: 'Recipes' },
   { key: 'stories', label: 'Farm Stories' },
 ];
-
-/* ═══════════════════════════════════════════════════════════
-   PROFILE SETTINGS SECTION
-═══════════════════════════════════════════════════════════ */
-
-function ProfileSettings({ producerId }) {
-  const [producer, setProducer] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [form, setForm] = useState({
-    company_name: '',
-    company_email: '',
-    company_number: '',
-    company_description: '',
-    lead_time_hours: 48,
-  });
-
-  useEffect(() => {
-    if (!producerId) return;
-    setLoading(true);
-    apiClient.get(`/producers/${producerId}/`)
-      .then(res => {
-        setProducer(res.data);
-        setForm({
-          company_name: res.data.company_name || '',
-          company_email: res.data.company_email || '',
-          company_number: res.data.company_number || '',
-          company_description: res.data.company_description || '',
-          lead_time_hours: res.data.lead_time_hours ?? 48,
-        });
-      })
-      .catch(err => setError(err.response?.data?.detail || 'Failed to load profile.'))
-      .finally(() => setLoading(false));
-  }, [producerId]);
-
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setForm(f => ({ ...f, [name]: value }));
-  }
-
-  async function handleSave(e) {
-    e.preventDefault();
-    setSaving(true);
-    setError('');
-    setSuccess('');
-    try {
-      const payload = {
-        ...form,
-        lead_time_hours: parseInt(form.lead_time_hours, 10),
-        account: producer.account,
-      };
-      const res = await apiClient.patch(`/producers/${producerId}/`, payload);
-      setProducer(res.data);
-      setSuccess('Profile updated successfully.');
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err) {
-      const msg = err.response?.data?.lead_time_hours?.[0]
-        || err.response?.data?.detail
-        || 'Failed to save profile.';
-      setError(msg);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (loading) {
-    return <div className={styles.centred}><span className={styles.spinner} /> Loading profile...</div>;
-  }
-
-  return (
-    <form onSubmit={handleSave} className={styles.profileForm}>
-      {error && <p className={styles.errorBanner}>{error}</p>}
-      {success && <p className={styles.successBanner}>{success}</p>}
-
-      <div className={styles.formRow}>
-        <div className={styles.field}>
-          <label>Company Name</label>
-          <input name="company_name" value={form.company_name} onChange={handleChange} required />
-        </div>
-        <div className={styles.field}>
-          <label>Company Email</label>
-          <input name="company_email" type="email" value={form.company_email} onChange={handleChange} required />
-        </div>
-      </div>
-
-      <div className={styles.formRow}>
-        <div className={styles.field}>
-          <label>Company Number</label>
-          <input name="company_number" value={form.company_number} onChange={handleChange} />
-        </div>
-        <div className={styles.field}>
-          <label>Minimum Lead Time (hours)</label>
-          <input
-            name="lead_time_hours"
-            type="number"
-            min="48"
-            step="1"
-            value={form.lead_time_hours}
-            onChange={handleChange}
-            required
-          />
-          <span className={styles.fieldHint}>Minimum 48 hours. Orders will require at least this much lead time.</span>
-        </div>
-      </div>
-
-      <div className={styles.field}>
-        <label>Company Description</label>
-        <textarea name="company_description" value={form.company_description} onChange={handleChange} rows={4} />
-      </div>
-
-      <div className={styles.profileActions}>
-        <button type="submit" className={styles.saveBtn} disabled={saving}>
-          {saving ? 'Saving...' : 'Save Changes'}
-        </button>
-      </div>
-    </form>
-  );
-}
 
 /* ═══════════════════════════════════════════════════════════
    RECIPE MODAL
@@ -765,7 +644,7 @@ function StoriesTab({ producerId }) {
 ═══════════════════════════════════════════════════════════ */
 
 export default function ProducerProfile({ producerId, producerName }) {
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState('recipes');
 
   if (!producerId) {
     return (
@@ -800,7 +679,6 @@ export default function ProducerProfile({ producerId, producerName }) {
       </div>
 
       {/* Tab content */}
-      {activeTab === 'profile' && <ProfileSettings producerId={producerId} />}
       {activeTab === 'recipes' && <RecipesTab producerId={producerId} />}
       {activeTab === 'stories' && <StoriesTab producerId={producerId} />}
     </section>
