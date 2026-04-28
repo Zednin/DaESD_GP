@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { FiChevronRight, FiArrowLeft, FiLogOut, FiHelpCircle, FiMoon, FiSettings, FiUser } from "react-icons/fi";
+import { FiChevronRight, FiArrowLeft, FiLogOut, FiHelpCircle, FiMoon, FiSettings, FiUser, FiGrid } from "react-icons/fi";
 import styles from "./AccountMenu.module.css";
 import { useNavigate } from "react-router-dom";
 
@@ -15,7 +15,7 @@ const panels = {
               leftIcon: <FiUser />,
               title: user?.first_name || user?.email || "Account",
               subtitle: "See your profile",
-              onClick: () => console.log("go profile"),
+              action: "profile",
             }
           : {
               type: "profile",
@@ -28,8 +28,20 @@ const panels = {
         { type: "divider" },
       ];
 
+      const dashboardItems =
+        user?.account_type === "producer" || user?.account_type === "admin"
+          ? [
+              {
+                leftIcon: <FiGrid />,
+                title: "Dashboard",
+                action: "dashboard",
+              },
+            ]
+          : [];
+
       const authOnlyItems = user
         ? [
+            ...dashboardItems,
             {
               leftIcon: <FiSettings />,
               title: "Settings & privacy",
@@ -196,13 +208,34 @@ export default function AccountMenu({ user, onLogout }) {
     setOpen(false);
     setStack(["root"]);
   }
-
   function handleItem(item) {
     if (item.toPanel) return go(item.toPanel);
 
     if (item.action === "signin") {
       close();
       navigate("/login");
+      return;
+    }
+
+    if (item.action === "profile") {
+      close();
+
+      if (user?.account_type === "producer") {
+        navigate("/producer/myaccount");
+      } else {
+        navigate("/my-account");
+      }
+
+      return;
+    }
+
+    if (item.action === "dashboard") {
+      close();
+      if (user?.account_type === "admin") {
+        navigate("/admin/dashboard");
+      } else if (user?.account_type === "producer") {
+        navigate("/producer/dashboard");
+      }
       return;
     }
 
@@ -215,7 +248,6 @@ export default function AccountMenu({ user, onLogout }) {
     item.onClick?.();
     close();
   }
-
   const items = activePanel.items({ user });
 
   return (
