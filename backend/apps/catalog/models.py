@@ -97,7 +97,14 @@ class Product(models.Model):
         )
     
     # Amount of producr in stock
-    stock = models.IntegerField(default=0)                         
+    stock = models.IntegerField(default=0)   
+                          
+    # Low stock, default to 5
+    low_stock_threshold = models.PositiveIntegerField(
+        default=5,
+        validators=[MinValueValidator(0)],
+        help_text="Warn producers when stock is at or below this quantity"
+    )
     
     # Seasonal availability
     availability_mode = models.CharField(

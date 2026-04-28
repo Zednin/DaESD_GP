@@ -382,8 +382,9 @@ export default function ProducerOrders({ producerId }) {
                             {new Date(order.delivery_date).toLocaleDateString('en-GB')}
                             {(() => {
                               const hrs = getLeadTimeHours(order.created_at, order.delivery_date);
+                              const minHrs = order.lead_time_hours || 48;
                               return hrs !== null ? (
-                                <span className={`${styles.leadTimeBadge} ${hrs >= 48 ? styles.leadTimeOk : styles.leadTimeWarn}`}>
+                                <span className={`${styles.leadTimeBadge} ${hrs >= minHrs ? styles.leadTimeOk : styles.leadTimeWarn}`}>
                                   <FiClock size={10} /> {hrs}h
                                 </span>
                               ) : null;

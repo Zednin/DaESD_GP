@@ -22,11 +22,30 @@ class AccountSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "date_joined",
+            "organisation",
         ]
         read_only_fields = ["id", "date_joined", "account_type"]
 
     def validate_email(self, value):
         return value.lower().strip()
+
+    # Check to see if account is an organisation
+    organisation = serializers.SerializerMethodField()
+
+    
+    def get_organisation(self, obj):
+
+        # Check if customer
+        customer = getattr(obj, "customer_profile", None)
+        if not customer:
+            return None
+
+        # check if customer is linked to organisation
+        organisation = getattr(customer, "organisation", None)
+        if not organisation:
+            return None
+
+        return OrganisationSettingsSerializer(organisation).data
     
 class AddressSettingsSerializer(serializers.ModelSerializer):
     class Meta:

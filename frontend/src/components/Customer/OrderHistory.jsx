@@ -49,9 +49,9 @@ function getStatusTone(status = "") {
   const s = status.toLowerCase();
 
   if (["paid", "confirmed", "accepted"].includes(s)) return "confirmed";
-  if (["pending", "processing"].includes(s)) return "pending";
-  if (["dispatched", "shipped", "out_for_delivery", "out for delivery"].includes(s)) return "dispatched";
-  if (["delivered", "complete", "completed"].includes(s)) return "delivered";
+  if (["pending"].includes(s)) return "pending";
+  if (["preparing", "processing", "ready", "dispatched", "shipped", "out_for_delivery", "out for delivery"].includes(s)) return "dispatched";
+  if (["delivered", "part delivered", "complete", "completed"].includes(s)) return "delivered";
   if (["cancelled", "canceled", "failed", "refunded"].includes(s)) return "cancelled";
 
   return "neutral";
@@ -106,16 +106,24 @@ function getDisplayOrderStatus(order) {
     return "delivered";
   }
 
-  if (statuses.some((status) => status === "preparing" || status === "ready")) {
-    return "processing";
+  if (statuses.every((status) => status === "cancelled" || status === "rejected")) {
+    return "cancelled";
+  }
+
+  if (statuses.some((status) => status === "delivered")) {
+    return "part delivered";
+  }
+
+  if (statuses.some((status) => status === "ready")) {
+    return "ready";
+  }
+
+  if (statuses.some((status) => status === "preparing")) {
+    return "preparing";
   }
 
   if (statuses.some((status) => status === "accepted")) {
-    return "confirmed";
-  }
-
-  if (statuses.every((status) => status === "cancelled")) {
-    return "cancelled";
+    return "accepted";
   }
 
   if (statuses.some((status) => status === "pending")) {
