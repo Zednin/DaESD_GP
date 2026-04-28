@@ -4,8 +4,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from apps.catalog.models import Product
 from apps.producers.models import Producer
-
-
+    
 class Review(models.Model):
     """20 Reviews"""
 
@@ -42,17 +41,20 @@ class Review(models.Model):
 
     # Review Title
     review_title = models.CharField(max_length=255)
-
+    
     # Review Text
     review_text = models.TextField()
-
-    # Anonymous review
+    
+    # Anonymous review (mysterious innit)
     is_anonymous = models.BooleanField(default=False)
 
     # Created at
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Updated at
+    updated_at = models.DateTimeField(auto_now=True)
 
-    # Producer Response (nullable)
+     # Producer Response (nullable)
     producer_response = models.TextField(
         null=True,
         blank=True
@@ -63,6 +65,20 @@ class Review(models.Model):
         null=True,
         blank=True
     )
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["product", "customer"],
+                name="uniq_review_product_customer"
+            )
+        ]
+        indexes = [
+            models.Index(fields=["product", "-created_at"]),
+            models.Index(fields=["customer", "-created_at"]),
+            models.Index(fields=["order_item"]),
+        ]
 
     def __str__(self):
         return f"{self.product} - {self.rating} by {self.customer}"

@@ -13,6 +13,7 @@ export function AuthProvider({ children }) {
     try {
       const me = await fetchMe(); // returns null if not logged in
       setUser(me);
+      return me;
     } finally {
       setLoading(false);
     }

@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import {MdOutlineShoppingCart} from "react-icons/md";
 import { AnimatePresence, motion } from "framer-motion";
 import styles from "./Navbar.module.css";
-import SearchBar from "./SearchBar";
 import AccountMenu from "./AccountMenu/AccountMenu";
+import NotificationMenu from "./NotificationMenu/NotificationMenu";
 import { Link } from "react-router-dom";
 import { readCart, getCartCount, getCartSubtotal } from "../utils/cartStorage";
 import { useAuth } from "../auth/AuthContext";
@@ -90,6 +90,8 @@ export default function Navbar() {
   const subtotal = getCartSubtotal(cartItems);
 
   const navigate = useNavigate();
+  const isProducer = user?.account_type === "producer";
+  const isAdmin = user?.account_type === "admin";
 
   function handleCheckoutClick(e) {
     if (!user) {
@@ -146,12 +148,27 @@ export default function Navbar() {
                 </Link>
               </li>
             ))}
+            {isProducer && (
+              <li>
+                <Link className={styles.link} to="/producer/dashboard">
+                Dashboard
+                </Link>
+              </li>
+            )}
+            {isAdmin && (
+              <li>
+                <Link className={styles.link} to="/admin/dashboard">
+                Dashboard
+                </Link>
+              </li>
+            )}
           </ul>
         </div>
 
         {/* RIGHT SIDE */}
         <div className={styles.right}>
-          <SearchBar />
+          {/* Notifications (logged-in only) */}
+          {!loading && user && <NotificationMenu notifications={[]} />}
 
           {/* Cart */}
           <div className={styles.cartWrap} ref={cartWrapRef}>

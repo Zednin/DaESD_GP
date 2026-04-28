@@ -10,14 +10,13 @@ class ProducerSerializer(serializers.ModelSerializer):
             "id",
             "account",
             "company_name",
-            "company_email",
             "company_number",
             "company_description",
             "lead_time_hours",
             "business_address",
             "created_at",
         ]
-        read_only_fields = ["id", "created_at"]
+        read_only_fields = ["id", "created_at", "account"]
 
 
 class RecipeSerializer(serializers.ModelSerializer):

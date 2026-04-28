@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { readCart, getCartSubtotal } from "../../utils/cartStorage";
-import { ensureCsrf, getCookie } from "../../utils/auth";
+import apiClient from "../../utils/apiClient";
 import styles from "./Checkout.module.css";
 
 export default function Checkout() {
@@ -21,25 +21,7 @@ export default function Checkout() {
     setError(null);
 
     try {
-      await ensureCsrf();
-      const csrf = getCookie("csrftoken");
-
-      const res = await fetch("/api/checkout/create-session/", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": csrf,
-        },
-        body: JSON.stringify({}), // backend uses server-side cart
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        console.error("Checkout failed:", data);
-        throw new Error(data?.detail || "Failed to start checkout");
-      }
+      const { data } = await apiClient.post("/checkout/create-session/", {});
 
       if (data.url) {
         window.location.href = data.url;
@@ -48,7 +30,11 @@ export default function Checkout() {
       }
     } catch (err) {
       console.error("Checkout error:", err);
-      setError(err.message || "Something went wrong");
+      setError(
+        err?.response?.data?.detail ||
+        err?.message ||
+        "Something went wrong"
+      );
     } finally {
       setLoading(false);
     }
@@ -73,7 +59,6 @@ export default function Checkout() {
       <h1>Checkout</h1>
 
       <div className={styles.layout}>
-        {/* LEFT: action panel */}
         <section className={styles.formCard}>
           <h2>Ready to complete your order?</h2>
 
@@ -92,7 +77,6 @@ export default function Checkout() {
           </button>
         </section>
 
-        {/* RIGHT: order summary */}
         <aside className={styles.summaryCard}>
           <h2>Order summary</h2>
 
