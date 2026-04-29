@@ -7,7 +7,7 @@ from .models import Producer
 from apps.accounts.permissions import IsProducer
 
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import status
 from django_filters.rest_framework import DjangoFilterBackend
 from apps.community.models import Recipe, FarmStory
@@ -46,12 +46,16 @@ class ProducerViewSet(ModelViewSet):
 
 class RecipeViewSet(ModelViewSet):
     serializer_class = RecipeSerializer
-    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["producer", "is_published", "seasonal_tag"]
+    filterset_fields = ["producer", "is_published", "seasonal_tag", "products"]
+
+    def get_permissions(self):
+        if self.action in ("list", "retrieve"):
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     def get_queryset(self):
-        return Recipe.objects.prefetch_related("products").all()
+        return Recipe.objects.prefetch_related("products").select_related("producer").all()
 
 
 class FarmStoryViewSet(ModelViewSet):
