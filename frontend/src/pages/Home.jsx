@@ -1,55 +1,42 @@
-import { useEffect, useState } from "react";
 import Hero from "../components/Hero/Hero";
 import FeaturedProducts from "../components/FeaturedProducts/FeaturedProducts";
 import Banner from "../components/Banners/Banner";
+import styles from "./Home.module.css";
 
 export default function Home() {
-  const [health, setHealth] = useState(null);
-
-  useEffect(() => {
-    fetch("http://localhost:8000/api/")
-      .then((r) => r.json())
-      .then(setHealth)
-      .catch((e) => setHealth({ error: String(e) }));
-  }, []);
-
   return (
-    <main>
+    <main className={styles.page}>
       <Hero />
+
+      <section className={styles.intro}>
+        <p className={styles.eyebrow}>Local food, made simple</p>
+        <h1>Shop fresh produce from trusted local suppliers.</h1>
+        <p className={styles.subtext}>
+          BRFN connects customers with independent producers, making it easier
+          to discover fresh, seasonal, and sustainable food in one place.
+        </p>
+      </section>
+
       <FeaturedProducts />
-      <Banner />
 
-      {/* keep the backend status section below if you want */}
-            <p style={{ fontSize: 18, marginTop: 12, lineHeight: 1.5 }}>
-        Welcome to BRFN iytdfi
-      </p>
+      <section className={styles.benefits}>
+        <div className={styles.card}>
+          <h3>Fresh & seasonal</h3>
+          <p>Locally sourced produce, updated regularly.</p>
+        </div>
 
-      <section style={{ marginTop: 24 }}>
-        <h2 style={{ marginBottom: 8 }}>Backend Status</h2>
-        <div
-          style={{
-            border: "1px solid #eee",
-            borderRadius: 12,
-            padding: 16,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 16,
-          }}
-        >
-          <span>
-            {health === null
-              ? "Checking…"
-              : health.error
-              ? "Backend error"
-              : "Backend connected"}
-          </span>
+        <div className={styles.card}>
+          <h3>Support local producers</h3>
+          <p>Buy directly from regional suppliers.</p>
+        </div>
 
-          <pre style={{ margin: 0, fontSize: 12, overflowX: "auto" }}>
-            {JSON.stringify(health, null, 2)}
-          </pre>
+        <div className={styles.card}>
+          <h3>Simple ordering</h3>
+          <p>Browse, add to basket, and checkout easily.</p>
         </div>
       </section>
+
+      <Banner />
     </main>
   );
 }
