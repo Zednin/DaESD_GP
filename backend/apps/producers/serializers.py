@@ -52,12 +52,14 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 class FarmStorySerializer(serializers.ModelSerializer):
     content = serializers.CharField(source="body")
+    company_name = serializers.CharField(source="producer.company_name", read_only=True)
 
     class Meta:
         model = FarmStory
         fields = [
             "id",
             "producer",
+            "company_name",
             "title",
             "content",
             "image",
