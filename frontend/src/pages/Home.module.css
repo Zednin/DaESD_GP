@@ -1,0 +1,148 @@
+.page {
+  padding-top: 36px;
+  padding-bottom: 64px;
+}
+
+/* Intro */
+.intro {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 48px 24px 36px;
+  text-align: center;
+}
+
+.eyebrow {
+  margin: 0 0 10px 0;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.intro h1 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 44px;
+  line-height: 1.05;
+  color: var(--text);
+}
+
+.subtext {
+  max-width: 680px;
+  margin: 14px auto 0;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+/* Benefits */
+.benefits {
+  max-width: 1100px;
+  margin: 42px auto;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 22px;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  filter: brightness(0.99);
+}
+
+.card h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.card p {
+  margin-top: 10px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* Optional CTA strip */
+.ctaStrip {
+  max-width: 1100px;
+  margin: 42px auto;
+  padding: 28px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.ctaStrip h2 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 32px;
+  color: var(--text);
+}
+
+.ctaStrip p {
+  margin: 10px auto 0;
+  max-width: 620px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.primaryBtn {
+  display: inline-block;
+  margin-top: 18px;
+  padding: 12px 16px;
+  border-radius: 9999px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.primaryBtn:hover {
+  filter: brightness(0.95);
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .benefits {
+    grid-template-columns: 1fr;
+  }
+
+  .intro h1 {
+    font-size: 36px;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding-top: 24px;
+  }
+
+  .intro {
+    padding: 36px 18px 28px;
+  }
+
+  .intro h1 {
+    font-size: 32px;
+  }
+
+  .subtext {
+    font-size: 16px;
+  }
+
+  .benefits {
+    padding: 0 18px;
+  }
+}
