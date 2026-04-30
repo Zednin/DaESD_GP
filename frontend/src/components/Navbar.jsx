@@ -31,6 +31,11 @@ const NavbarMenu = [
         title: "Reduced to Clear",
         link: "/surplus-deals",
     },
+    {
+        id: 5,
+        title: "Farm Stories",
+        link: "/farm-stories",
+    }
 ]
 
 
