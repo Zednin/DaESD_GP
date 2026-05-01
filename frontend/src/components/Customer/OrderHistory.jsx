@@ -19,6 +19,7 @@ import {
   deleteReview,
   getReview,
 } from "../../utils/reviewsApi";
+import { addToCart } from "../../utils/cartStorage";
 import styles from "./OrderHistory.module.css";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -164,6 +165,27 @@ function getRatingLabel(rating) {
     default:
       return "";
   }
+}
+
+function getOrderItemProductId(item) {
+  return item.product_id || item.product || item.product?.id || item.id;
+}
+
+function getOrderItemUnit(item) {
+  return item.unit || item.product?.unit || "unit";
+}
+
+function getOrderItemPrice(item) {
+  const quantity = Number(getOrderItemQuantity(item) || 1);
+  const lineTotal = Number(getOrderItemTotal(item) || 0);
+
+  return (
+    item.price ||
+    item.price_snapshot ||
+    item.unit_price ||
+    item.product?.price ||
+    (quantity > 0 && lineTotal > 0 ? lineTotal / quantity : 0)
+  );
 }
 
 function InteractiveStarRating({ value, onChange }) {
@@ -497,7 +519,7 @@ function ItemReviewAction({ item, onOpenReview }) {
   );
 }
 
-function OrderCard({ order, onOpenReview }) {
+function OrderCard({ order, onOpenReview, onReorder, reorderState }) {
   const [expanded, setExpanded] = useState(false);
 
   const items = useMemo(() => buildOrderItems(order), [order]);
@@ -572,12 +594,33 @@ function OrderCard({ order, onOpenReview }) {
         </button>
 
         <div className={styles.secondaryActions}>
-          <button type="button" className={styles.secondaryBtn}>
-            <LuClock3 size={15} />
-            Reorder
+          <button
+            type="button"
+            className={styles.secondaryBtn}
+            onClick={() => onReorder(order)}
+            disabled={reorderState?.loading}
+          >
+            <LuRefreshCw size={15} className={reorderState?.loading ? styles.spinIcon : ""} />
+            {reorderState?.loading ? "Adding..." : "Reorder"}
           </button>
         </div>
       </div>
+
+      <AnimatePresence>
+        {reorderState?.message && (
+          <motion.div
+            className={`${styles.reorderNotice} ${
+              reorderState.type === "error" ? styles.reorderNoticeError : ""
+            }`}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.2 }}
+          >
+            {reorderState.message}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {expanded && (
         <div className={styles.expandedPanel}>
@@ -654,6 +697,7 @@ export default function OrderHistory() {
   const [existingReview, setExistingReview] = useState(null);
   const [loadingExistingReview, setLoadingExistingReview] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [reorderStates, setReorderStates] = useState({});
 
   async function loadOrders() {
     try {
@@ -748,6 +792,68 @@ export default function OrderHistory() {
     }
   }
 
+async function handleReorder(order) {
+  const items = buildOrderItems(order);
+
+  setReorderStates((prev) => ({
+    ...prev,
+    [order.id]: { loading: true, message: "", type: "success" },
+  }));
+
+  try {
+    if (!items.length) {
+      throw new Error("No items are available to reorder.");
+    }
+
+    let addedCount = 0;
+
+    for (const item of items) {
+      const productId = getOrderItemProductId(item);
+      if (!productId) continue;
+
+      await addToCart(
+        {
+          id: productId,
+          name: getOrderItemName(item),
+          unit: getOrderItemUnit(item),
+          price: getOrderItemPrice(item),
+          image: item.image || item.product?.image || null,
+          producer_id: item.producer_id || item.product?.producer_id || null,
+          producer_name: item.producer_name || item.product?.producer_name || null,
+        },
+        Number(getOrderItemQuantity(item))
+      );
+
+      addedCount += Number(getOrderItemQuantity(item));
+    }
+
+    setReorderStates((prev) => ({
+      ...prev,
+      [order.id]: {
+        loading: false,
+        type: "success",
+        message: `${addedCount} item${addedCount === 1 ? "" : "s"} added to basket.`,
+      },
+    }));
+
+    setTimeout(() => {
+      setReorderStates((prev) => ({
+        ...prev,
+        [order.id]: { loading: false, message: "", type: "success" },
+      }));
+    }, 3200);
+  } catch (err) {
+    setReorderStates((prev) => ({
+      ...prev,
+      [order.id]: {
+        loading: false,
+        type: "error",
+        message: err.message || "Could not add this order to your basket.",
+      },
+    }));
+  }
+}
+
   return (
     <section className={styles.wrapper}>
       <div className={styles.header}>
@@ -773,6 +879,8 @@ export default function OrderHistory() {
               key={order.id}
               order={order}
               onOpenReview={handleOpenReview}
+              onReorder={handleReorder}
+              reorderState={reorderStates[order.id]}
             />
           ))}
         </div>

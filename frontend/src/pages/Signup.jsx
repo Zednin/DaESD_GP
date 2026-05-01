@@ -18,6 +18,15 @@ export default function Signup() {
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+
+  const [addressLine1, setAddressLine1] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
+  const [city, setCity] = useState("");
+  const [postcode, setPostcode] = useState("");
+
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
 
@@ -62,6 +71,14 @@ export default function Signup() {
   function validate() {
     if (!username.trim()) return "Username is required";
     if (!email.trim()) return "Email is required";
+
+    if (!firstName.trim()) return "Primary contact first name is required";
+    if (!lastName.trim()) return "Primary contact last name is required";
+
+    if (!addressLine1.trim()) return "Address line 1 is required";
+    if (!city.trim()) return "City is required";
+    if (!postcode.trim()) return "Postcode is required";
+
     if (!password) return "Password is required";
     if (password.length < 8) return "Password must be at least 8 characters";
     if (password !== password2) return "Passwords do not match";
@@ -92,22 +109,35 @@ export default function Signup() {
       const validationError = validate();
       if (validationError) throw new Error(validationError);
 
+      const addressPayload = {
+        address_line_1: addressLine1.trim(),
+        address_line_2: addressLine2.trim(),
+        city: city.trim(),
+        postcode: postcode.trim(),
+      };
+
       if (accountType === "producer") {
         await signupProducer({
           username: username.trim(),
           email: email.trim(),
           password,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
           company_name: companyName.trim(),
           company_email: companyEmail.trim(),
           company_number: companyNumber.trim(),
           company_description: companyDescription.trim(),
           lead_time_hours: Number(leadTimeHours),
+          business_address: addressPayload,
         });
       } else {
         await signupCustomer({
           username: username.trim(),
           email: email.trim(),
           password,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          default_delivery_address: addressPayload,
           ...(org ? { organisation_type: org } : {}),
           ...(organisationName.trim()
             ? { organisation_name: organisationName.trim() }
@@ -169,6 +199,86 @@ export default function Signup() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>
+              {accountType === "producer"
+                ? "Primary contact first name"
+                : "First name"}
+            </label>
+            <input
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder={
+                accountType === "producer"
+                  ? "Enter primary contact first name"
+                  : "Enter first name"
+              }
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>
+              {accountType === "producer"
+                ? "Primary contact last name"
+                : "Last name"}
+            </label>
+            <input
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder={
+                accountType === "producer"
+                  ? "Enter primary contact last name"
+                  : "Enter last name"
+              }
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>
+              {accountType === "producer"
+                ? "Business address line 1"
+                : "Address line 1"}
+            </label>
+            <input
+              type="text"
+              value={addressLine1}
+              onChange={(e) => setAddressLine1(e.target.value)}
+              placeholder="Address line 1"
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>Address line 2</label>
+            <input
+              type="text"
+              value={addressLine2}
+              onChange={(e) => setAddressLine2(e.target.value)}
+              placeholder="Address line 2 optional"
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>City</label>
+            <input
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="City"
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>Postcode</label>
+            <input
+              type="text"
+              value={postcode}
+              onChange={(e) => setPostcode(e.target.value)}
+              placeholder="Postcode"
             />
           </div>
 

@@ -83,6 +83,7 @@ export async function signupCustomer({
   last_name = "",
   organisation_type = "",
   organisation_name = "",
+  default_delivery_address,
 }) {
   try {
     await ensureCsrf();
@@ -93,6 +94,7 @@ export async function signupCustomer({
       password,
       first_name,
       last_name,
+      default_delivery_address,
     };
 
     if (organisation_type) {
@@ -117,9 +119,11 @@ export async function signupProducer({
   first_name = "",
   last_name = "",
   company_name,
+  company_email = "",
   company_number,
   company_description = "",
   lead_time_hours = 48,
+  business_address,
 }) {
   try {
     await ensureCsrf();
@@ -131,9 +135,11 @@ export async function signupProducer({
       first_name,
       last_name,
       company_name,
+      company_email,
       company_number,
       company_description,
       lead_time_hours,
+      business_address,
     });
 
     return data;
