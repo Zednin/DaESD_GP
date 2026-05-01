@@ -15,6 +15,7 @@ import {
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import styles from "./AccountMenu.module.css";
+import { useTheme } from "../../theme/ThemeProvider"; // adjust path if needed
 
 const panels = {
   root: {
@@ -182,9 +183,7 @@ export default function AccountMenu({ user, onLogout, onOpenTerms }) {
   const wrapRef = useRef(null);
   const navigate = useNavigate();
 
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem("theme") || "auto";
-  });
+  const { theme, setTheme } = useTheme();
 
   const activeKey = stack[stack.length - 1];
   const activePanel = panels[activeKey];
@@ -211,38 +210,7 @@ export default function AccountMenu({ user, onLogout, onOpenTerms }) {
     };
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("theme", darkMode);
-
-    const root = document.documentElement;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-
-    const apply = () => {
-      const isDark = darkMode === "auto" ? mq.matches : darkMode === "on";
-
-      root.classList.add("theme-animate");
-      root.dataset.theme = isDark ? "dark" : "light";
-
-      window.clearTimeout(root.__themeTimer);
-      root.__themeTimer = window.setTimeout(() => {
-        root.classList.remove("theme-animate");
-      }, 260);
-    };
-
-    apply();
-
-    if (darkMode === "auto") {
-      const onChange = () => apply();
-
-      if (mq.addEventListener) mq.addEventListener("change", onChange);
-      else mq.addListener(onChange);
-
-      return () => {
-        if (mq.removeEventListener) mq.removeEventListener("change", onChange);
-        else mq.removeListener(onChange);
-      };
-    }
-  }, [darkMode]);
+  
 
   function go(panelKey) {
     setStack((s) => [...s, panelKey]);
@@ -411,8 +379,8 @@ export default function AccountMenu({ user, onLogout, onOpenTerms }) {
 
                     if (item.type === "darkmode") {
                       const options = [
-                        { key: "off", label: "Off" },
-                        { key: "on", label: "On" },
+                        { key: "light", label: "Light" },
+                        { key: "dark", label: "Dark" },
                         {
                           key: "auto",
                           label: "Automatic",
@@ -443,7 +411,7 @@ export default function AccountMenu({ user, onLogout, onOpenTerms }) {
                                 key={opt.key}
                                 type="button"
                                 className={styles.darkModeRow}
-                                onClick={() => setDarkMode(opt.key)}
+                                onClick={() => setTheme(opt.key)}
                               >
                                 <div className={styles.darkModeRowText}>
                                   <div className={styles.darkModeRowLabel}>
@@ -459,7 +427,7 @@ export default function AccountMenu({ user, onLogout, onOpenTerms }) {
 
                                 <span
                                   className={`${styles.radio} ${
-                                    darkMode === opt.key ? styles.radioOn : ""
+                                    theme === opt.key ? styles.radioOn : ""
                                   }`}
                                   aria-hidden="true"
                                 />
