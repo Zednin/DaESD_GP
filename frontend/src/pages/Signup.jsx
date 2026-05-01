@@ -5,6 +5,7 @@ import styles from "./Signup.module.css";
 import { signupCustomer, signupProducer, login } from "../utils/auth";
 import { useAuth } from "../auth/AuthContext";
 import { migrateLocalCartToServerIfNeeded } from "../utils/cartStorage";
+import TermsModal from "../Components/Legal/TermsModal";
 
 export default function Signup() {
   const { accountType } = useParams();
@@ -33,6 +34,9 @@ export default function Signup() {
   const [companyNumber, setCompanyNumber] = useState("");
   const [companyDescription, setCompanyDescription] = useState("");
   const [leadTimeHours, setLeadTimeHours] = useState("48");
+
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   const isProducer = accountType === "producer";
 
@@ -93,6 +97,10 @@ export default function Signup() {
       if (!Number.isFinite(leadTime) || leadTime < 48) {
         return "Lead time must be at least 48 hours";
       }
+    }
+
+    if (!acceptedTerms) {
+      return "You must accept the terms and conditions before creating an account";
     }
 
     return "";
@@ -362,9 +370,30 @@ export default function Signup() {
                 </Field>
               </div>
             </FormSection>
+            <div className={styles.termsBox}>
+              <label className={styles.termsLabel}>
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                />
+
+                <span>
+                  I agree to the{" "}
+                  <button
+                    type="button"
+                    className={styles.termsLink}
+                    onClick={() => setTermsOpen(true)}
+                  >
+                    Terms and Conditions
+                  </button>
+                </span>
+              </label>
+            </div>
           </form>
         </section>
       </motion.section>
+      <TermsModal open={termsOpen} onClose={() => setTermsOpen(false)} />
     </main>
   );
 }
