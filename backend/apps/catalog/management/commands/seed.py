@@ -58,26 +58,55 @@ PRODUCERS = [
 
 PRODUCTS = [
     # Vegetables
-    {"name": "Carrots",       "category": "Vegetables", "producer": "greenfarm",     "price": "1.20",  "unit": "kg",    "stock": 200, "organic_certified": True},
-    {"name": "Potatoes",      "category": "Vegetables", "producer": "greenfarm",     "price": "0.90",  "unit": "kg",    "stock": 500, "organic_certified": False},
-    {"name": "Spinach",       "category": "Vegetables", "producer": "greenfarm",     "price": "1.50",  "unit": "unit",  "stock": 80,  "organic_certified": True},
-    {"name": "Courgettes",    "category": "Vegetables", "producer": "greenfarm",     "price": "1.00",  "unit": "kg",    "stock": 120, "organic_certified": False},
+    {"name": "Carrots", "category": "Vegetables", "producer": "greenfarm", "price": "1.20", "unit": "kg", "stock": 200, "organic_certified": True,
+     "image": "https://res.cloudinary.com/drwmcduef/image/upload/v1774007764/products/1/main.webp"},
+
+    {"name": "Potatoes", "category": "Vegetables", "producer": "greenfarm", "price": "0.90", "unit": "kg", "stock": 500, "organic_certified": False,
+     "image": "https://res.cloudinary.com/drwmcduef/image/upload/v1774006514/products/2/main.jpg"},
+
+    {"name": "Spinach", "category": "Vegetables", "producer": "greenfarm", "price": "1.50", "unit": "unit", "stock": 80, "organic_certified": True,
+     "image": "https://res.cloudinary.com/drwmcduef/image/upload/v1774006864/products/3/main.avif"},
+
+    {"name": "Courgettes", "category": "Vegetables", "producer": "greenfarm", "price": "1.00", "unit": "kg", "stock": 120, "organic_certified": False,
+     "image": "https://res.cloudinary.com/drwmcduef/image/upload/v1774002408/products/4/main.webp"},
+
     # Fruit
-    {"name": "Apples",        "category": "Fruit",      "producer": "sunriseorchard","price": "2.00",  "unit": "kg",    "stock": 300, "organic_certified": True},
-    {"name": "Pears",         "category": "Fruit",      "producer": "sunriseorchard","price": "2.50",  "unit": "kg",    "stock": 150, "organic_certified": False},
-    {"name": "Strawberries",  "category": "Fruit",      "producer": "sunriseorchard","price": "3.00",  "unit": "unit",  "stock": 60,  "organic_certified": True},
+    {"name": "Apples", "category": "Fruit", "producer": "sunriseorchard", "price": "2.00", "unit": "kg", "stock": 300, "organic_certified": True,
+     "image": "https://res.cloudinary.com/drwmcduef/image/upload/v1774002073/products/5/main.jpg"},
+
+    {"name": "Pears", "category": "Fruit", "producer": "sunriseorchard", "price": "2.50", "unit": "kg", "stock": 150, "organic_certified": False,
+     "image": "https://res.cloudinary.com/drwmcduef/image/upload/v1774006396/products/6/main.webp"},
+
+    {"name": "Strawberries", "category": "Fruit", "producer": "sunriseorchard", "price": "3.00", "unit": "unit", "stock": 60, "organic_certified": True,
+     "image": "https://res.cloudinary.com/drwmcduef/image/upload/v1774006644/products/7/main.jpg"},
+
     # Dairy
-    {"name": "Whole Milk",    "category": "Dairy",      "producer": "greenfarm",     "price": "1.10",  "unit": "litre", "stock": 100, "organic_certified": False},
-    {"name": "Cheddar",       "category": "Dairy",      "producer": "greenfarm",     "price": "5.00",  "unit": "unit",  "stock": 40,  "organic_certified": False},
+    {"name": "Whole Milk", "category": "Dairy", "producer": "greenfarm", "price": "1.10", "unit": "litre", "stock": 100, "organic_certified": False,
+     "image": "https://res.cloudinary.com/drwmcduef/image/upload/v1774006815/products/8/main.jpg"},
+
+    {"name": "Cheddar", "category": "Dairy", "producer": "greenfarm", "price": "5.00", "unit": "unit", "stock": 40, "organic_certified": False,
+     "image": "https://res.cloudinary.com/drwmcduef/image/upload/v1773766356/montgomery_s_1065x1065px.jpg_a0ridg.webp"},
+
     # Meat
-    {"name": "Chicken Thighs","category": "Meat",       "producer": "greenfarm",     "price": "6.50",  "unit": "kg",    "stock": 50,  "organic_certified": False},
-    {"name": "Pork Sausages", "category": "Meat",       "producer": "greenfarm",     "price": "4.00",  "unit": "unit",  "stock": 70,  "organic_certified": False},
+    {"name": "Chicken Thighs", "category": "Meat", "producer": "greenfarm", "price": "6.50", "unit": "kg", "stock": 50, "organic_certified": False,
+     "image": "https://res.cloudinary.com/drwmcduef/image/upload/v1773766257/chicken_thighs_bf18a1a35dcb0b6a_b55ef63d-d50c-41a5-b040-f6cdce5e8c7e_jd7iks.webp"},
+
+    {"name": "Pork Sausages", "category": "Meat", "producer": "greenfarm", "price": "4.00", "unit": "unit", "stock": 70, "organic_certified": False,
+     "image": "https://res.cloudinary.com/drwmcduef/image/upload/v1774006459/products/11/main.jpg"},
+
     # Bakery
-    {"name": "Sourdough Loaf","category": "Bakery",     "producer": "sunriseorchard","price": "3.50",  "unit": "unit",  "stock": 30,  "organic_certified": False},
-    {"name": "Croissants",    "category": "Bakery",     "producer": "sunriseorchard","price": "4.00",  "unit": "dozen", "stock": 20,  "organic_certified": False},
+    {"name": "Sourdough Loaf", "category": "Bakery", "producer": "sunriseorchard", "price": "3.50", "unit": "unit", "stock": 30, "organic_certified": False,
+     "image": "https://res.cloudinary.com/drwmcduef/image/upload/v1774006579/products/12/main.webp"},
+
+    {"name": "Croissants", "category": "Bakery", "producer": "sunriseorchard", "price": "4.00", "unit": "dozen", "stock": 20, "organic_certified": False,
+     "image": "https://res.cloudinary.com/drwmcduef/image/upload/v1773766472/Croissants-jar-of-jam.jpg_okmn5y.webp"},
+
     # Drinks
-    {"name": "Apple Juice",   "category": "Drinks",     "producer": "sunriseorchard","price": "2.50",  "unit": "litre", "stock": 90,  "organic_certified": True},
-    {"name": "Elderflower Cordial","category": "Drinks","producer": "sunriseorchard","price": "4.50",  "unit": "unit",  "stock": 45,  "organic_certified": False},
+    {"name": "Apple Juice", "category": "Drinks", "producer": "sunriseorchard", "price": "2.50", "unit": "litre", "stock": 90, "organic_certified": True,
+     "image": "https://res.cloudinary.com/drwmcduef/image/upload/v1773765963/Health-GettyImages-2195254115-b58f9b474bcf47b3a89491d5ebec2fbf_mitsht.jpg"},
+
+    {"name": "Elderflower Cordial", "category": "Drinks", "producer": "sunriseorchard", "price": "4.50", "unit": "unit", "stock": 45, "organic_certified": False,
+     "image": "https://res.cloudinary.com/drwmcduef/image/upload/v1773766573/homemade-elderflower-cordial-1500x1500_2.jpg_kncfn2.webp"},
 ]
 
 CUSTOMERS = [
@@ -247,8 +276,14 @@ class Command(BaseCommand):
                     "organic_certified": prod.get("organic_certified", False),
                     "status": "available",
                     "description": f"Fresh {prod['name'].lower()} from {producer_map[prod['producer']].company_name}.",
+                    "image": prod.get("image"),
                 },
             )
+
+            if not created:
+                obj.image = prod.get("image")
+                obj.save(update_fields=["image"])
+
             if created:
                 self.stdout.write(f"  [+] Product: {obj.name}")
 
