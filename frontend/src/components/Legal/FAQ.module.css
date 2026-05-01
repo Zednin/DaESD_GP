@@ -199,3 +199,20 @@
     transform: none;
   }
 }
+
+.chevronWrap {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--primary);
+}
+
+.answerMotion {
+  overflow: hidden;
+}
+
+.answerMotion p {
+  padding: 0 20px 18px;
+  color: var(--muted);
+  line-height: 1.7;
+}

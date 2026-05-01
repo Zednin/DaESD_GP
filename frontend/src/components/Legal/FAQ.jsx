@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FaChevronDown,
   FaLeaf,
@@ -86,6 +87,54 @@ const faqs = [
   },
 ];
 
+const pageVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const floatUp = {
+  hidden: {
+    opacity: 0,
+    y: 26,
+    filter: "blur(6px)",
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: {
+      duration: 0.42,
+      ease: "easeOut",
+    },
+  },
+};
+
+const groupVariants = {
+  hidden: {
+    opacity: 0,
+    y: 34,
+    scale: 0.985,
+    filter: "blur(8px)",
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    filter: "blur(0px)",
+    transition: {
+      type: "spring",
+      stiffness: 420,
+      damping: 34,
+      mass: 0.8,
+    },
+  },
+};
+
 export default function FAQ() {
   const [openItem, setOpenItem] = useState("About BRFN-0");
 
@@ -94,21 +143,42 @@ export default function FAQ() {
   };
 
   return (
-    <main className={styles.page}>
-      <section className={styles.hero}>
-        <p className={styles.eyebrow}>Need a hand?</p>
-        <h1>Frequently Asked Questions</h1>
-        <p>
+    <motion.main
+      className={styles.page}
+      variants={pageVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.section className={styles.hero} variants={floatUp}>
+        <motion.p className={styles.eyebrow} variants={floatUp}>
+          Need a hand?
+        </motion.p>
+
+        <motion.h1 variants={floatUp}>Frequently Asked Questions</motion.h1>
+
+        <motion.p variants={floatUp}>
           Answers to the common bits: accounts, producers, food miles, privacy,
           recommendations, and how BRFN works.
-        </p>
-      </section>
+        </motion.p>
+      </motion.section>
 
-      <section className={styles.faqWrap}>
+      <motion.section className={styles.faqWrap} variants={pageVariants}>
         {faqs.map((group) => (
-          <div className={styles.group} key={group.category}>
+          <motion.div
+            className={styles.group}
+            key={group.category}
+            variants={groupVariants}
+            whileHover={{ y: -3 }}
+          >
             <div className={styles.groupHeader}>
-              <span className={styles.groupIcon}>{group.icon}</span>
+              <motion.span
+                className={styles.groupIcon}
+                whileHover={{ rotate: -8, scale: 1.08 }}
+                transition={{ type: "spring", stiffness: 500, damping: 18 }}
+              >
+                {group.icon}
+              </motion.span>
+
               <h2>{group.category}</h2>
             </div>
 
@@ -118,9 +188,10 @@ export default function FAQ() {
                 const isOpen = openItem === id;
 
                 return (
-                  <article
+                  <motion.article
                     className={`${styles.item} ${isOpen ? styles.open : ""}`}
                     key={id}
+                    layout
                   >
                     <button
                       type="button"
@@ -129,19 +200,36 @@ export default function FAQ() {
                       aria-expanded={isOpen}
                     >
                       <span>{item.q}</span>
-                      <FaChevronDown className={styles.chevron} />
+
+                      <motion.span
+                        className={styles.chevronWrap}
+                        animate={{ rotate: isOpen ? 180 : 0 }}
+                        transition={{ duration: 0.22, ease: "easeOut" }}
+                      >
+                        <FaChevronDown />
+                      </motion.span>
                     </button>
 
-                    <div className={styles.answer}>
-                      <p>{item.a}</p>
-                    </div>
-                  </article>
+                    <AnimatePresence initial={false}>
+                      {isOpen && (
+                        <motion.div
+                          className={styles.answerMotion}
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.24, ease: "easeOut" }}
+                        >
+                          <p>{item.a}</p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.article>
                 );
               })}
             </div>
-          </div>
+          </motion.div>
         ))}
-      </section>
-    </main>
+      </motion.section>
+    </motion.main>
   );
 }

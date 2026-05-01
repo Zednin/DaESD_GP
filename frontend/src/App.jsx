@@ -3,7 +3,7 @@ import { Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import TermsModal from "./components//Legal/TermsModal";
+import TermsModal from "./components/Legal/TermsModal";
 
 // Auth
 import RequireAuth from "./auth/RequireAuth";
@@ -21,7 +21,7 @@ import SurplusDeals from "./components/Marketplace/SurplusDeals";
 import About from "./pages/About";
 import Login from "./pages/Login";
 import Cart from "./pages/Cart";
-import FAQ from "./components//Legal/FAQ";
+import FAQ from "./components/Legal/FAQ";
 
 // Signup pages
 import SignupSelect from "./pages/SignupSelect";
@@ -46,7 +46,7 @@ export default function App() {
 
   return (
     <>
-      <Navbar />
+      <Navbar onOpenTerms={() => setTermsOpen(true)} />
 
       <Routes>
         {/* General */}
