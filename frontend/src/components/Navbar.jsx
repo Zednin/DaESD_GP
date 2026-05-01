@@ -101,7 +101,7 @@ function AnimatedValue({ value, className, prefix = "", suffix = "" }) {
   );
 }
 
-export default function Navbar() {
+export default function Navbar({ onOpenTerms }) {
   const { user, loading, logout } = useAuth();
   const [cartOpen, setCartOpen] = useState(false);
   const cartWrapRef = useRef(null);
@@ -414,7 +414,13 @@ export default function Navbar() {
           </div>
 
           {/* Auth */}
-          {!loading && <AccountMenu user={user} onLogout={logout} />}
+          {!loading && (
+            <AccountMenu
+              user={user}
+              onLogout={logout}
+              onOpenTerms={onOpenTerms}
+            />
+          )}
 
         </div>
       </div>

@@ -38,6 +38,9 @@ class ProducerViewSet(ModelViewSet):
     serializer_class = ProducerSerializer
 
     def get_permissions(self):
+        if self.action == "me":
+            return [IsAuthenticated(), IsProducer()]
+
         if self.request.method in permissions.SAFE_METHODS:
             return []
 
@@ -47,14 +50,34 @@ class ProducerViewSet(ModelViewSet):
         queryset = Producer.objects.select_related("account", "business_address")
         user = self.request.user
 
-        if self.request.method in permissions.SAFE_METHODS:
-            return queryset.all()
-
         if is_admin_user(user):
             return queryset.all()
 
+        # Public browsing/detail pages
+        if self.request.method in permissions.SAFE_METHODS:
+            return queryset.all()
+
+        # Writes are only own producer
         return queryset.filter(account=user)
 
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated, IsProducer])
+    def me(self, request):
+        try:
+            producer = Producer.objects.select_related(
+                "account",
+                "business_address",
+            ).get(account=request.user)
+        except Producer.DoesNotExist:
+            return Response(
+                {"detail": "No producer profile was found for your account."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = self.get_serializer(producer)
+        return Response(serializer.data)
+    
+    
+    
 
 # PUBLIC READ / PRIVATE WRITE
 
