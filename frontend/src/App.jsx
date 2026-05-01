@@ -33,6 +33,9 @@ import CheckoutSuccess from "./pages/Checkout/CheckoutSuccess";
 import ProducerDashboard from "./pages/Producer/ProducerDashboard";
 import ProducerMyAccount from "./pages/Producer/ProducerMyAccount";
 
+// farm stories pages
+import FarmStories from "./components/Marketplace/FarmStories";
+
 // Admin pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 
@@ -49,7 +52,7 @@ export default function App() {
         <Route path="/producers/:producerId" element={<ProducerDetail />} />
         <Route path="/surplus-deals" element={<SurplusDeals />} />
         <Route path="/about" element={<About />} />
-        
+        <Route path="/farm-stories" element={<FarmStories />} />
 
         <Route path="/login" element={<Login />} />
         <Route path="/cart" element={<Cart />} />
