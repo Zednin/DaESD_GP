@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
@@ -43,6 +43,23 @@ import AdminDashboard from "./pages/Admin/AdminDashboard";
 
 export default function App() {
   const [termsOpen, setTermsOpen] = useState(false);
+
+  // Cyberpunk Effects ////////////////////
+  useEffect(() => {
+    function handleMove(e) {
+      const x = `${(e.clientX / window.innerWidth) * 100}%`;
+      const y = `${(e.clientY / window.innerHeight) * 100}%`;
+
+      document.documentElement.style.setProperty("--cp-x", x);
+      document.documentElement.style.setProperty("--cp-y", y);
+    }
+
+    window.addEventListener("mousemove", handleMove);
+    return () => window.removeEventListener("mousemove", handleMove);
+  }, []);
+  //////////////////////////////////
+
+
 
   return (
     <>
