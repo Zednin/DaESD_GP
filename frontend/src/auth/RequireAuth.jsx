@@ -5,7 +5,7 @@ export default function RequireAuth({ children }) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) return null; // or a spinner
+  if (loading) return null;
 
   if (!user) {
     const next = encodeURIComponent(location.pathname + location.search);

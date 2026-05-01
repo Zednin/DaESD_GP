@@ -251,11 +251,13 @@ class CustomerRegisterSerializer(BaseRegisterSerializer):
         required=False,
         allow_blank=True,
     )
+    default_delivery_address = AddressSettingsSerializer(required=True)
 
     class Meta(BaseRegisterSerializer.Meta):
         fields = BaseRegisterSerializer.Meta.fields + [
             "organisation_type",
             "organisation_name",
+            "default_delivery_address",
         ]
 
     def validate(self, attrs):
@@ -278,6 +280,7 @@ class CustomerRegisterSerializer(BaseRegisterSerializer):
     def create(self, validated_data):
         organisation_type = validated_data.pop("organisation_type", "").strip()
         organisation_name = validated_data.pop("organisation_name", "").strip()
+        address_data = validated_data.pop("default_delivery_address")
 
         account = Account.objects.create_user(
             username=validated_data["username"],
@@ -288,7 +291,20 @@ class CustomerRegisterSerializer(BaseRegisterSerializer):
             account_type="customer",
         )
 
-        customer = Customer.objects.create(account=account)
+        address = Address.objects.create(
+            account=account,
+            address_type=Address.AddressType.DELIVERY,
+            is_default=True,
+            address_line_1=address_data["address_line_1"].strip(),
+            address_line_2=address_data.get("address_line_2", "").strip(),
+            city=address_data["city"].strip(),
+            postcode=address_data["postcode"].strip(),
+        )
+
+        customer = Customer.objects.create(
+            account=account,
+            default_delivery_address=address,
+        )
 
         if organisation_type:
             Organisation.objects.create(
@@ -303,26 +319,34 @@ class CustomerRegisterSerializer(BaseRegisterSerializer):
 
 class ProducerRegisterSerializer(BaseRegisterSerializer):
     company_name = serializers.CharField(max_length=255)
+    company_email = serializers.EmailField(required=False, allow_blank=True)
     company_number = serializers.CharField(max_length=15)
     company_description = serializers.CharField(required=False, allow_blank=True)
     lead_time_hours = serializers.IntegerField(required=False, min_value=48)
+    business_address = AddressSettingsSerializer(required=True)
 
     class Meta(BaseRegisterSerializer.Meta):
         fields = BaseRegisterSerializer.Meta.fields + [
             "company_name",
+            "company_email",
             "company_number",
             "company_description",
             "lead_time_hours",
+            "business_address",
         ]
 
     @transaction.atomic
     def create(self, validated_data):
+        address_data = validated_data.pop("business_address")
+
         producer_data = {
             "company_name": validated_data.pop("company_name"),
             "company_number": validated_data.pop("company_number"),
             "company_description": validated_data.pop("company_description", ""),
             "lead_time_hours": validated_data.pop("lead_time_hours", 48),
         }
+
+        validated_data.pop("company_email", "")
 
         account = Account.objects.create_user(
             username=validated_data["username"],
@@ -333,8 +357,19 @@ class ProducerRegisterSerializer(BaseRegisterSerializer):
             account_type="producer",
         )
 
+        address = Address.objects.create(
+            account=account,
+            address_type=Address.AddressType.BUSINESS,
+            is_default=True,
+            address_line_1=address_data["address_line_1"].strip(),
+            address_line_2=address_data.get("address_line_2", "").strip(),
+            city=address_data["city"].strip(),
+            postcode=address_data["postcode"].strip(),
+        )
+
         Producer.objects.create(
             account=account,
+            business_address=address,
             **producer_data,
         )
 

@@ -11,8 +11,6 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # If init SQL/scripts, add:
-      #- ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
@@ -35,13 +33,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      recommender:
+      ai:
         condition: service_healthy
 
-  recommender:
+  ai:
     build:
-      context: ./recommender
-    container_name: recommender
+      context: ./ai
+    container_name: ai
     restart: unless-stopped
     ports:
       - "5001:5000"
@@ -69,6 +67,6 @@ services:
           target: /app/src
         - action: rebuild
           path: ./frontend/package.json
-      
+
 volumes:
   postgres_data:
