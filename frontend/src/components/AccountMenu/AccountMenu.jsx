@@ -381,6 +381,7 @@ export default function AccountMenu({ user, onLogout, onOpenTerms }) {
                       const options = [
                         { key: "light", label: "Light" },
                         { key: "dark", label: "Dark" },
+                        { key: "cyberpunk", label: "Cyberpunk" },
                         {
                           key: "auto",
                           label: "Automatic",
