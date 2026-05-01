@@ -3,6 +3,7 @@ import shared from '../../pages/Producer/ProducerShared.module.css';
 import local from './ProducerProducts.module.css';
 const styles = { ...shared, ...local };
 import { FiUpload } from 'react-icons/fi';
+import DatePicker, { getCurrentLocalDateTimeInputValue } from '../DatePicker/DatePicker';
 import apiClient from "../../utils/apiClient";
 import { uploadProductImage } from "../../utils/productUploads";
 
@@ -54,6 +55,7 @@ function formatAvailability(product) {
 /* Product form modal  */
 function ProductModal({ product, producerId, onClose, onSaved }) {
   const isEdit = Boolean(product?.id);
+  const maxHarvestDateTime = getCurrentLocalDateTimeInputValue();
   const [imageFile, setImageFile] = useState(null);
   const [form, setForm] = useState(
     isEdit
@@ -113,6 +115,14 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
       return;
     }
 
+    if (name === 'harvest_date' && value > maxHarvestDateTime) {
+      setForm((f) => ({
+        ...f,
+        harvest_date: maxHarvestDateTime,
+      }));
+      return;
+    }
+
     setForm((f) => ({
       ...f,
       [name]: type === 'checkbox' ? checked : value
@@ -138,6 +148,12 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
     setError('');
 
     try {
+      if (form.harvest_date && new Date(form.harvest_date) > new Date()) {
+        setError('Harvest date cannot be in the future.');
+        setSaving(false);
+        return;
+      }
+
       const { allergens: _allergens, ...rest } = form;
       const payload = {
         ...rest,
@@ -269,7 +285,19 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
             </div>
             <div className={styles.field}>
               <label>Harvest Date</label>
-              <input name="harvest_date" type="datetime-local" value={form.harvest_date} onChange={handleChange} />
+              <DatePicker
+                value={form.harvest_date}
+                max={maxHarvestDateTime}
+                includeTime
+                placeholder="Select harvest date"
+                ariaLabel="Choose harvest date"
+                onChange={(harvestDate) =>
+                  setForm((f) => ({
+                    ...f,
+                    harvest_date: harvestDate,
+                  }))
+                }
+              />
             </div>
           </div>
 

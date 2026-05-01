@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import shared from '../../pages/Producer/ProducerShared.module.css';
 import local from './ProducerSurplus.module.css';
 const styles = { ...shared, ...local };
+import DatePicker from '../DatePicker/DatePicker';
 import apiClient from '../../utils/apiClient';
 
 function formatTimeRemaining(endDate) {
@@ -264,10 +265,12 @@ function DiscountOfferModal({ product, onClose, onSaved }) {
           {/* Best before date */}
           <div className={styles.field}>
             <label>Best Before Date</label>
-            <input
-              type="datetime-local"
+            <DatePicker
               value={bestBefore}
-              onChange={(e) => setBestBefore(e.target.value)}
+              onChange={setBestBefore}
+              includeTime
+              placeholder="Select best before date"
+              ariaLabel="Choose best before date"
             />
           </div>
 
