@@ -161,3 +161,12 @@
   border-radius: 999px;
   margin-left: auto;
 }
+
+.impactStatCard {
+  background: color-mix(in srgb, var(--success-muted) 58%, var(--surface) 42%);
+  border-color: color-mix(in srgb, var(--success) 28%, var(--border));
+}
+
+.impactStatValue {
+  color: var(--success);
+}
