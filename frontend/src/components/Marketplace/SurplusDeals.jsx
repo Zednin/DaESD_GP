@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import QuickAddModal from '../QuickAddModal/QuickAddModal';
 import { fadeRight, fadeUp } from '../../animations/heroAnimations';
 import styles from './SurplusDeals.module.css';
-import { FiClock, FiCalendar, FiPackage } from 'react-icons/fi';
+import { FiClock, FiCalendar, FiPackage, FiTrendingUp } from 'react-icons/fi';
 import { LuLeaf } from 'react-icons/lu';
 import { addToCart, getCartSubtotal, readCart } from '../../utils/cartStorage';
 import { getAllergenInfo } from '../../utils/allergenIcons';
@@ -32,6 +32,51 @@ function formatBestBefore(date) {
   if (diffDays <= 0) return 'Today';
   if (diffDays === 1) return '1 day';
   return `${diffDays} days`;
+}
+
+const UNIT_WEIGHT_KG = {
+  kg: 1,
+  kilogram: 1,
+  kilograms: 1,
+  g: 0.001,
+  gram: 0.001,
+  grams: 0.001,
+  box: 2,
+  crate: 5,
+  punnet: 0.3,
+  bunch: 0.25,
+  bag: 1,
+  item: 0.2,
+  each: 0.2,
+};
+
+const MIN_CARBON_KG_PER_FOOD_KG = 1.3;
+const MAX_CARBON_KG_PER_FOOD_KG = 2.5;
+
+function getCarbonMultiplier(product) {
+  const seed = `${product.id ?? ''}${product.name ?? ''}${product.unit ?? ''}`;
+  const hash = seed.split('').reduce((total, char) => total + char.charCodeAt(0), 0);
+  const ratio = (hash % 100) / 100;
+
+  return MIN_CARBON_KG_PER_FOOD_KG
+    + ratio * (MAX_CARBON_KG_PER_FOOD_KG - MIN_CARBON_KG_PER_FOOD_KG);
+}
+
+function estimateWasteImpact(product, quantity = 1) {
+  const unit = product.unit?.toLowerCase();
+  const weightPerUnit = UNIT_WEIGHT_KG[unit] ?? 0.5;
+  const rescuedKg = weightPerUnit * quantity;
+  const carbonMultiplier = getCarbonMultiplier(product);
+
+  return {
+    rescuedKg,
+    carbonSavedKg: rescuedKg * carbonMultiplier,
+  };
+}
+
+function formatKg(value) {
+  if (value < 1) return `${Math.round(value * 1000)}g`;
+  return `${value.toFixed(1)}kg`;
 }
 
 export default function SurplusDeals() {
@@ -81,6 +126,17 @@ export default function SurplusDeals() {
     await addToCart(product, qty);
     setQuickAddOpen(false);
   }
+
+  const totalImpact = products.reduce(
+    (totals, product) => {
+      const impact = estimateWasteImpact(product, Number(product.stock) || 0);
+      return {
+        rescuedKg: totals.rescuedKg + impact.rescuedKg,
+        carbonSavedKg: totals.carbonSavedKg + impact.carbonSavedKg,
+      };
+    },
+    { rescuedKg: 0, carbonSavedKg: 0 }
+  );
 
   if (loading) {
     return (
@@ -142,20 +198,47 @@ export default function SurplusDeals() {
           <p>Check back soon — producers regularly add last-minute offers.</p>
         </div>
       ) : (
-        <motion.section
-          className={styles.grid}
-          variants={fadeUp(0.35)}
-          initial="hidden"
-          animate="visible"
-        >
-          {products.map((product) => {
-            const originalPrice = parseFloat(product.price);
-            const surplusPrice = parseFloat(product.surplus_price);
-            const timeRemaining = formatTimeRemaining(product.surplus_end_date);
-            const bestBefore = formatBestBefore(product.best_before_date);
+        <>
+          <motion.section
+            className={styles.impactSummary}
+            variants={fadeUp(0.32)}
+            initial="hidden"
+            animate="visible"
+          >
+            <div className={styles.impactSummaryIntro}>
+              <FiTrendingUp className={styles.impactSummaryIcon} />
+              <div>
+                <h2>Potential impact today</h2>
+                <p>If these surplus deals sell, this is the estimated waste avoided.</p>
+              </div>
+            </div>
+            <div className={styles.impactSummaryStats}>
+              <div>
+                <span className={styles.impactSummaryValue}>{formatKg(totalImpact.rescuedKg)}</span>
+                <span className={styles.impactSummaryLabel}>food rescued</span>
+              </div>
+              <div>
+                <span className={styles.impactSummaryValue}>{formatKg(totalImpact.carbonSavedKg)}</span>
+                <span className={styles.impactSummaryLabel}>CO2e saved</span>
+              </div>
+            </div>
+          </motion.section>
 
-            return (
-              <div key={product.id} className={styles.card}>
+          <motion.section
+            className={styles.grid}
+            variants={fadeUp(0.35)}
+            initial="hidden"
+            animate="visible"
+          >
+            {products.map((product) => {
+              const originalPrice = parseFloat(product.price);
+              const surplusPrice = parseFloat(product.surplus_price);
+              const timeRemaining = formatTimeRemaining(product.surplus_end_date);
+              const bestBefore = formatBestBefore(product.best_before_date);
+              const itemImpact = estimateWasteImpact(product);
+
+              return (
+                <div key={product.id} className={styles.card}>
                 {/* Discount badge */}
                 <div className={styles.discountBadge}>
                   -{product.discount_percentage}% OFF
@@ -215,6 +298,24 @@ export default function SurplusDeals() {
                     </div>
                   </div>
 
+                  {/* Impact estimate */}
+                  <div className={styles.impactBox}>
+                    <div className={styles.impactBoxHeader}>
+                      <LuLeaf className={styles.impactBoxIcon} />
+                      <span>Buying 1 helps prevent</span>
+                    </div>
+                    <div className={styles.impactMetrics}>
+                      <div>
+                        <strong>{formatKg(itemImpact.rescuedKg)}</strong>
+                        <span>food waste</span>
+                      </div>
+                      <div>
+                        <strong>{formatKg(itemImpact.carbonSavedKg)}</strong>
+                        <span>CO2e</span>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Surplus note */}
                   {product.surplus_note && (
                     <p className={styles.surplusNote}>"{product.surplus_note}"</p>
@@ -243,10 +344,11 @@ export default function SurplusDeals() {
                     Add to basket — £{surplusPrice.toFixed(2)}
                   </button>
                 </div>
-              </div>
-            );
-          })}
-        </motion.section>
+                </div>
+              );
+            })}
+          </motion.section>
+        </>
       )}
 
       {/* Quick Add Modal */}
