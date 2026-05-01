@@ -14,6 +14,19 @@ import {
 import { fetchMe, logout as apiLogout } from "../utils/auth";
 
 const AuthContext = createContext(null);
+const PRODUCER_SPLASH_SESSION_KEY_PREFIX = "producer-dashboard-splash-seen";
+
+function clearProducerSplashSession() {
+  try {
+    Object.keys(sessionStorage).forEach((key) => {
+      if (key.startsWith(PRODUCER_SPLASH_SESSION_KEY_PREFIX)) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  } catch {
+    // Ignore storage errors during logout.
+  }
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -41,6 +54,7 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error("[auth] logout failed:", error);
     } finally {
+      clearProducerSplashSession();
       setUser(null);
       await clearCartLocal();
       window.dispatchEvent(new Event("auth:updated"));
