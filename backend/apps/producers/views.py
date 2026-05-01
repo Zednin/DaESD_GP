@@ -35,26 +35,24 @@ class IsProducerOwnerOrAdmin(permissions.BasePermission):
 
 class ProducerViewSet(ModelViewSet):
     serializer_class = ProducerSerializer
-    permission_classes = [IsAuthenticated, IsProducerOwnerOrAdmin]
+
+    def get_permissions(self):
+        if self.request.method in permissions.SAFE_METHODS:
+            return []
+
+        return [IsAuthenticated(), IsProducerOwnerOrAdmin()]
 
     def get_queryset(self):
         queryset = Producer.objects.select_related("account", "business_address")
         user = self.request.user
 
+        if self.request.method in permissions.SAFE_METHODS:
+            return queryset.all()
+
         if is_admin_user(user):
             return queryset.all()
 
         return queryset.filter(account=user)
-
-    def perform_create(self, serializer):
-        if not is_admin_user(self.request.user):
-            raise PermissionDenied("You cannot create producer profiles from this endpoint.")
-
-        serializer.save()
-
-    @action(detail=False, methods=["get"], permission_classes=[IsProducer])
-    def dashboard(self, request):
-        return Response({"message": "Producer dashboard data"})
 
 
 # PUBLIC READ / PRIVATE WRITE
