@@ -12,14 +12,5 @@ export default function RequireAuth({ children }) {
     return <Navigate to={`/login?next=${next}`} replace />;
   }
 
-  // role based redirect
-  if (user.account_type === "producer") {
-    return <Navigate to="/producer/myaccount" replace />;
-  }
-
-  if (user.account_type === "admin") {
-    return <Navigate to="/admin/dashboard" replace />;
-  }
-
   return children;
 }

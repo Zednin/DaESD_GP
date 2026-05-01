@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from .models import Product, Category
 from apps.traceability.models import Allergen
 
@@ -16,21 +17,33 @@ class ProductAllergenSerializer(serializers.ModelSerializer):
 
 
 class ProductSerializer(serializers.ModelSerializer):
-    # Readable representations
-    producer_name = serializers.CharField(source="producer.company_name", read_only=True)
-    category_name = serializers.CharField(source="category.name", read_only=True)
+    producer_name = serializers.CharField(
+        source="producer.company_name",
+        read_only=True,
+    )
+
+    producer_profile_id = serializers.SerializerMethodField()
+
+    category_name = serializers.CharField(
+        source="category.name",
+        read_only=True,
+    )
+
     allergens = ProductAllergenSerializer(many=True, read_only=True)
-    # Accept allergen IDs on write
+
     allergen_ids = serializers.PrimaryKeyRelatedField(
         queryset=Allergen.objects.all(),
         many=True,
         write_only=True,
         required=False,
     )
-    # Surplus computed fields
+
     surplus_price = serializers.DecimalField(
-        max_digits=10, decimal_places=2, read_only=True
+        max_digits=10,
+        decimal_places=2,
+        read_only=True,
     )
+
     surplus_active = serializers.BooleanField(read_only=True)
 
     class Meta:
@@ -38,6 +51,7 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "producer",
+            "producer_profile_id",
             "producer_name",
             "category",
             "category_name",
@@ -65,21 +79,39 @@ class ProductSerializer(serializers.ModelSerializer):
             "allergens",
             "allergen_ids",
         ]
-        read_only_fields = ["id", "created_at", "updated_at", "surplus_price", "surplus_active"]
+
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "surplus_price",
+            "surplus_active",
+            "producer_profile_id",
+            "producer_name",
+            "category_name",
+            "allergens",
+        ]
+
+    def get_producer_profile_id(self, obj):
+        return obj.producer_id
 
     def create(self, validated_data):
         allergens = validated_data.pop("allergen_ids", [])
         product = super().create(validated_data)
+
         for allergen in allergens:
             allergen.products.add(product)
+
         return product
 
     def update(self, instance, validated_data):
         allergens = validated_data.pop("allergen_ids", None)
         product = super().update(instance, validated_data)
+
         if allergens is not None:
-            # Clear existing and set new
             instance.allergens.clear()
+
             for allergen in allergens:
                 allergen.products.add(product)
+
         return product

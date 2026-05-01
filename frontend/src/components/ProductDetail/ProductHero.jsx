@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   LuLeaf,
   LuMapPinned,
@@ -160,10 +161,10 @@ export default function ProductHero({
             </div>
 
             <div className={styles.imageBottomPanel}>
-              <div className={styles.originPill}>
+              <Link to={`/producers/${product.producer_id || product.producer_profile_id || product.producer}`} className={styles.originPill}>
                 <LuMapPinned size={14} />
                 From {product.producer_name}
-              </div>
+              </Link>
 
               <div className={styles.heroMiniStat}>
                 <span>{formatFoodMilesText(foodMiles)}</span>
@@ -182,10 +183,10 @@ export default function ProductHero({
       >
         <div className={styles.infoShell}>
           <div className={styles.metaRow}>
-            <span className={styles.producerChip}>
+            <Link to={`/producers/${product.producer_id || product.producer_profile_id || product.producer}`} className={styles.producerChip}>
               <LuBadgeCheck size={14} />
               {product.producer_name}
-            </span>
+            </Link>
 
             <div className={styles.reviewChip}>
               <RatingStars rating={reviewAverage} size={14} />
