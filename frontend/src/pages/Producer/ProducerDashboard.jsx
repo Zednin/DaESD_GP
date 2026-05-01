@@ -21,11 +21,21 @@ const navItems = [
 ];
 
 const SPLASH_LETTERS = ["B", "R", "F", "N"];
+const SPLASH_SESSION_KEY_PREFIX = "producer-dashboard-splash-seen";
 
 export default function ProducerDashboard() {
   const { user } = useAuth();
+  const splashSessionKey = user?.id
+    ? `${SPLASH_SESSION_KEY_PREFIX}:${user.id}`
+    : SPLASH_SESSION_KEY_PREFIX;
 
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(() => {
+    try {
+      return sessionStorage.getItem(splashSessionKey) !== "true";
+    } catch {
+      return true;
+    }
+  });
   const [splashFading, setSplashFading] = useState(false);
   const [activeSection, setActiveSection] = useState("overview");
   const [allProducers, setAllProducers] = useState([]);
@@ -34,9 +44,25 @@ export default function ProducerDashboard() {
   const isAdmin = user?.account_type === "admin";
 
   const endSplash = useCallback(() => {
+    try {
+      sessionStorage.setItem(splashSessionKey, "true");
+    } catch {
+      // Ignore storage errors so the dashboard still opens normally.
+    }
+
     setSplashFading(true);
     setTimeout(() => setShowSplash(false), 600);
-  }, []);
+  }, [splashSessionKey]);
+
+  useEffect(() => {
+    try {
+      const hasSeenSplash = sessionStorage.getItem(splashSessionKey) === "true";
+      setShowSplash(!hasSeenSplash);
+      setSplashFading(false);
+    } catch {
+      setShowSplash(true);
+    }
+  }, [splashSessionKey]);
 
   useEffect(() => {
     if (!showSplash) return;
