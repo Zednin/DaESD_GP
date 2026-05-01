@@ -2,7 +2,7 @@ from django.db import models
 from rest_framework import permissions, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
@@ -11,6 +11,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Producer
 from .serializers import ProducerSerializer, RecipeSerializer, FarmStorySerializer
 from apps.accounts.permissions import IsProducer
+
 from apps.community.models import Recipe, FarmStory
 from apps.api.cloudinary_utils import upload_file_to_cloudinary
 
@@ -79,7 +80,7 @@ class RecipeViewSet(ModelViewSet):
     serializer_class = RecipeSerializer
     permission_classes = [IsOwnerProducerOrAdminForWrites]
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["producer", "is_published", "seasonal_tag"]
+    filterset_fields = ["producer", "is_published", "seasonal_tag", "products"]
 
     def get_queryset(self):
         queryset = Recipe.objects.select_related(

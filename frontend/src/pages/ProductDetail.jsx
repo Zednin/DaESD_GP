@@ -5,6 +5,7 @@ import { addToCart } from "../utils/cartStorage";
 import styles from "./ProductDetail.module.css";
 import ProductHero from "../components/ProductDetail/ProductHero";
 import ProductFoodMiles from "../components/ProductDetail/ProductFoodMiles";
+import ProductRecipes from "../components/ProductDetail/ProductRecipes";
 import ProductReviews from "../components/ProductDetail/ProductReviews";
 
 export default function ProductDetail() {
@@ -81,19 +82,7 @@ export default function ProductDetail() {
 
       <ProductFoodMiles product={product} />
 
-      <section className={styles.storySection}>
-        <h2>About this product</h2>
-        <div className={styles.storyCard}>
-          <p>
-            This product page is designed to surface the details that matter in local food systems:
-            provenance, availability, sustainability, and transparency around what you are buying.
-          </p>
-          <p>
-            In the final version, this section can also link through to seasonal recipes, storage guidance,
-            and producer stories.
-          </p>
-        </div>
-      </section>
+      <ProductRecipes productId={productId} />
 
       <ProductReviews
         productId={productId}
