@@ -6,7 +6,7 @@ import styles from "./Navbar.module.css";
 import AccountMenu from "./AccountMenu/AccountMenu";
 import NotificationMenu from "./NotificationMenu/NotificationMenu";
 import { Link } from "react-router-dom";
-import { readCart, getCartCount, getCartSubtotal } from "../utils/cartStorage";
+import {readCart, getCartCount, getCartSubtotal, updateCartQty,removeFromCart} from "../utils/cartStorage";
 import { useAuth } from "../auth/AuthContext";
 
 
@@ -79,6 +79,23 @@ const badgeVariants = {
   },
 };
 
+function AnimatedValue({ value, className, prefix = "", suffix = "" }) {
+  return (
+    <AnimatePresence mode="popLayout" initial={false}>
+      <motion.span
+        key={value}
+        className={className}
+        initial={{ y: 8, opacity: 0, filter: "blur(3px)" }}
+        animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+        exit={{ y: -8, opacity: 0, filter: "blur(3px)" }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
+      >
+        {prefix}{value}{suffix}
+      </motion.span>
+    </AnimatePresence>
+  );
+}
+
 export default function Navbar() {
   const { user, loading, logout } = useAuth();
   const [cartOpen, setCartOpen] = useState(false);
@@ -92,6 +109,25 @@ export default function Navbar() {
   const navigate = useNavigate();
   const isProducer = user?.account_type === "producer";
   const isAdmin = user?.account_type === "admin";
+
+  const previewItems = cartItems.slice(0, 4);
+  const hiddenItemCount = Math.max(0, cartItems.length - previewItems.length);
+  const freeDeliveryTarget = 40;
+  const freeDeliveryRemaining = Math.max(0, freeDeliveryTarget - subtotal);
+  const freeDeliveryProgress = Math.min(100, (subtotal / freeDeliveryTarget) * 100);
+
+  async function increaseQty(item) {
+    await updateCartQty(item.productId, Number(item.qty || 1) + 1);
+  }
+
+  async function decreaseQty(item) {
+    if (Number(item.qty) <= 1) return;
+    await updateCartQty(item.productId, Number(item.qty || 1) - 1);
+  }
+
+  async function removeItem(item) {
+    await removeFromCart(item.productId);
+  }
 
   function handleCheckoutClick(e) {
     if (!user) {
@@ -209,53 +245,158 @@ export default function Navbar() {
                 style={{ transformOrigin: "top right" }}
               >
                 <div className={styles.cartHeader}>
-                  <span className={styles.cartTitle}>Your basket</span>
-                  <span className={styles.cartMeta}>{itemCount} items</span>
+                  <div>
+                    <span className={styles.cartTitle}>Basket</span>
+                    <p className={styles.cartSubtitle}>
+                      {itemCount > 0
+                        ? `${itemCount} item${itemCount === 1 ? "" : "s"} ready`
+                        : "No items added yet"}
+                    </p>
+                  </div>
+
+                  {itemCount > 0 && (
+                    <div className={styles.cartMiniTotal}>
+                      <AnimatedValue value={subtotal.toFixed(2)} prefix="£" />
+                    </div>
+                  )}
                 </div>
 
                 {cartItems.length === 0 ? (
-                  <div className={styles.cartEmpty}>Your basket is empty.</div>
+                  <div className={styles.cartEmpty}>
+                    <div className={styles.cartEmptyIcon}>
+                      <MdOutlineShoppingCart />
+                    </div>
+                    <h3>Your basket is empty</h3>
+                    <p>Add local produce and your items will appear here.</p>
+                    <Link
+                      to="/products"
+                      className={styles.emptyCartBtn}
+                      onClick={() => setCartOpen(false)}
+                    >
+                      Browse products
+                    </Link>
+                  </div>
                 ) : (
                   <>
+                    <div className={styles.deliveryProgress}>
+                      <div className={styles.deliveryText}>
+                        {freeDeliveryRemaining > 0 ? (
+                          <span>
+                            £{freeDeliveryRemaining.toFixed(2)} away from suggested free delivery
+                          </span>
+                        ) : (
+                          <span>Suggested free delivery reached</span>
+                        )}
+                      </div>
+
+                      <div className={styles.deliveryTrack}>
+                        <motion.div
+                          className={styles.deliveryFill}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${freeDeliveryProgress}%` }}
+                          transition={{ duration: 0.35, ease: "easeOut" }}
+                        />
+                      </div>
+                    </div>
+
                     <motion.ul className={styles.cartList}>
                       <AnimatePresence initial={false}>
-                        {cartItems.map((item) => (
-                          <motion.li
-                            key={item.productId}
-                            className={styles.cartItem}
-                            variants={itemVariants}
-                            initial="hidden"
-                            animate="visible"
-                            exit="exit"
-                            whileHover={{ x: 2 }}
-                            transition={{ type: "spring", stiffness: 600, damping: 35 }}
-                          >
-                            <div className={styles.cartItemText}>
-                              <div className={styles.cartItemName}>{item.name}</div>
-                              <div className={styles.cartItemSub}>
-                                Qty {item.qty} • £{Number(item.price).toFixed(2)} / {item.unit}
-                              </div>
-                            </div>
+                        {previewItems.map((item) => {
+                          const lineTotal = Number(item.qty || 0) * Number(item.price || 0);
 
-                            <div className={styles.cartItemTotal}>
-                              £{(item.qty * Number(item.price)).toFixed(2)}
-                            </div>
-                          </motion.li>
-                        ))}
+                          return (
+                            <motion.li
+                              key={item.productId}
+                              className={styles.cartItem}
+                              layout="position"
+                              variants={itemVariants}
+                              initial="hidden"
+                              animate="visible"
+                              exit="exit"
+                              transition={{ type: "spring", stiffness: 520, damping: 36 }}
+                            >
+                              <div className={styles.cartItemMain}>
+                                <div className={styles.cartItemName}>{item.name}</div>
+
+                                <div className={styles.cartItemSub}>
+                                  £{Number(item.price).toFixed(2)} / {item.unit || "item"}
+                                </div>
+
+                                <div className={styles.cartItemControls}>
+                                  <button
+                                    type="button"
+                                    className={styles.qtyMiniBtn}
+                                    onClick={() => decreaseQty(item)}
+                                    disabled={Number(item.qty) <= 1}
+                                    aria-label={`Decrease ${item.name}`}
+                                  >
+                                    −
+                                  </button>
+
+                                  <div className={styles.qtyMiniValue}>
+                                    <AnimatedValue value={item.qty} />
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    className={styles.qtyMiniBtn}
+                                    onClick={() => increaseQty(item)}
+                                    aria-label={`Increase ${item.name}`}
+                                  >
+                                    +
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    className={styles.removeMiniBtn}
+                                    onClick={() => removeItem(item)}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              </div>
+
+                              <strong className={styles.cartItemTotal}>
+                                <AnimatedValue value={lineTotal.toFixed(2)} prefix="£" />
+                              </strong>
+                            </motion.li>
+                          );
+                        })}
                       </AnimatePresence>
                     </motion.ul>
+
+                    {hiddenItemCount > 0 && (
+                      <Link
+                        to="/cart"
+                        className={styles.moreItemsRow}
+                        onClick={() => setCartOpen(false)}
+                      >
+                        View {hiddenItemCount} more item{hiddenItemCount === 1 ? "" : "s"}
+                      </Link>
+                    )}
 
                     <div className={styles.cartFooter}>
                       <div className={styles.cartSubtotalRow}>
                         <span>Subtotal</span>
-                        <strong>£{subtotal.toFixed(2)}</strong>
+                        <strong>
+                          <AnimatedValue value={subtotal.toFixed(2)} prefix="£" />
+                        </strong>
                       </div>
 
                       <div className={styles.cartActions}>
-                        <Link to="/cart" className={styles.viewCartBtn} onClick={() => setCartOpen(false)}>
+                        <Link
+                          to="/cart"
+                          className={styles.viewCartBtn}
+                          onClick={() => setCartOpen(false)}
+                        >
                           View basket
                         </Link>
-                        <Link to="/checkout" className={styles.checkoutBtn} onClick={handleCheckoutClick}>
+
+                        <Link
+                          to="/checkout"
+                          className={styles.checkoutBtn}
+                          onClick={handleCheckoutClick}
+                        >
                           Checkout
                         </Link>
                       </div>

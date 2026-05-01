@@ -1,24 +1,198 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import styles from "./Cart.module.css";
 import { Link } from "react-router-dom";
-import { readCart, updateCartQty, removeFromCart, getCartSubtotal } from "../utils/cartStorage";
+import {
+  readCart,
+  updateCartQty,
+  removeFromCart,
+  getCartSubtotal,
+} from "../utils/cartStorage";
+import apiClient from "../utils/apiClient";
 
+function money(value) {
+  return `£${Number(value || 0).toFixed(2)}`;
+}
+
+function getProducerName(item) {
+  return item.producerName || item.producer_name || "Unknown producer";
+}
+
+function getProducerId(item) {
+  return item.producerId || item.producer_id || getProducerName(item);
+}
+
+function getImageUrl(item) {
+  return item.image || item.image_url || "";
+}
+
+function QuantityStepper({ value, onDecrease, onIncrease }) {
+  return (
+    <div className={styles.qtyStepper}>
+      <button
+        type="button"
+        className={styles.qtyButton}
+        onClick={onDecrease}
+        disabled={Number(value) <= 1}
+        aria-label="Decrease quantity"
+      >
+        −
+      </button>
+
+      <motion.span
+        key={value}
+        className={styles.qtyNumber}
+        initial={{ scale: 0.86 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 0.14, ease: "easeOut" }}
+      >
+        {value}
+      </motion.span>
+
+      <button
+        type="button"
+        className={styles.qtyButton}
+        onClick={onIncrease}
+        aria-label="Increase quantity"
+      >
+        +
+      </button>
+    </div>
+  );
+}
 
 export default function Cart() {
   const [items, setItems] = useState(() => readCart());
+  const [productDetails, setProductDetails] = useState({});
+
+  const itemOrderRef = useRef(new Map());
+  const nextOrderRef = useRef(0);
 
   useEffect(() => {
     function sync() {
       setItems(readCart());
     }
+
     window.addEventListener("cart:updated", sync);
     return () => window.removeEventListener("cart:updated", sync);
   }, []);
 
+  useEffect(() => {
+    const currentProductIds = new Set();
+
+    items.forEach((item) => {
+      const key = String(item.productId);
+      currentProductIds.add(key);
+
+      if (!itemOrderRef.current.has(key)) {
+        itemOrderRef.current.set(key, nextOrderRef.current);
+        nextOrderRef.current += 1;
+      }
+    });
+
+    for (const key of itemOrderRef.current.keys()) {
+      if (!currentProductIds.has(key)) {
+        itemOrderRef.current.delete(key);
+      }
+    }
+  }, [items]);
+
+  const productIdsKey = useMemo(() => {
+    return [...new Set(items.map((item) => item.productId).filter(Boolean))]
+      .sort()
+      .join(",");
+  }, [items]);
+
+  useEffect(() => {
+    const productIds = productIdsKey ? productIdsKey.split(",") : [];
+
+    if (productIds.length === 0) {
+      setProductDetails({});
+      return;
+    }
+
+    Promise.all(
+      productIds.map((id) =>
+        apiClient
+          .get(`/products/${id}/`)
+          .then(({ data }) => [id, data])
+          .catch(() => [id, null])
+      )
+    ).then((entries) => {
+      setProductDetails(
+        Object.fromEntries(entries.filter(([, product]) => product))
+      );
+    });
+  }, [productIdsKey]);
+
+  const enrichedItems = useMemo(() => {
+    return items
+      .map((item) => {
+        const product = productDetails[item.productId] || {};
+        const orderKey = String(item.productId);
+
+        return {
+          ...item,
+          name: product.name || item.name,
+          unit: product.unit || item.unit,
+          image: product.image || item.image,
+          producerId:
+            product.producer_id ||
+            product.producer ||
+            item.producerId ||
+            item.producer_id,
+          producerName:
+            product.producer_name ||
+            item.producerName ||
+            item.producer_name ||
+            "Unknown producer",
+          categoryName: product.category_name || item.categoryName,
+          displayOrder: itemOrderRef.current.get(orderKey) ?? 999999,
+        };
+      })
+      .sort((a, b) => a.displayOrder - b.displayOrder);
+  }, [items, productDetails]);
+
+  const producerGroups = useMemo(() => {
+    const groups = new Map();
+
+    enrichedItems.forEach((item) => {
+      const producerId = getProducerId(item);
+      const producerName = getProducerName(item);
+
+      if (!groups.has(producerId)) {
+        groups.set(producerId, {
+          producerId,
+          producerName,
+          items: [],
+          subtotal: 0,
+          firstDisplayOrder: item.displayOrder,
+        });
+      }
+
+      const lineTotal = Number(item.qty || 0) * Number(item.price || 0);
+      const group = groups.get(producerId);
+
+      group.items.push(item);
+      group.subtotal += lineTotal;
+      group.firstDisplayOrder = Math.min(group.firstDisplayOrder, item.displayOrder);
+    });
+
+    return Array.from(groups.values()).sort(
+      (a, b) => a.firstDisplayOrder - b.firstDisplayOrder
+    );
+  }, [enrichedItems]);
+
   const subtotal = useMemo(() => getCartSubtotal(items), [items]);
 
+  const totalItems = useMemo(
+    () => items.reduce((sum, item) => sum + Number(item.qty || 0), 0),
+    [items]
+  );
+
   async function updateQty(productId, nextQty) {
-    await updateCartQty(productId, nextQty);
+    const qty = Math.max(1, Number(nextQty || 1));
+    await updateCartQty(productId, qty);
   }
 
   async function removeItem(productId) {
@@ -28,12 +202,14 @@ export default function Cart() {
   return (
     <main className={`container ${styles.page}`}>
       <header className={styles.header}>
+        <span className={styles.eyebrow}>Basket</span>
         <h1>Your basket</h1>
-        <p>Review items, adjust quantities, then checkout.</p>
+        <p>Review your selected products, grouped by producer, before checkout.</p>
       </header>
 
       {items.length === 0 ? (
         <section className={styles.empty}>
+          <div className={styles.emptyIcon}>🛒</div>
           <h2>Your basket is empty</h2>
           <p>Add something tasty from Products.</p>
           <Link className={styles.primaryBtn} to="/products">
@@ -42,55 +218,89 @@ export default function Cart() {
         </section>
       ) : (
         <div className={styles.layout}>
-          {/* LEFT: items */}
-          <section className={styles.itemsCard}>
-            <div className={styles.itemsHeader}>
-              <span className={styles.itemsTitle}>Items</span>
-              <span className={styles.itemsMeta}>{items.length} items</span>
-            </div>
+          <section className={styles.itemsColumn}>
+            {producerGroups.map((group) => (
+              <section key={group.producerId} className={styles.producerCard}>
+                <div className={styles.producerHeader}>
+                  <div>
+                    <span className={styles.producerLabel}>Producer</span>
+                    <h2>{group.producerName}</h2>
+                  </div>
 
-            <ul className={styles.list}>
-              {items.map((item) => {
-                const lineTotal = item.qty * Number(item.price);
-                return (
-                  <li key={item.productId} className={styles.row}>
-                    <div className={styles.thumb} aria-hidden="true" />
+                  <div className={styles.producerSummary}>
+                    <span>
+                      {group.items.length} product
+                      {group.items.length === 1 ? "" : "s"}
+                    </span>
+                    <strong>{money(group.subtotal)}</strong>
+                  </div>
+                </div>
 
-                    <div className={styles.info}>
-                      <div className={styles.name}>{item.name}</div>
-                      <div className={styles.meta}>
-                        £{Number(item.price).toFixed(2)} / {item.unit}
-                      </div>
+                <ul className={styles.list}>
+                  {group.items.map((item) => {
+                    const lineTotal =
+                      Number(item.qty || 0) * Number(item.price || 0);
+                    const imageUrl = getImageUrl(item);
 
-                      <div className={styles.controls}>
-                        <label className={styles.qtyLabel}>
-                          Qty
-                          <input
-                            className={styles.qtyInput}
-                            type="number"
-                            min="1"
-                            value={item.qty}
-                            onChange={(e) => updateQty(item.productId, e.target.value)}
-                          />
-                        </label>
+                    return (
+                      <li key={item.productId} className={styles.row}>
+                        <div className={styles.thumb}>
+                          {imageUrl ? (
+                            <img
+                              src={imageUrl}
+                              alt={item.name}
+                              className={styles.productImage}
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className={styles.imageFallback}>No image</div>
+                          )}
+                        </div>
 
-                        <button
-                          type="button"
-                          className={styles.removeBtn}
-                          onClick={() => removeItem(item.productId)}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
+                        <div className={styles.info}>
+                          <div className={styles.name}>{item.name}</div>
 
-                    <div className={styles.total}>
-                      £{lineTotal.toFixed(2)}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+                          <div className={styles.meta}>
+                            {item.categoryName && (
+                              <span>{item.categoryName} · </span>
+                            )}
+                            {money(item.price)} / {item.unit || "item"}
+                          </div>
+
+                          <div className={styles.controls}>
+                            <div className={styles.qtyControl}>
+                              <span className={styles.qtyLabel}>Qty</span>
+                              <QuantityStepper
+                                value={item.qty}
+                                onDecrease={() =>
+                                  updateQty(item.productId, Number(item.qty) - 1)
+                                }
+                                onIncrease={() =>
+                                  updateQty(item.productId, Number(item.qty) + 1)
+                                }
+                              />
+                            </div>
+
+                            <button
+                              type="button"
+                              className={styles.removeBtn}
+                              onClick={() => removeItem(item.productId)}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className={styles.totalBlock}>
+                          <span>Line total</span>
+                          <strong>{money(lineTotal)}</strong>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ))}
 
             <div className={styles.backRow}>
               <Link className={styles.linkBtn} to="/products">
@@ -99,18 +309,38 @@ export default function Cart() {
             </div>
           </section>
 
-          {/* RIGHT: summary */}
           <aside className={styles.summaryCard}>
-            <h2 className={styles.summaryTitle}>Summary</h2>
+            <h2 className={styles.summaryTitle}>Order summary</h2>
 
             <div className={styles.summaryRow}>
-              <span>Subtotal</span>
-              <strong>£{subtotal.toFixed(2)}</strong>
+              <span>Total items</span>
+              <strong>{totalItems}</strong>
             </div>
 
-            <div className={styles.summaryHint}>
-              Delivery and any discounts will be calculated at checkout.
+            <div className={styles.summaryRow}>
+              <span>Producers</span>
+              <strong>{producerGroups.length}</strong>
             </div>
+
+            <div className={`${styles.summaryRow} ${styles.summaryTotal}`}>
+              <span>Subtotal</span>
+              <strong>{money(subtotal)}</strong>
+            </div>
+
+            <div className={styles.producerBreakdown}>
+              <span className={styles.breakdownTitle}>By producer</span>
+
+              {producerGroups.map((group) => (
+                <div key={group.producerId} className={styles.breakdownRow}>
+                  <span>{group.producerName}</span>
+                  <strong>{money(group.subtotal)}</strong>
+                </div>
+              ))}
+            </div>
+
+            <p className={styles.summaryHint}>
+              Delivery and any discounts will be calculated at checkout.
+            </p>
 
             <Link className={styles.checkoutBtn} to="/checkout">
               Go to checkout
