@@ -5,6 +5,7 @@ import styles from "./Signup.module.css";
 import { signupCustomer, signupProducer, login } from "../utils/auth";
 import { useAuth } from "../auth/AuthContext";
 import { migrateLocalCartToServerIfNeeded } from "../utils/cartStorage";
+import TermsModal from "../Components/Legal/TermsModal";
 
 export default function Signup() {
   const { accountType } = useParams();
@@ -18,18 +19,14 @@ export default function Signup() {
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
   const [city, setCity] = useState("");
   const [postcode, setPostcode] = useState("");
-
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
-
   const [organisationName, setOrganisationName] = useState("");
 
   const [companyName, setCompanyName] = useState("");
@@ -38,11 +35,18 @@ export default function Signup() {
   const [companyDescription, setCompanyDescription] = useState("");
   const [leadTimeHours, setLeadTimeHours] = useState("48");
 
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
+
+  const isProducer = accountType === "producer";
+
   const pageContent = useMemo(() => {
-    if (accountType === "producer") {
+    if (isProducer) {
       return {
-        title: "Create your producer account",
-        subtitle: "Set up your storefront and start selling through the marketplace.",
+        eyebrow: "Producer signup",
+        title: "Start selling local food",
+        subtitle:
+          "Create your producer profile, set your lead time, and get your storefront ready.",
       };
     }
 
@@ -55,30 +59,28 @@ export default function Signup() {
     };
 
     const subtitles = {
-      "": "Sign up to browse and order fresh food.",
-      restaurant: "Sign up to place recurring orders.",
-      community_group: "Sign up to coordinate bulk food purchasing.",
-      charity: "Sign up to manage food orders for charitable work.",
-      education: "Sign up to order for schools and education settings.",
+      "": "Sign up to browse and order fresh food from trusted local producers.",
+      restaurant: "Order fresh ingredients for your kitchen with less admin.",
+      community_group: "Coordinate bulk purchasing for your group with ease.",
+      charity: "Manage reliable food ordering for charitable work.",
+      education: "Order fresh food for schools and education settings.",
     };
 
     return {
+      eyebrow: org ? "Organisation signup" : "Customer signup",
       title: labels[org] || "Create your customer account",
       subtitle: subtitles[org] || "Sign up to start ordering.",
     };
-  }, [accountType, org]);
+  }, [isProducer, org]);
 
   function validate() {
     if (!username.trim()) return "Username is required";
     if (!email.trim()) return "Email is required";
-
-    if (!firstName.trim()) return "Primary contact first name is required";
-    if (!lastName.trim()) return "Primary contact last name is required";
-
+    if (!firstName.trim()) return "First name is required";
+    if (!lastName.trim()) return "Last name is required";
     if (!addressLine1.trim()) return "Address line 1 is required";
     if (!city.trim()) return "City is required";
     if (!postcode.trim()) return "Postcode is required";
-
     if (!password) return "Password is required";
     if (password.length < 8) return "Password must be at least 8 characters";
     if (password !== password2) return "Passwords do not match";
@@ -87,7 +89,7 @@ export default function Signup() {
       return "Organisation name is required";
     }
 
-    if (accountType === "producer") {
+    if (isProducer) {
       if (!companyName.trim()) return "Company name is required";
       if (!companyNumber.trim()) return "Company number is required";
 
@@ -95,6 +97,10 @@ export default function Signup() {
       if (!Number.isFinite(leadTime) || leadTime < 48) {
         return "Lead time must be at least 48 hours";
       }
+    }
+
+    if (!acceptedTerms) {
+      return "You must accept the terms and conditions before creating an account";
     }
 
     return "";
@@ -116,7 +122,7 @@ export default function Signup() {
         postcode: postcode.trim(),
       };
 
-      if (accountType === "producer") {
+      if (isProducer) {
         await signupProducer({
           username: username.trim(),
           email: email.trim(),
@@ -149,11 +155,9 @@ export default function Signup() {
       const user = await refresh();
       await migrateLocalCartToServerIfNeeded();
 
-      if (user?.account_type === "producer") {
-        navigate("/producer/dashboard", { replace: true });
-      } else {
-        navigate("/products", { replace: true });
-      }
+      navigate(user?.account_type === "producer" ? "/producer/dashboard" : "/products", {
+        replace: true,
+      });
     } catch (err) {
       setError(err?.message || "Something went wrong");
     } finally {
@@ -162,218 +166,252 @@ export default function Signup() {
   }
 
   return (
-    <div className={styles.page}>
-      <motion.div
-        className={styles.card}
-        initial={{ opacity: 0, y: 24 }}
+    <main className={styles.page}>
+      <div className={styles.orbOne} />
+      <div className={styles.orbTwo} />
+
+      <motion.section
+        className={styles.shell}
+        initial={{ opacity: 0, y: 28 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: "easeOut" }}
       >
-        <button
-          type="button"
-          className={styles.backLink}
-          onClick={() => navigate("/signup/select")}
-        >
-          ← Back
-        </button>
+        <aside className={styles.heroPanel}>
+          <button
+            type="button"
+            className={styles.backLink}
+            onClick={() => navigate("/signup/select")}
+          >
+            ← Back to account types
+          </button>
 
-        <h1 className={styles.title}>{pageContent.title}</h1>
-        <p className={styles.subtitle}>{pageContent.subtitle}</p>
+          <div>
+            <p className={styles.eyebrow}>{pageContent.eyebrow}</p>
+            <h1 className={styles.title}>{pageContent.title}</h1>
+            <p className={styles.subtitle}>{pageContent.subtitle}</p>
 
-        {error && <div className={styles.error}>{error}</div>}
+            <button
+              type="submit"
+              form="signup-form"
+              className={styles.submitBtnHero}
+              disabled={loading}
+            >
+              {loading ? "Creating your account..." : "Create account"}
+            </button>
 
-        <form className={styles.form} onSubmit={handleSubmit}>
-          <div className={styles.inputGroup}>
-            <label>Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Choose a username"
-            />
+            <p className={styles.ctaHint}>Takes less than 2 minutes</p>
           </div>
 
-          <div className={styles.inputGroup}>
-            <label>Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-            />
+          <div className={styles.perks}>
+            <span>Fresh local produce</span>
+            <span>Simple ordering</span>
+            <span>Secure account setup</span>
           </div>
+        </aside>
 
-          <div className={styles.inputGroup}>
-            <label>
-              {accountType === "producer"
-                ? "Primary contact first name"
-                : "First name"}
-            </label>
-            <input
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder={
-                accountType === "producer"
-                  ? "Enter primary contact first name"
-                  : "Enter first name"
-              }
-            />
-          </div>
+        <section className={styles.card}>
+          {error && <div className={styles.error}>{error}</div>}
 
-          <div className={styles.inputGroup}>
-            <label>
-              {accountType === "producer"
-                ? "Primary contact last name"
-                : "Last name"}
-            </label>
-            <input
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              placeholder={
-                accountType === "producer"
-                  ? "Enter primary contact last name"
-                  : "Enter last name"
-              }
-            />
-          </div>
-
-          <div className={styles.inputGroup}>
-            <label>
-              {accountType === "producer"
-                ? "Business address line 1"
-                : "Address line 1"}
-            </label>
-            <input
-              type="text"
-              value={addressLine1}
-              onChange={(e) => setAddressLine1(e.target.value)}
-              placeholder="Address line 1"
-            />
-          </div>
-
-          <div className={styles.inputGroup}>
-            <label>Address line 2</label>
-            <input
-              type="text"
-              value={addressLine2}
-              onChange={(e) => setAddressLine2(e.target.value)}
-              placeholder="Address line 2 optional"
-            />
-          </div>
-
-          <div className={styles.inputGroup}>
-            <label>City</label>
-            <input
-              type="text"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="City"
-            />
-          </div>
-
-          <div className={styles.inputGroup}>
-            <label>Postcode</label>
-            <input
-              type="text"
-              value={postcode}
-              onChange={(e) => setPostcode(e.target.value)}
-              placeholder="Postcode"
-            />
-          </div>
-
-          {accountType === "customer" && org && (
-            <div className={styles.inputGroup}>
-              <label>Organisation name</label>
-              <input
-                type="text"
-                value={organisationName}
-                onChange={(e) => setOrganisationName(e.target.value)}
-                placeholder="Enter your organisation name"
-              />
-            </div>
-          )}
-
-          {accountType === "producer" && (
-            <>
-              <div className={styles.inputGroup}>
-                <label>Company name</label>
+          <form id="signup-form" className={styles.form} onSubmit={handleSubmit}>
+            <FormSection title="Account details">
+              <Field label="Username">
                 <input
-                  type="text"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="Enter your company name"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="e.g. greenbasket"
                 />
-              </div>
+              </Field>
 
-              <div className={styles.inputGroup}>
-                <label>Company email</label>
+              <Field label="Email">
                 <input
                   type="email"
-                  value={companyEmail}
-                  onChange={(e) => setCompanyEmail(e.target.value)}
-                  placeholder="Enter your company email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
                 />
-              </div>
+              </Field>
+            </FormSection>
 
-              <div className={styles.inputGroup}>
-                <label>Company number</label>
+            <FormSection title={isProducer ? "Primary contact" : "Your details"}>
+              <div className={styles.twoCol}>
+                <Field label="First name">
+                  <input
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="First name"
+                  />
+                </Field>
+
+                <Field label="Last name">
+                  <input
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Last name"
+                  />
+                </Field>
+              </div>
+            </FormSection>
+
+            <FormSection title={isProducer ? "Business address" : "Delivery address"}>
+              <Field label="Address line 1">
                 <input
-                  type="text"
-                  value={companyNumber}
-                  onChange={(e) => setCompanyNumber(e.target.value)}
-                  placeholder="Enter your company number"
+                  value={addressLine1}
+                  onChange={(e) => setAddressLine1(e.target.value)}
+                  placeholder="Street address"
                 />
-              </div>
+              </Field>
 
-              <div className={styles.inputGroup}>
-                <label>Company description</label>
-                <textarea
-                  rows={4}
-                  value={companyDescription}
-                  onChange={(e) => setCompanyDescription(e.target.value)}
-                  placeholder="Tell us about your business"
-                />
-              </div>
-
-              <div className={styles.inputGroup}>
-                <label>Lead time hours</label>
+              <Field label="Address line 2">
                 <input
-                  type="number"
-                  min="48"
-                  value={leadTimeHours}
-                  onChange={(e) => setLeadTimeHours(e.target.value)}
-                  placeholder="48"
+                  value={addressLine2}
+                  onChange={(e) => setAddressLine2(e.target.value)}
+                  placeholder="Apartment, suite, unit — optional"
                 />
+              </Field>
+
+              <div className={styles.twoCol}>
+                <Field label="City">
+                  <input
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="City"
+                  />
+                </Field>
+
+                <Field label="Postcode">
+                  <input
+                    value={postcode}
+                    onChange={(e) => setPostcode(e.target.value)}
+                    placeholder="Postcode"
+                  />
+                </Field>
               </div>
-            </>
-          )}
+            </FormSection>
 
-          <div className={styles.inputGroup}>
-            <label>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Create a password"
-            />
-          </div>
+            {accountType === "customer" && org && (
+              <FormSection title="Organisation">
+                <Field label="Organisation name">
+                  <input
+                    value={organisationName}
+                    onChange={(e) => setOrganisationName(e.target.value)}
+                    placeholder="Organisation name"
+                  />
+                </Field>
+              </FormSection>
+            )}
 
-          <div className={styles.inputGroup}>
-            <label>Confirm password</label>
-            <input
-              type="password"
-              value={password2}
-              onChange={(e) => setPassword2(e.target.value)}
-              placeholder="Re-enter your password"
-            />
-          </div>
+            {isProducer && (
+              <FormSection title="Producer profile">
+                <Field label="Company name">
+                  <input
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="Company name"
+                  />
+                </Field>
 
-          <button type="submit" className={styles.submitBtn} disabled={loading}>
-            {loading ? "Creating account..." : "Create account"}
-          </button>
-        </form>
-      </motion.div>
-    </div>
+                <div className={styles.twoCol}>
+                  <Field label="Company email">
+                    <input
+                      type="email"
+                      value={companyEmail}
+                      onChange={(e) => setCompanyEmail(e.target.value)}
+                      placeholder="sales@example.com"
+                    />
+                  </Field>
+
+                  <Field label="Company number">
+                    <input
+                      value={companyNumber}
+                      onChange={(e) => setCompanyNumber(e.target.value)}
+                      placeholder="Company number"
+                    />
+                  </Field>
+                </div>
+
+                <Field label="Company description">
+                  <textarea
+                    rows={4}
+                    value={companyDescription}
+                    onChange={(e) => setCompanyDescription(e.target.value)}
+                    placeholder="Tell customers what you grow, make, or supply"
+                  />
+                </Field>
+
+                <Field label="Lead time hours">
+                  <input
+                    type="number"
+                    min="48"
+                    value={leadTimeHours}
+                    onChange={(e) => setLeadTimeHours(e.target.value)}
+                  />
+                </Field>
+              </FormSection>
+            )}
+
+            <FormSection title="Security">
+              <div className={styles.twoCol}>
+                <Field label="Password">
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Minimum 8 characters"
+                  />
+                </Field>
+
+                <Field label="Confirm password">
+                  <input
+                    type="password"
+                    value={password2}
+                    onChange={(e) => setPassword2(e.target.value)}
+                    placeholder="Repeat password"
+                  />
+                </Field>
+              </div>
+            </FormSection>
+            <div className={styles.termsBox}>
+              <label className={styles.termsLabel}>
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                />
+
+                <span>
+                  I agree to the{" "}
+                  <button
+                    type="button"
+                    className={styles.termsLink}
+                    onClick={() => setTermsOpen(true)}
+                  >
+                    Terms and Conditions
+                  </button>
+                </span>
+              </label>
+            </div>
+          </form>
+        </section>
+      </motion.section>
+      <TermsModal open={termsOpen} onClose={() => setTermsOpen(false)} />
+    </main>
+  );
+}
+
+function FormSection({ title, children }) {
+  return (
+    <section className={styles.section}>
+      <h2>{title}</h2>
+      <div className={styles.sectionGrid}>{children}</div>
+    </section>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <label className={styles.inputGroup}>
+      <span>{label}</span>
+      {children}
+    </label>
   );
 }

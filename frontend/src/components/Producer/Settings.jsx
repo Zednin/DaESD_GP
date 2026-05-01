@@ -140,24 +140,21 @@ export default function Settings() {
       setError("");
       setSuccess("");
 
-      const [{ data: producerData }, { data: addressData }] = await Promise.all([
-        apiClient.get("/producers/"),
-        apiClient.get("/addresses/?address_type=BUSINESS"),
-      ]);
-
-      const producers = producerData.results ?? producerData;
-      const producer = producers[0];
+      const { data: producer } = await apiClient.get("/producers/me/");
 
       if (!producer) {
         setError("No producer profile was found for your account.");
         return;
       }
 
-      const addresses = addressData.results ?? addressData;
-      const businessAddress =
-        addresses.find((address) => address.id === producer.business_address) ||
-        addresses[0] ||
-        null;
+      let businessAddress = null;
+
+      if (producer.business_address) {
+        const { data } = await apiClient.get(
+          `/addresses/${producer.business_address}/`
+        );
+        businessAddress = data;
+      }
 
       const normalised = normaliseProducer(producer, businessAddress);
 
