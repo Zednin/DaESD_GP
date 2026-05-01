@@ -8,11 +8,13 @@ import RequireAuth from "./auth/RequireAuth";
 import RequireProducer from "./auth/RequireProducer";
 import RequireAdmin from "./auth/RequireAdmin";
 import AuthCallback from "./auth/AuthCallback";
+import CustomerAccountRedirect from "./pages/CustomerAccountRedirect";
 
 // General pages
 import Home from "./pages/Home";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
+import ProducerDetail from "./pages/ProducerDetail"; // General as Customers can access
 import SurplusDeals from "./components/Marketplace/SurplusDeals";
 import About from "./pages/About";
 import Login from "./pages/Login";
@@ -44,6 +46,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/products" element={<Products />} />
         <Route path="/products/:productId" element={<ProductDetail />} />
+        <Route path="/producers/:producerId" element={<ProducerDetail />} />
         <Route path="/surplus-deals" element={<SurplusDeals />} />
         <Route path="/about" element={<About />} />
         
@@ -71,7 +74,7 @@ export default function App() {
           path="/my-account"
           element={
             <RequireAuth>
-              <CustomerMyAccount />
+              <CustomerAccountRedirect />
             </RequireAuth>
           }
         />
