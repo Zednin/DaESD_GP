@@ -135,7 +135,7 @@ class Product(models.Model):
     # Image URL
     image = models.URLField(max_length=500, blank=True, null=True)
     
-    # Surplus shite
+    # Surplus functionality
     is_surplus = models.BooleanField(default=False)
     discount_percentage = models.PositiveIntegerField(
         default=0,
