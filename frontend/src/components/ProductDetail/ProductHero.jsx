@@ -280,10 +280,15 @@ export default function ProductHero({
           </div>
 
           <div className={styles.buyPanel}>
+            {isUnavailable && (
+              <div className={styles.outOfStockBanner}>
+                This product is currently out of stock
+              </div>
+            )}
             <div className={styles.qtyArea}>
               <label className={styles.qtyLabel}>
                 Quantity
-                {Number.isFinite(stockLimit) && (
+                {Number.isFinite(stockLimit) && stockLimit > 0 && (
                   <span> · {stockLimit} in stock</span>
                 )}
               </label>
