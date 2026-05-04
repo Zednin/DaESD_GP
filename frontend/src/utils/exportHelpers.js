@@ -24,20 +24,20 @@ function cssColor(varName, fallback) {
   return fallback;
 }
 
-/* ── Colour palette (reads from CSS vars, falls back to hardcoded) ── */
+/* ── Colour palette (always light theme — theme-independent for print) ── */
 function getColors() {
   return {
-    PRIMARY:  cssColor('--primary',  [110, 35, 50]),
-    ACCENT:   cssColor('--secondary', [251, 146, 60]),
-    TEXT:     cssColor('--text',     [31, 41, 55]),
-    MUTED:    cssColor('--muted',    [107, 114, 128]),
-    SURFACE2: cssColor('--surface-2', [246, 247, 249]),
-    SUCCESS:  cssColor('--success',  [34, 197, 94]),
-    WARNING:  cssColor('--warning',  [234, 179, 8]),
-    ERROR:    cssColor('--error',    [239, 68, 68]),
-    WHITE:    [255, 255, 255],
-    ALT_ROW:  [249, 250, 251],
-    BORDER:   [229, 231, 235],
+    PRIMARY:   [110, 35, 50],
+    ACCENT:    [251, 146, 60],
+    TEXT:      [31, 41, 55],
+    MUTED:     [107, 114, 128],
+    SURFACE2:  [246, 247, 249],
+    SUCCESS:   [34, 197, 94],
+    WARNING:   [234, 179, 8],
+    ERROR:     [239, 68, 68],
+    WHITE:     [255, 255, 255],
+    ALT_ROW:   [249, 250, 251],
+    BORDER:    [229, 231, 235],
     FOOTER_BG: [240, 240, 240],
   };
 }
