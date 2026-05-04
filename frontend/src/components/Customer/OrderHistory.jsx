@@ -94,6 +94,62 @@ function buildOrderItems(order) {
   return [];
 }
 
+function buildProducerFulfilmentGroups(order, items) {
+  if (Array.isArray(order.producer_orders) && order.producer_orders.length > 0) {
+    return order.producer_orders.map((producerOrder) => {
+      const groupItems = Array.isArray(producerOrder.items)
+        ? producerOrder.items.map((item) => ({
+            ...item,
+            producer_name:
+              producerOrder.producer_name ||
+              producerOrder.producer?.company_name ||
+              item.producer_name ||
+              "Producer",
+            producer_order_status: producerOrder.status,
+            delivery_date: producerOrder.delivery_date,
+          }))
+        : [];
+
+      return {
+        id: producerOrder.id,
+        producerName:
+          producerOrder.producer_name ||
+          producerOrder.producer?.company_name ||
+          "Producer",
+        status: producerOrder.status,
+        deliveryDate: producerOrder.delivery_date,
+        items: groupItems,
+      };
+    });
+  }
+
+  return [
+    {
+      id: "items",
+      producerName: "Items",
+      status: order.status,
+      deliveryDate: getDeliveryDate(order),
+      items,
+    },
+  ];
+}
+
+function getFulfilmentSummary(groups) {
+  if (!groups.length) return "No producer fulfilment details";
+
+  const counts = groups.reduce((acc, group) => {
+    const label = getStatusLabel(group.status || "pending").toLowerCase();
+    acc[label] = (acc[label] || 0) + 1;
+    return acc;
+  }, {});
+
+  const statusText = Object.entries(counts)
+    .map(([status, count]) => `${count} ${status}`)
+    .join(" · ");
+
+  return `${groups.length} producer${groups.length === 1 ? "" : "s"} · ${statusText}`;
+}
+
 function getDisplayOrderStatus(order) {
   const producerOrders = Array.isArray(order.producer_orders) ? order.producer_orders : [];
 
@@ -523,10 +579,15 @@ function OrderCard({ order, onOpenReview, onReorder, reorderState }) {
   const [expanded, setExpanded] = useState(false);
 
   const items = useMemo(() => buildOrderItems(order), [order]);
+  const producerGroups = useMemo(
+    () => buildProducerFulfilmentGroups(order, items),
+    [order, items]
+  );
   const total = getOrderTotal(order);
   const placedDate = getOrderPlacedDate(order);
   const deliveryDate = getDeliveryDate(order);
   const itemCount = items.reduce((sum, item) => sum + Number(getOrderItemQuantity(item)), 0);
+  const fulfilmentSummary = getFulfilmentSummary(producerGroups);
 
   return (
     <article className={styles.orderCard}>
@@ -546,6 +607,11 @@ function OrderCard({ order, onOpenReview, onReorder, reorderState }) {
             <span className={styles.metaChip}>
               <LuPackage size={14} />
               {itemCount} item{itemCount !== 1 ? "s" : ""}
+            </span>
+
+            <span className={styles.metaChip}>
+              <LuTruck size={14} />
+              {fulfilmentSummary}
             </span>
 
             {deliveryDate && (
@@ -626,37 +692,59 @@ function OrderCard({ order, onOpenReview, onReorder, reorderState }) {
         <div className={styles.expandedPanel}>
           <div className={styles.itemsBlock}>
             <h4>Items in this order</h4>
+            <p className={styles.fulfilmentIntro}>
+              Track each producer's part of this order separately.
+            </p>
 
             <div className={styles.itemsList}>
               {items.length === 0 ? (
                 <p className={styles.noItemsText}>No item breakdown is available for this order yet.</p>
               ) : (
-                items.map((item, index) => (
-                  <div
-                    key={`${order.id}-item-${index}-${getOrderItemName(item)}`}
-                    className={styles.itemRow}
-                  >
-                    <div className={styles.itemMain}>
-                      <div className={styles.itemNameRow}>
-                        <strong>{getOrderItemName(item)}</strong>
-                        {item.producer_name && (
-                          <span className={styles.itemProducer}>{item.producer_name}</span>
-                        )}
+                producerGroups.map((group) => (
+                  <section key={group.id} className={styles.producerFulfilment}>
+                    <div className={styles.producerFulfilmentHeader}>
+                      <div>
+                        <span className={styles.detailLabel}>Producer</span>
+                        <h5>{group.producerName}</h5>
                       </div>
 
-                      <span className={styles.itemMeta}>
-                        Quantity: {getOrderItemQuantity(item)}
-                      </span>
-
-                      <div className={styles.itemReviewRow}>
-                        <ItemReviewAction item={item} onOpenReview={onOpenReview} />
+                      <div className={styles.producerFulfilmentMeta}>
+                        <StatusBadge status={group.status || "pending"} />
+                        <span>
+                          {group.deliveryDate
+                            ? `Delivery ${formatDate(group.deliveryDate)}`
+                            : "Delivery not provided"}
+                        </span>
                       </div>
                     </div>
 
-                    <div className={styles.itemPrice}>
-                      {formatCurrency(getOrderItemTotal(item))}
+                    <div className={styles.producerItemsList}>
+                      {group.items.map((item, index) => (
+                        <div
+                          key={`${order.id}-${group.id}-item-${index}-${getOrderItemName(item)}`}
+                          className={styles.itemRow}
+                        >
+                          <div className={styles.itemMain}>
+                            <div className={styles.itemNameRow}>
+                              <strong>{getOrderItemName(item)}</strong>
+                            </div>
+
+                            <span className={styles.itemMeta}>
+                              Quantity: {getOrderItemQuantity(item)}
+                            </span>
+
+                            <div className={styles.itemReviewRow}>
+                              <ItemReviewAction item={item} onOpenReview={onOpenReview} />
+                            </div>
+                          </div>
+
+                          <div className={styles.itemPrice}>
+                            {formatCurrency(getOrderItemTotal(item))}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
+                  </section>
                 ))
               )}
             </div>
