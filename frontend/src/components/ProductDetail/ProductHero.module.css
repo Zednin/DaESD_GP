@@ -348,6 +348,18 @@
   align-items: end;
 }
 
+.outOfStockBanner {
+  grid-column: 1 / -1;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--error-muted, rgba(220, 38, 38, 0.1));
+  color: var(--error, #dc2626);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  border: 1px solid var(--error, #dc2626);
+}
+
 .qtyArea {
   min-width: 160px;
 }

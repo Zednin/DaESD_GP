@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import shared from '../../pages/Producer/ProducerShared.module.css';
 import local from './ProducerProducts.module.css';
 const styles = { ...shared, ...local };
@@ -425,10 +425,14 @@ function DeleteModal({ product, onClose, onDeleted }) {
 }
 
 /* Main component  */
+const STOCK_FILTERS = ['all', 'inStock', 'outOfStock'];
+const STOCK_FILTER_LABELS = { all: 'All', inStock: 'In Stock', outOfStock: 'Out of Stock' };
+
 export default function ProducerProducts({ producerId, producerName }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [stockFilter, setStockFilter] = useState('all');
 
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -474,6 +478,18 @@ export default function ProducerProducts({ producerId, producerName }) {
     setDeleteTarget(null);
   }
 
+  const stockCounts = useMemo(() => ({
+    all: products.length,
+    inStock: products.filter((p) => p.stock > 0 && p.status !== 'unavailable').length,
+    outOfStock: products.filter((p) => p.stock === 0 || p.status === 'unavailable').length,
+  }), [products]);
+
+  const filteredProducts = useMemo(() => {
+    if (stockFilter === 'inStock') return products.filter((p) => p.stock > 0 && p.status !== 'unavailable');
+    if (stockFilter === 'outOfStock') return products.filter((p) => p.stock === 0 || p.status === 'unavailable');
+    return products;
+  }, [products, stockFilter]);
+
   if (!producerId) {
     return (
       <div className={styles.centred}>
@@ -516,12 +532,32 @@ export default function ProducerProducts({ producerId, producerName }) {
         </button>
       </div>
 
+      {products.length > 0 && (
+        <div className={styles.filterTabs}>
+          {STOCK_FILTERS.map((f) => (
+            <button
+              key={f}
+              type="button"
+              className={`${styles.filterTab} ${stockFilter === f ? styles.filterTabActive : ''}`}
+              onClick={() => setStockFilter(f)}
+            >
+              {STOCK_FILTER_LABELS[f]}
+              <span className={styles.filterTabCount}>{stockCounts[f]}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {products.length === 0 ? (
         <div className={styles.empty}>
           <p>No products listed yet.</p>
           <button className={styles.addBtn} onClick={() => setEditTarget('new')}>
             Add your first product
           </button>
+        </div>
+      ) : filteredProducts.length === 0 ? (
+        <div className={styles.empty}>
+          <p>No {stockFilter === 'outOfStock' ? 'out-of-stock' : 'in-stock'} products.</p>
         </div>
       ) : (
         <div className={styles.tableWrapper}>
@@ -540,7 +576,7 @@ export default function ProducerProducts({ producerId, producerName }) {
               </tr>
             </thead>
             <tbody>
-              {products.map((p) => (
+              {filteredProducts.map((p) => (
                 <tr key={p.id}>
                   <td className={styles.nameCell}>
                     <span className={styles.productName}>{p.name}</span>
