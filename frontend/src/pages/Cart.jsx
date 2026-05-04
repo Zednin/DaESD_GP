@@ -26,7 +26,9 @@ function getImageUrl(item) {
   return item.image || item.image_url || "";
 }
 
-function QuantityStepper({ value, onDecrease, onIncrease }) {
+function QuantityStepper({ value, max, onDecrease, onIncrease }) {
+  const atMax = Number.isFinite(max) && Number(value) >= max;
+
   return (
     <div className={styles.qtyStepper}>
       <button
@@ -53,6 +55,7 @@ function QuantityStepper({ value, onDecrease, onIncrease }) {
         type="button"
         className={styles.qtyButton}
         onClick={onIncrease}
+        disabled={atMax}
         aria-label="Increase quantity"
       >
         +
@@ -64,6 +67,7 @@ function QuantityStepper({ value, onDecrease, onIncrease }) {
 export default function Cart() {
   const [items, setItems] = useState(() => readCart());
   const [productDetails, setProductDetails] = useState({});
+  const [cartError, setCartError] = useState("");
 
   const itemOrderRef = useRef(new Map());
   const nextOrderRef = useRef(0);
@@ -147,6 +151,8 @@ export default function Cart() {
             item.producer_name ||
             "Unknown producer",
           categoryName: product.category_name || item.categoryName,
+          stock: Number.isFinite(Number(product.stock)) ? Number(product.stock) : item.stock,
+          status: product.status || item.status,
           displayOrder: itemOrderRef.current.get(orderKey) ?? 999999,
         };
       })
@@ -192,10 +198,17 @@ export default function Cart() {
 
   async function updateQty(productId, nextQty) {
     const qty = Math.max(1, Number(nextQty || 1));
-    await updateCartQty(productId, qty);
+    setCartError("");
+
+    try {
+      await updateCartQty(productId, qty);
+    } catch (error) {
+      setCartError(error.message || "Could not update quantity.");
+    }
   }
 
   async function removeItem(productId) {
+    setCartError("");
     await removeFromCart(productId);
   }
 
@@ -205,6 +218,7 @@ export default function Cart() {
         <span className={styles.eyebrow}>Basket</span>
         <h1>Your basket</h1>
         <p>Review your selected products, grouped by producer, before checkout.</p>
+        {cartError && <p className={styles.errorText}>{cartError}</p>}
       </header>
 
       {items.length === 0 ? (
@@ -241,6 +255,11 @@ export default function Cart() {
                     const lineTotal =
                       Number(item.qty || 0) * Number(item.price || 0);
                     const imageUrl = getImageUrl(item);
+                    const stock = Number(item.stock);
+                    const hasStock = Number.isFinite(stock);
+                    const stockLabel = hasStock
+                      ? `${stock} ${item.unit || "item"}${stock === 1 ? "" : "s"} in stock`
+                      : null;
 
                     return (
                       <li key={item.productId} className={styles.row}>
@@ -265,6 +284,7 @@ export default function Cart() {
                               <span>{item.categoryName} · </span>
                             )}
                             {money(item.price)} / {item.unit || "item"}
+                            {stockLabel && <span> Â· {stockLabel}</span>}
                           </div>
 
                           <div className={styles.controls}>
@@ -272,6 +292,7 @@ export default function Cart() {
                               <span className={styles.qtyLabel}>Qty</span>
                               <QuantityStepper
                                 value={item.qty}
+                                max={hasStock ? stock : Infinity}
                                 onDecrease={() =>
                                   updateQty(item.productId, Number(item.qty) - 1)
                                 }

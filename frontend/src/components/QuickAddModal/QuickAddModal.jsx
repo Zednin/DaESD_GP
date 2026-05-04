@@ -19,6 +19,20 @@ export default function QuickAddModal({
 
   const progress = Math.min(cartSubtotal / freeShippingThreshold, 1);
   const remaining = Math.max(freeShippingThreshold - cartSubtotal, 0);
+  const stockLimit = useMemo(() => {
+    const stock = Number(product?.stock);
+    return Number.isFinite(stock) ? Math.max(0, stock) : Infinity;
+  }, [product]);
+  const isUnavailable = product?.status === "unavailable" || stockLimit <= 0;
+
+  function updateQty(next) {
+    if (isUnavailable) {
+      setQty(1);
+      return;
+    }
+
+    setQty(Math.min(Math.max(1, next), stockLimit));
+  }
 
   useEffect(() => {
     function onKeyDown(e) {
@@ -145,13 +159,19 @@ export default function QuickAddModal({
             </div>
 
             <div className={styles.controls}>
-              <label className={styles.qtyLabel}>Quantity</label>
+              <label className={styles.qtyLabel}>
+                Quantity
+                {Number.isFinite(stockLimit) && (
+                  <span> · {stockLimit} in stock</span>
+                )}
+              </label>
               <br />
               <div className={styles.qtyRow}>
                 <button
                   type="button"
                   className={styles.qtyBtn}
-                  onClick={() => setQty((v) => Math.max(1, v - 1))}
+                  disabled={isUnavailable || qty <= 1}
+                  onClick={() => updateQty(qty - 1)}
                 >
                   −
                 </button>
@@ -159,18 +179,21 @@ export default function QuickAddModal({
                 <input
                   type="number"
                   min={1}
+                  max={Number.isFinite(stockLimit) ? stockLimit : undefined}
+                  disabled={isUnavailable}
                   className={styles.qtyInput}
                   value={qty}
                   onChange={(e) => {
                     const n = Number(e.target.value);
-                    setQty(Number.isFinite(n) ? Math.max(1, n) : 1);
+                    updateQty(Number.isFinite(n) ? n : 1);
                   }}
                 />
 
                 <button
                   type="button"
                   className={styles.qtyBtn}
-                  onClick={() => setQty((v) => v + 1)}
+                  disabled={isUnavailable || qty >= stockLimit}
+                  onClick={() => updateQty(qty + 1)}
                 >
                   +
                 </button>
@@ -179,10 +202,13 @@ export default function QuickAddModal({
               <button
                 type="button"
                 className={styles.addBtn}
+                disabled={isUnavailable}
                 onClick={() => onAdd(product, qty)}
               >
-                Add to basket — £{(Number(product.price) * qty).toFixed(2)}
-                {product.original_price && (
+                {isUnavailable
+                  ? "Out of stock"
+                  : `Add to basket — £${(Number(product.price) * qty).toFixed(2)}`}
+                {!isUnavailable && product.original_price && (
                   <span className={styles.btnSaving}>
                     {" "}
                     (save £

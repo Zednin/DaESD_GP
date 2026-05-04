@@ -110,13 +110,26 @@ export default function ProductHero({
     return Number(product.price);
   }, [product]);
 
+  const stockLimit = useMemo(() => {
+    const stock = Number(product?.stock);
+    return Number.isFinite(stock) ? Math.max(0, stock) : Infinity;
+  }, [product]);
+
+  const isUnavailable = product?.status === "unavailable" || stockLimit <= 0;
+
   const total = useMemo(() => (currentPrice * qty).toFixed(2), [currentPrice, qty]);
 
   function handleQtyChange(next) {
-    setQty(Math.max(1, next));
+    if (isUnavailable) {
+      setQty(1);
+      return;
+    }
+
+    setQty(Math.min(Math.max(1, next), stockLimit));
   }
 
   function handleAdd() {
+    if (isUnavailable) return;
     onAddToBasket?.(product, qty);
   }
 
@@ -268,28 +281,48 @@ export default function ProductHero({
 
           <div className={styles.buyPanel}>
             <div className={styles.qtyArea}>
-              <label className={styles.qtyLabel}>Quantity</label>
+              <label className={styles.qtyLabel}>
+                Quantity
+                {Number.isFinite(stockLimit) && (
+                  <span> · {stockLimit} in stock</span>
+                )}
+              </label>
 
               <div className={styles.qtyControl}>
-                <button type="button" onClick={() => handleQtyChange(qty - 1)}>
+                <button
+                  type="button"
+                  onClick={() => handleQtyChange(qty - 1)}
+                  disabled={isUnavailable || qty <= 1}
+                >
                   <LuMinus size={15} />
                 </button>
 
                 <input
                   type="number"
                   min={1}
+                  max={Number.isFinite(stockLimit) ? stockLimit : undefined}
+                  disabled={isUnavailable}
                   value={qty}
                   onChange={(e) => handleQtyChange(Number(e.target.value) || 1)}
                 />
 
-                <button type="button" onClick={() => handleQtyChange(qty + 1)}>
+                <button
+                  type="button"
+                  onClick={() => handleQtyChange(qty + 1)}
+                  disabled={isUnavailable || qty >= stockLimit}
+                >
                   <LuPlus size={15} />
                 </button>
               </div>
             </div>
 
-            <button type="button" className={styles.addBtn} onClick={handleAdd}>
-              Add to basket — £{total}
+            <button
+              type="button"
+              className={styles.addBtn}
+              onClick={handleAdd}
+              disabled={isUnavailable}
+            >
+              {isUnavailable ? "Out of stock" : `Add to basket — £${total}`}
             </button>
           </div>
         </div>
