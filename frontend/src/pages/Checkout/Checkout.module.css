@@ -27,6 +27,12 @@
   font-size: 1.1rem;
 }
 
+.note {
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0 0 1rem;
+}
+
 /* Form */
 .form {
   display: grid;
@@ -67,6 +73,11 @@
   opacity: 0.9;
 }
 
+.payBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 /* Summary */
 .summaryList {
   list-style: none;
@@ -93,6 +104,81 @@
   padding-top: 0.9rem;
   border-top: 1px solid var(--border);
   font-size: 1rem;
+}
+
+.error {
+  padding: 0.75rem 0.9rem;
+  background: var(--error-muted);
+  border: 1px solid var(--error-border);
+  border-radius: 8px;
+  color: var(--error);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.recurringToggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 1rem;
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.recurringToggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+}
+
+.recurringBadge {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--primary-border);
+  border-radius: 8px;
+  background: var(--primary-muted);
+}
+
+.recurringBadgeInfo {
+  display: grid;
+  gap: 4px;
+}
+
+.recurringBadgeLabel {
+  color: var(--primary);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.recurringBadgeDetails {
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.recurringRemove {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.recurringRemove:hover {
+  background: var(--control-bg-hover);
 }
 
 /* Mobile */

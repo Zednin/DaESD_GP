@@ -1,4 +1,5 @@
 import stripe
+import json
 
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import timedelta
@@ -13,7 +14,14 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from apps.cart.models import Cart
-from apps.orders.models import Order, OrderItem, ProducerOrder, CommissionLedger
+from apps.orders.models import (
+    Order,
+    OrderItem,
+    ProducerOrder,
+    CommissionLedger,
+    RecurringOrder,
+    RecurringOrderItem,
+)
 from apps.payments.models import Payment
 from apps.addresses.models import Address
 from apps.communications.email_service import (
@@ -24,6 +32,54 @@ from apps.communications.email_service import (
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 COMMISSION_RATE = Decimal("0.05")
+
+
+def get_restaurant_organisation(user):
+    customer = getattr(user, "customer_profile", None)
+    organisation = getattr(customer, "organisation", None)
+
+    if getattr(user, "account_type", "") == "restaurant" and organisation:
+        return organisation
+
+    if getattr(organisation, "organisation_type", "") == "restaurant":
+        return organisation
+
+    return None
+
+
+def clean_recurring_payload(data):
+    if not isinstance(data, dict):
+        raise ValueError("Recurring order details are invalid.")
+
+    frequency = data.get("frequency", "weekly")
+    if frequency not in {"weekly", "fortnightly"}:
+        raise ValueError("Recurring order frequency is invalid.")
+
+    try:
+        order_day = int(data.get("order_day", 0))
+        delivery_day = int(data.get("delivery_day", 2))
+    except (TypeError, ValueError):
+        raise ValueError("Recurring order days are invalid.")
+
+    if order_day not in range(7) or delivery_day not in range(7):
+        raise ValueError("Recurring order days are invalid.")
+
+    name = str(data.get("name") or "My recurring order").strip()[:100]
+
+    return {
+        "name": name or "My recurring order",
+        "frequency": frequency,
+        "order_day": order_day,
+        "delivery_day": delivery_day,
+    }
+
+
+def get_next_run_at(order_day):
+    now = timezone.now()
+    days_until_next = (int(order_day) - now.weekday()) % 7
+    if days_until_next == 0:
+        days_until_next = 7
+    return now + timedelta(days=days_until_next)
 
 
 def money(value):
@@ -56,6 +112,19 @@ class CreateCheckoutSessionView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        recurring_payload = None
+        if request.data.get("recurring"):
+            if not get_restaurant_organisation(request.user):
+                return Response(
+                    {"detail": "Recurring orders are only available for restaurant customers."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            try:
+                recurring_payload = clean_recurring_payload(request.data.get("recurring"))
+            except ValueError as exc:
+                return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
         line_items = []
         for item in items:
             line_items.append({
@@ -71,6 +140,14 @@ class CreateCheckoutSessionView(APIView):
 
         frontend_url = settings.FRONTEND_URL
 
+        metadata = {
+            "user_id": str(request.user.id),
+            "cart_id": str(cart.id),
+        }
+
+        if recurring_payload:
+            metadata["recurring_order"] = json.dumps(recurring_payload)
+
         session = stripe.checkout.Session.create(
             mode="payment",
             line_items=line_items,
@@ -80,10 +157,7 @@ class CreateCheckoutSessionView(APIView):
             shipping_address_collection={
                 "allowed_countries": ["GB"],
             },
-            metadata={
-                "user_id": str(request.user.id),
-                "cart_id": str(cart.id),
-            },
+            metadata=metadata,
         )
 
         return Response({"url": session.url}, status=status.HTTP_200_OK)
@@ -112,8 +186,9 @@ def stripe_webhook(request):
 
 
 def handle_checkout_session_completed(session):
-    user_id = session.get("metadata", {}).get("user_id")
-    cart_id = session.get("metadata", {}).get("cart_id")
+    metadata = session.get("metadata", {})
+    user_id = metadata.get("user_id")
+    cart_id = metadata.get("cart_id")
 
     if not user_id or not cart_id:
         return
@@ -181,6 +256,15 @@ def handle_checkout_session_completed(session):
             status="paid",
         )
 
+        recurring_payload = None
+        if metadata.get("recurring_order"):
+            try:
+                recurring_payload = clean_recurring_payload(
+                    json.loads(metadata["recurring_order"])
+                )
+            except (TypeError, ValueError, json.JSONDecodeError):
+                recurring_payload = None
+
         items_by_producer = {}
         for cart_item in cart_items:
             producer_id = cart_item.product.producer_id
@@ -228,6 +312,26 @@ def handle_checkout_session_completed(session):
                 commission_amount=commission,
                 payout_amount=payout_amount,
             )
+
+        if recurring_payload:
+            organisation = get_restaurant_organisation(order.account)
+            if organisation:
+                recurring_order = RecurringOrder.objects.create(
+                    organisation=organisation,
+                    delivery_address=delivery_address,
+                    name=recurring_payload["name"],
+                    frequency=recurring_payload["frequency"],
+                    order_day=recurring_payload["order_day"],
+                    delivery_day=recurring_payload["delivery_day"],
+                    next_run_at=get_next_run_at(recurring_payload["order_day"]),
+                )
+
+                for cart_item in cart_items:
+                    RecurringOrderItem.objects.create(
+                        recurring_order=recurring_order,
+                        product=cart_item.product,
+                        quantity=cart_item.quantity,
+                    )
 
         order.commission_amount = money(total_commission)
         order.save(update_fields=["commission_amount"])
