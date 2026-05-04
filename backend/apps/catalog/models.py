@@ -97,7 +97,10 @@ class Product(models.Model):
         )
     
     # Amount of producr in stock
-    stock = models.IntegerField(default=0)                         
+    stock = models.IntegerField(default=0)
+
+    # Stock level at or below which producers should be alerted
+    low_stock_threshold = models.PositiveIntegerField(default=10)
     
     # Seasonal availability
     availability_mode = models.CharField(
@@ -181,6 +184,18 @@ class Product(models.Model):
         if self.surplus_end_date and timezone.now() > self.surplus_end_date:
             return False
         return True
+
+    @property
+    def is_low_stock(self):
+        return 0 < self.stock <= self.low_stock_threshold
+
+    @property
+    def stock_alert_level(self):
+        if self.stock <= 0:
+            return "out"
+        if self.is_low_stock:
+            return "low"
+        return "ok"
 
     def clean(self):
         # Validates data before saving

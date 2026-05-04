@@ -13,6 +13,7 @@ const EMPTY_FORM = {
   price: '',
   unit: 'unit',
   stock: '',
+  low_stock_threshold: 10,
   availability_mode: 'year_round',
   season_start_month: '',
   season_end_month: '',
@@ -27,6 +28,23 @@ const EMPTY_FORM = {
 
 const UNIT_OPTIONS = ['kg', 'g', 'litre', 'ml', 'unit', 'dozen'];
 const STATUS_OPTIONS = ['available', 'unavailable'];
+
+function getStockAlertLevel(product) {
+  if (product.stock_alert_level) {
+    return product.stock_alert_level;
+  }
+
+  const threshold = product.low_stock_threshold ?? 10;
+  if (product.stock <= 0) return 'out';
+  if (product.stock <= threshold) return 'low';
+  return 'ok';
+}
+
+function getStockAlertLabel(alertLevel) {
+  if (alertLevel === 'out') return 'Out of stock';
+  if (alertLevel === 'low') return 'Low stock';
+  return null;
+}
 
 const MONTH_OPTIONS = [
   { value: 1, label: 'January' },
@@ -65,6 +83,7 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
           price: product.price,
           unit: product.unit,
           stock: product.stock,
+          low_stock_threshold: product.low_stock_threshold ?? 10,
           availability_mode: product.availability_mode ?? 'year_round',
           season_start_month: product.season_start_month ?? '',
           season_end_month: product.season_end_month ?? '',
@@ -160,6 +179,7 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
         producer: producerId,
         price: parseFloat(form.price),
         stock: parseInt(form.stock, 10),
+        low_stock_threshold: parseInt(form.low_stock_threshold, 10),
         category: form.category ? parseInt(form.category, 10) : null,
         allergen_ids: form.allergens,
         image: form.image || null,
@@ -271,6 +291,10 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
             <div className={styles.field}>
               <label>Stock *</label>
               <input name="stock" type="number" min="0" value={form.stock} onChange={handleChange} required />
+            </div>
+            <div className={styles.field}>
+              <label>Low Stock Alert *</label>
+              <input name="low_stock_threshold" type="number" min="1" value={form.low_stock_threshold} onChange={handleChange} required />
             </div>
           </div>
 
@@ -552,9 +576,31 @@ export default function ProducerProducts({ producerId, producerName }) {
                   <td>£{parseFloat(p.price).toFixed(2)}</td>
                   <td>{p.unit}</td>
                   <td>
-                    <span className={p.stock === 0 ? styles.stockZero : styles.stock}>
-                      {p.stock}
-                    </span>
+                    <div className={styles.stockCell}>
+                      <span className={
+                        getStockAlertLevel(p) === 'out'
+                          ? styles.stockZero
+                          : getStockAlertLevel(p) === 'low'
+                            ? styles.stockLow
+                            : styles.stock
+                      }>
+                        {p.stock}
+                      </span>
+                      {getStockAlertLabel(getStockAlertLevel(p)) && (
+                        <span className={`${styles.badge} ${
+                          getStockAlertLevel(p) === 'out'
+                            ? styles.badgeRed
+                            : styles.badgeWarning
+                        }`}>
+                          {getStockAlertLabel(getStockAlertLevel(p))}
+                        </span>
+                      )}
+                      {getStockAlertLevel(p) === 'low' && (
+                        <span className={styles.stockAlertMeta}>
+                          Threshold: {p.low_stock_threshold}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <span className={`${styles.badge} ${p.status === 'available' ? styles.badgeGreen : styles.badgeGrey}`}>
