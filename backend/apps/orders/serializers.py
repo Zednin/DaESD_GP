@@ -1,6 +1,9 @@
 from decimal import Decimal, ROUND_HALF_UP
+from datetime import timedelta
+from django.db import transaction
+from django.utils import timezone
 from rest_framework import serializers
-from .models import Order, ProducerOrder, OrderItem
+from .models import Order, ProducerOrder, OrderItem, RecurringOrder, RecurringOrderItem
 from apps.community.models import Review
 
 COMMISSION_RATE = Decimal('0.05')
@@ -181,5 +184,136 @@ class ProducerOrderSerializer(serializers.ModelSerializer):
 
     def get_lead_time_hours(self, obj):
         return obj.producer.lead_time_hours
+
+
+class RecurringOrderItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    product_status = serializers.CharField(source="product.status", read_only=True)
+    product_available = serializers.SerializerMethodField()
+    unit = serializers.CharField(source="product.unit", read_only=True)
+    price = serializers.DecimalField(source="product.price", max_digits=10, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = RecurringOrderItem
+        fields = [
+            "id",
+            "product",
+            "product_name",
+            "product_status",
+            "product_available",
+            "unit",
+            "price",
+            "quantity",
+        ]
+        read_only_fields = fields
+
+    def get_product_available(self, obj):
+        return obj.product.status == "available"
+
+
+class RecurringOrderItemUpdateSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    quantity = serializers.IntegerField(min_value=0)
+
+
+class RecurringOrderSerializer(serializers.ModelSerializer):
+    items = RecurringOrderItemSerializer(many=True, read_only=True)
+    organisation_name = serializers.CharField(source="organisation.organisation_name", read_only=True)
+    delivery_address = serializers.SerializerMethodField()
+    item_updates = RecurringOrderItemUpdateSerializer(many=True, write_only=True, required=False)
+
+    class Meta:
+        model = RecurringOrder
+        fields = [
+            "id",
+            "organisation_name",
+            "delivery_address",
+            "name",
+            "frequency",
+            "order_day",
+            "delivery_day",
+            "status",
+            "next_run_at",
+            "starts_at",
+            "ends_at",
+            "created_at",
+            "updated_at",
+            "items",
+            "item_updates",
+        ]
+        read_only_fields = [
+            "id",
+            "organisation_name",
+            "delivery_address",
+            "next_run_at",
+            "starts_at",
+            "ends_at",
+            "created_at",
+            "updated_at",
+            "items",
+        ]
+
+    def update(self, instance, validated_data):
+        item_updates = validated_data.pop("item_updates", None)
+        order_day_changed = "order_day" in validated_data
+
+        with transaction.atomic():
+            instance = super().update(instance, validated_data)
+
+            if order_day_changed:
+                instance.next_run_at = self.get_next_run_at(instance.order_day)
+                instance.save(update_fields=["next_run_at", "updated_at"])
+
+            if item_updates is not None:
+                self.update_items(instance, item_updates)
+                if hasattr(instance, "_prefetched_objects_cache"):
+                    instance._prefetched_objects_cache = {}
+
+        return instance
+
+    def update_items(self, instance, item_updates):
+        existing_items = {item.id: item for item in instance.items.select_related("product")}
+
+        for update in item_updates:
+            try:
+                item_id = int(update.get("id"))
+                quantity = int(update.get("quantity"))
+            except (TypeError, ValueError):
+                raise serializers.ValidationError({"item_updates": "Recurring order items are invalid."})
+
+            item = existing_items.get(item_id)
+            if item is None:
+                raise serializers.ValidationError({"item_updates": "Recurring order item was not found."})
+
+            if quantity < 0:
+                raise serializers.ValidationError({"item_updates": "Item quantity cannot be negative."})
+
+            if quantity == 0:
+                item.delete()
+            else:
+                item.quantity = quantity
+                item.save(update_fields=["quantity"])
+
+        if not instance.items.exists():
+            raise serializers.ValidationError({"item_updates": "A recurring order must contain at least one item."})
+
+    def get_next_run_at(self, order_day):
+        now = timezone.now()
+        days_until_next = (int(order_day) - now.weekday()) % 7
+        if days_until_next == 0:
+            days_until_next = 7
+        return now + timedelta(days=days_until_next)
+
+    def get_delivery_address(self, obj):
+        address = obj.delivery_address
+        if not address:
+            return None
+
+        return {
+            "address_line_1": address.address_line_1,
+            "address_line_2": address.address_line_2 or "",
+            "city": address.city,
+            "postcode": address.postcode,
+        }
 
 

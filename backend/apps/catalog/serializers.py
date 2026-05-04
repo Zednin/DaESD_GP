@@ -60,6 +60,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "price",
             "unit",
             "stock",
+            "low_stock_threshold",
             "availability_mode",
             "season_start_month",
             "season_end_month",

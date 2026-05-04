@@ -1,12 +1,37 @@
 import { useMemo, useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import { readCart, getCartSubtotal } from "../../utils/cartStorage";
 import apiClient from "../../utils/apiClient";
+import { useAuth } from "../../auth/AuthContext";
+import RecurringOrderModal from "./RecurringOrderModal";
 import styles from "./Checkout.module.css";
 
+const WEEKDAYS = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
+function isRestaurantCustomer(user) {
+  return (
+    user?.account_type === "restaurant" ||
+    user?.organisation?.organisation_type === "restaurant"
+  );
+}
+
 export default function Checkout() {
+  const { user } = useAuth();
   const [items] = useState(() => readCart());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showRecurring, setShowRecurring] = useState(false);
+  const [recurringPrefs, setRecurringPrefs] = useState(null);
+
+  const canCreateRecurring = isRestaurantCustomer(user);
 
   const subtotal = useMemo(
     () => getCartSubtotal(items),
@@ -21,7 +46,12 @@ export default function Checkout() {
     setError(null);
 
     try {
-      const { data } = await apiClient.post("/checkout/create-session/", {});
+      if (recurringPrefs && !canCreateRecurring) {
+        throw new Error("Recurring orders are only available for restaurant customers.");
+      }
+
+      const payload = recurringPrefs ? { recurring: recurringPrefs } : {};
+      const { data } = await apiClient.post("/checkout/create-session/", payload);
 
       if (data.url) {
         window.location.href = data.url;
@@ -68,6 +98,46 @@ export default function Checkout() {
 
           {error && <p className={styles.error}>{error}</p>}
 
+          {canCreateRecurring && recurringPrefs && (
+            <div className={styles.recurringBadge}>
+              <div className={styles.recurringBadgeInfo}>
+                <span className={styles.recurringBadgeLabel}>Recurring order</span>
+                <span className={styles.recurringBadgeDetails}>
+                  {recurringPrefs.frequency === "fortnightly" ? "Fortnightly" : "Weekly"}
+                  {" · "}
+                  Order every {WEEKDAYS[recurringPrefs.order_day]}
+                  {" · "}
+                  Deliver every {WEEKDAYS[recurringPrefs.delivery_day]}
+                </span>
+              </div>
+              <button
+                type="button"
+                className={styles.recurringRemove}
+                onClick={() => setRecurringPrefs(null)}
+                aria-label="Remove recurring order"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          {canCreateRecurring && (
+            <label className={styles.recurringToggle}>
+              <input
+                type="checkbox"
+                checked={Boolean(recurringPrefs)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setShowRecurring(true);
+                  } else {
+                    setRecurringPrefs(null);
+                  }
+                }}
+              />
+              <span>Make this a recurring order</span>
+            </label>
+          )}
+
           <button
             onClick={handleSubmit}
             className={styles.payBtn}
@@ -104,6 +174,20 @@ export default function Checkout() {
           </div>
         </aside>
       </div>
+
+      <AnimatePresence>
+        {showRecurring && (
+          <RecurringOrderModal
+            items={items}
+            initialValue={recurringPrefs}
+            onClose={() => setShowRecurring(false)}
+            onConfirm={(prefs) => {
+              setRecurringPrefs(prefs);
+              setShowRecurring(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </main>
   );
 }
