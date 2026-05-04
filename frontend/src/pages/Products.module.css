@@ -84,6 +84,21 @@
   transition: transform 200ms ease, box-shadow 200ms ease;
 }
 
+.recsSpinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--surface-2);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: recsSpinnerRotate 0.7s linear infinite;
+}
+
+@keyframes recsSpinnerRotate {
+  to { transform: rotate(360deg); }
+}
+
 .recCard:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow);
