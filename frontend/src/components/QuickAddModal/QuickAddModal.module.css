@@ -301,6 +301,23 @@
   transform: translateY(-1px);
 }
 
+.addBtn:disabled {
+  background: var(--border-strong);
+  color: var(--muted);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+  filter: none;
+}
+
+.stockMessage {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 .shipping {
   margin-top: 24px;
   padding-top: 18px;
