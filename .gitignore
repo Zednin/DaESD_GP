@@ -3,3 +3,4 @@ devnotes.md
 __pycache__/
 *.py[cod]
 schema.sql
+settings.json
