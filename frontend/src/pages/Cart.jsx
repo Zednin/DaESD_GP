@@ -284,7 +284,7 @@ export default function Cart() {
                               <span>{item.categoryName} · </span>
                             )}
                             {money(item.price)} / {item.unit || "item"}
-                            {stockLabel && <span> Â· {stockLabel}</span>}
+                            {stockLabel && <span> · {stockLabel}</span>}
                           </div>
 
                           <div className={styles.controls}>
