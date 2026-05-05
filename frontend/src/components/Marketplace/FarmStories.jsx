@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import Fuse from "fuse.js";
-import { FiBookOpen, FiChevronDown, FiSearch, FiSliders, FiX } from "react-icons/fi";
+import { FiBookOpen, FiChevronDown, FiHeart, FiSearch, FiSliders, FiX } from "react-icons/fi";
 import { fadeRight, fadeUp } from "../../animations/heroAnimations";
+import { useAuth } from "../../auth/AuthContext";
 import apiClient from "../../utils/apiClient";
 import styles from "./FarmStories.module.css";
 
@@ -44,6 +45,8 @@ function getStoryProducerKey(story) {
 
 export default function FarmStories() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [stories, setStories] = useState([]);
   const [producers, setProducers] = useState([]);
   const [producerSearchInput, setProducerSearchInput] = useState("");
@@ -55,6 +58,7 @@ export default function FarmStories() {
   const [producerError, setProducerError] = useState(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selectedStory, setSelectedStory] = useState(null);
+  const [likingStoryIds, setLikingStoryIds] = useState(() => new Set());
   const feedFilterRef = useRef(null);
 
   const producerFuse = useMemo(
@@ -144,6 +148,66 @@ export default function FarmStories() {
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
+
+  function updateStoryLike(storyId, likeData) {
+    setStories((currentStories) =>
+      currentStories.map((story) =>
+        story.id === storyId
+          ? {
+              ...story,
+              liked_by_me: likeData.liked_by_me,
+              like_count: likeData.like_count,
+            }
+          : story
+      )
+    );
+
+    setSelectedStory((story) =>
+      story?.id === storyId
+        ? {
+            ...story,
+            liked_by_me: likeData.liked_by_me,
+            like_count: likeData.like_count,
+          }
+        : story
+    );
+  }
+
+  async function handleToggleLike(story) {
+    if (!user) {
+      const next = `${location.pathname}${location.search}${location.hash}`;
+      navigate(`/login?next=${encodeURIComponent(next)}`);
+      return;
+    }
+
+    if (user.account_type !== "customer") {
+      return;
+    }
+
+    setLikingStoryIds((current) => new Set(current).add(story.id));
+
+    try {
+      const { data } = await apiClient.post(`/farm-stories/${story.id}/toggle-like/`);
+      updateStoryLike(story.id, data);
+    } catch (err) {
+      console.error("Failed to toggle farm story like:", err);
+    } finally {
+      setLikingStoryIds((current) => {
+        const next = new Set(current);
+        next.delete(story.id);
+        return next;
+      });
+    }
+  }
+
+  function getLikeLabel(story) {
+    const count = Number(story.like_count ?? 0);
+    return `${count} ${count === 1 ? "like" : "likes"}`;
+  }
+
+  function canToggleLikes() {
+    return !user || user.account_type === "customer";
+  }
 
   if (loading) {
     return (
@@ -425,6 +489,24 @@ export default function FarmStories() {
                       </button>
                     </p>
                   )}
+
+                  <button
+                    type="button"
+                    className={`${styles.likeButton} ${
+                      story.liked_by_me ? styles.likeButtonActive : ""
+                    }`}
+                    onClick={() => handleToggleLike(story)}
+                    disabled={likingStoryIds.has(story.id) || !canToggleLikes()}
+                    aria-pressed={Boolean(story.liked_by_me)}
+                    title={
+                      user?.account_type && user.account_type !== "customer"
+                        ? "Only customers can like farm stories"
+                        : undefined
+                    }
+                  >
+                    <FiHeart />
+                    <span>{getLikeLabel(story)}</span>
+                  </button>
                 </div>
               </article>
             ))}
@@ -498,6 +580,26 @@ export default function FarmStories() {
                 <h2 className={styles.modalTitle}>{selectedStory.title}</h2>
 
                 <p className={styles.modalBody}>{selectedStory.content}</p>
+
+                <button
+                  type="button"
+                  className={`${styles.likeButton} ${styles.modalLikeButton} ${
+                    selectedStory.liked_by_me ? styles.likeButtonActive : ""
+                  }`}
+                  onClick={() => handleToggleLike(selectedStory)}
+                  disabled={
+                    likingStoryIds.has(selectedStory.id) || !canToggleLikes()
+                  }
+                  aria-pressed={Boolean(selectedStory.liked_by_me)}
+                  title={
+                    user?.account_type && user.account_type !== "customer"
+                      ? "Only customers can like farm stories"
+                      : undefined
+                  }
+                >
+                  <FiHeart />
+                  <span>{getLikeLabel(selectedStory)}</span>
+                </button>
               </div>
             </motion.div>
           </motion.div>

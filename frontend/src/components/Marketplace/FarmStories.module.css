@@ -555,6 +555,50 @@
   overflow: hidden;
 }
 
+.likeButton {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.likeButton:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: var(--surface-2);
+  color: var(--text);
+  transform: translateY(-1px);
+}
+
+.likeButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.likeButtonActive {
+  border-color: color-mix(in srgb, #d83f63 55%, var(--border));
+  background: color-mix(in srgb, #d83f63 11%, var(--surface));
+  color: #d83f63;
+}
+
+.likeButtonActive svg {
+  fill: currentColor;
+}
+
+.modalLikeButton {
+  margin-top: 24px;
+}
+
 /* ═══════════════════════════════════════════════════════════
    FEED FOOTER (Load more / caught up)
 ═══════════════════════════════════════════════════════════ */
