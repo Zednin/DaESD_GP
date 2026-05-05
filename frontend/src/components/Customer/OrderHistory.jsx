@@ -5,6 +5,7 @@ import {
   LuChevronUp,
   LuCircleAlert,
   LuClock3,
+  LuFilter,
   LuPackage,
   LuRefreshCw,
   LuShoppingBag,
@@ -12,6 +13,7 @@ import {
   LuTruck,
   LuX,
 } from "react-icons/lu";
+import DatePicker from "../DatePicker/DatePicker";
 import apiClient from "../../utils/apiClient";
 import {
   createReview,
@@ -275,6 +277,21 @@ function ErrorState({ message, onRetry }) {
       <button type="button" className={styles.retryBtn} onClick={onRetry}>
         <LuRefreshCw size={16} />
         Try again
+      </button>
+    </div>
+  );
+}
+
+function NoResultsState({ onClear }) {
+  return (
+    <div className={styles.emptyState}>
+      <div className={styles.emptyIconWrap}>
+        <LuFilter size={28} />
+      </div>
+      <h3>No orders match your filters</h3>
+      <p>Try adjusting the date range or producer filter to see more orders.</p>
+      <button type="button" className={styles.retryBtn} onClick={onClear}>
+        Clear filters
       </button>
     </div>
   );
@@ -698,6 +715,53 @@ export default function OrderHistory() {
   const [loadingExistingReview, setLoadingExistingReview] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reorderStates, setReorderStates] = useState({});
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [producerFilter, setProducerFilter] = useState("");
+
+  const allProducers = useMemo(() => {
+    const names = new Set();
+    for (const order of orders) {
+      for (const item of buildOrderItems(order)) {
+        if (item.producer_name) names.add(item.producer_name);
+      }
+    }
+    return [...names].sort();
+  }, [orders]);
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      const placedDate = getOrderPlacedDate(order);
+      const placedDateStr = placedDate
+        ? new Date(placedDate).toISOString().slice(0, 10)
+        : null;
+
+      if (dateFrom && placedDateStr && placedDateStr < dateFrom) return false;
+      if (dateTo && placedDateStr && placedDateStr > dateTo) return false;
+
+      if (producerFilter) {
+        const hasProducer = buildOrderItems(order).some(
+          (item) => item.producer_name === producerFilter
+        );
+        if (!hasProducer) return false;
+      }
+
+      return true;
+    });
+  }, [orders, dateFrom, dateTo, producerFilter]);
+
+  const hasActiveFilters = Boolean(dateFrom || dateTo || producerFilter);
+
+  function clearFilters() {
+    setDateFrom("");
+    setDateTo("");
+    setProducerFilter("");
+  }
+
+  const today = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }, []);
 
   async function loadOrders() {
     try {
@@ -876,15 +940,78 @@ async function handleReorder(order) {
         </button>
       </div>
 
+      {!loading && !error && orders.length > 0 && (
+        <div className={styles.filterBar}>
+          <div className={styles.filterBarLeft}>
+            <LuFilter size={15} className={styles.filterIcon} />
+            <span className={styles.filterBarLabel}>Filter</span>
+          </div>
+
+          <label className={styles.filterGroup}>
+            <span className={styles.filterLabel}>From</span>
+            <DatePicker
+              value={dateFrom}
+              onChange={setDateFrom}
+              max={dateTo || today}
+              placeholder="From date"
+              ariaLabel="Choose start date"
+              className={styles.filterDatePicker}
+            />
+          </label>
+
+          <label className={styles.filterGroup}>
+            <span className={styles.filterLabel}>To</span>
+            <DatePicker
+              value={dateTo}
+              onChange={setDateTo}
+              min={dateFrom || undefined}
+              max={today}
+              placeholder="To date"
+              ariaLabel="Choose end date"
+              className={styles.filterDatePicker}
+            />
+          </label>
+
+          {allProducers.length > 0 && (
+            <label className={styles.filterGroup}>
+              <span className={styles.filterLabel}>Producer</span>
+              <select
+                className={styles.filterSelect}
+                value={producerFilter}
+                onChange={(e) => setProducerFilter(e.target.value)}
+              >
+                <option value="">All producers</option>
+                {allProducers.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              className={styles.clearFiltersBtn}
+              onClick={clearFilters}
+            >
+              <LuX size={13} />
+              Clear
+            </button>
+          )}
+        </div>
+      )}
+
       {loading ? (
         <OrderSkeleton />
       ) : error ? (
         <ErrorState message={error} onRetry={loadOrders} />
       ) : orders.length === 0 ? (
         <EmptyState />
+      ) : filteredOrders.length === 0 ? (
+        <NoResultsState onClear={clearFilters} />
       ) : (
         <div className={styles.orderList}>
-          {orders.map((order) => (
+          {filteredOrders.map((order) => (
             <OrderCard
               key={order.id}
               order={order}
