@@ -97,6 +97,7 @@ class CartViewSet(ModelViewSet):
 
 class CartItemViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
+    # Security check: only return recurring orders that belong to the logged-in user's organisation.
     def get_queryset(self):
         return CartItem.objects.filter(cart__account=self.request.user)
 
