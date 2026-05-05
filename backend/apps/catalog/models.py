@@ -13,7 +13,7 @@ class Category(models.Model):
         max_length=100, 
         unique=True
         )
-    
+
     # Category Description
     description = models.TextField()
 
@@ -91,17 +91,21 @@ class Product(models.Model):
     
     # Unit type
     unit = models.CharField(
-        max_length=10, 
-        choices=UNIT_CHOICES, 
+        max_length=10,
+        choices=UNIT_CHOICES,
         default='unit'
         )
-    
-    # Amount of producr in stock
-    stock = models.IntegerField(default=0)
 
-    # Stock level at or below which producers should be alerted
-    low_stock_threshold = models.PositiveIntegerField(default=10)
-    
+    # Amount of producr in stock
+    stock = models.IntegerField(default=0, validators=[MinValueValidator(0)])
+
+    # low stock alert threshold
+    low_stock_threshold = models.PositiveIntegerField(
+        default=10,
+        validators=[MinValueValidator(0)],
+        help_text="Warn producers when stock is at or below this quantity"
+    )
+
     # Seasonal availability
     availability_mode = models.CharField(
         max_length=20,
@@ -166,6 +170,36 @@ class Product(models.Model):
 
     # Product listing updated from inventory_adjustment
     updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(price__gte=0),
+                name="product_price_gte_0",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(stock__gte=0),
+                name="product_stock_gte_0",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(discount_percentage__gte=0) & models.Q(discount_percentage__lte=100),
+                name="product_discount_0_100",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(season_start_month__isnull=True) | (
+                    models.Q(season_start_month__gte=1) & models.Q(season_start_month__lte=12)
+                ),
+                name="product_season_start_month_1_12",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(season_end_month__isnull=True) | (
+                    models.Q(season_end_month__gte=1) & models.Q(season_end_month__lte=12)
+                ),
+                name="product_season_end_month_1_12",
+            ),
+        ]
+
+    
 
     @property
     def surplus_price(self):

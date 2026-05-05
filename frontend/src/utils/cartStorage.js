@@ -65,9 +65,8 @@ function getStockLimit(itemOrProduct) {
 }
 
 function mapServerCartToUiItems(serverCart) {
-  // server item fields: { id, product_id, name, unit, quantity, price_snapshot }
   return (serverCart.items || []).map((it) => ({
-    cartItemId: it.id,                // needed for update/delete
+    cartItemId: it.id,
     productId: it.product_id,
     name: it.name,
     unit: it.unit,
@@ -75,6 +74,10 @@ function mapServerCartToUiItems(serverCart) {
     status: it.status,
     qty: it.quantity,
     price: Number(it.price_snapshot),
+    // producer metadata and lead time
+    producer_id: it.producer_id,
+    producer_name: it.producer_name,
+    leadTimeHours: it.lead_time_hours,
   }));
 }
 
@@ -134,6 +137,9 @@ export async function addToCart(product, qty) {
             status: product.status,
             price: Number(product.price),
             qty: requestedQty,
+            producer_id: product.producer_id || product.producer_profile_id || product.producer,
+            producer_name: product.producer_name,
+            leadTimeHours: product.lead_time_hours,
           },
         ];
 

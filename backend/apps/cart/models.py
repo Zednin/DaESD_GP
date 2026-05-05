@@ -3,6 +3,7 @@ from django.db import models
 # Create your models here.
 from apps.accounts.models import Account
 from apps.catalog.models import Product
+from django.core.validators import MinValueValidator
 
 class Cart(models.Model):
     account = models.OneToOneField(Account, on_delete=models.CASCADE, related_name="cart")
@@ -15,12 +16,16 @@ class Cart(models.Model):
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="cart_items")
-    quantity = models.PositiveIntegerField(default=1)
+    quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
     price_snapshot = models.DecimalField(max_digits=10, decimal_places=2)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["cart", "product"], name="uniq_cart_product")
+            models.UniqueConstraint(fields=["cart", "product"], name="uniq_cart_product"),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0),
+                name="cartitem_quantity_gt_0",
+            ),
         ]
 
     def __str__(self):
