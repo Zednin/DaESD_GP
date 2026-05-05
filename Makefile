@@ -43,6 +43,10 @@ migrate:
 psql:
 	docker exec -it $(PG_CONTAINER) psql -U $${DB_USER} -d $${DB_NAME}
 
+
+view_db:
+	docker exec -it django-web python manage.py inspectdb
+
 # reset the database base.sql doesnt exist yet - replace with actual seed data when ready
 reset-db:
 	docker exec -i $(PG_CONTAINER) psql -U $${DB_USER} -d postgres -c "DROP DATABASE IF EXISTS \"$${DB_NAME}\";"

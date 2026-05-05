@@ -17,14 +17,14 @@ class DistanceRecord(models.Model):
     # Producer Address FK (must be BUSINESS)
     producer_address = models.ForeignKey(
         'addresses.Address',
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='distance_as_producer'
     )
 
     # Customer Address FK (must be DELIVERY)
     customer_address = models.ForeignKey(
         'addresses.Address',
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='distance_as_customer'
     )
 
