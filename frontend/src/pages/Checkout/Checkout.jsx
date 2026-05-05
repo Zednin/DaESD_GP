@@ -51,15 +51,8 @@ function getRecurringDeliveryDate(prefs) {
   return formatDateInput(orderDate);
 }
 
-function isRestaurantCustomer(user) {
-  return (
-    user?.account_type === "restaurant" ||
-    user?.organisation?.organisation_type === "restaurant"
-  );
-}
-
 export default function Checkout() {
-  const { user } = useAuth();
+  const { canUseRecurringOrders } = useAuth();
   const [items] = useState(() => readCart());
   const [productDetails, setProductDetails] = useState({});
   const [allergenAcknowledged, setAllergenAcknowledged] = useState(false);
@@ -71,7 +64,7 @@ export default function Checkout() {
   const [bulkInstructions, setBulkInstructions] = useState("");
   const [bulkDeliveryDate, setBulkDeliveryDate] = useState("");
 
-  const canCreateRecurring = isRestaurantCustomer(user);
+  const canCreateRecurring = canUseRecurringOrders;
 
   const subtotal = useMemo(
     () => getCartSubtotal(items),
