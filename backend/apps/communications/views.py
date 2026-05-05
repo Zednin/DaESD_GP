@@ -3,18 +3,14 @@ import logging
 from django.shortcuts import render
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from rest_framework.serializers import ModelSerializer
-from .models import Announcement
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
+from .models import Announcement, Notification
+from .serializers import AnnouncementSerializer, NotificationSerializer
 from .email_service import send_announcement_to_producers
 
 logger = logging.getLogger(__name__)
-
-
-class AnnouncementSerializer(ModelSerializer):
-    class Meta:
-        model = Announcement
-        fields = ['id', 'title', 'body', 'created_by', 'created_at']
-        read_only_fields = ['id', 'created_by', 'created_at']
 
 
 class AnnouncementViewSet(ModelViewSet):
@@ -32,6 +28,32 @@ class AnnouncementViewSet(ModelViewSet):
             send_announcement_to_producers(announcement)
         except Exception:
             logger.exception("Failed to send announcement email to producers")
+            
+            
+class NotificationViewSet(ModelViewSet):
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(account=self.request.user)
+
+    @action(detail=False, methods=["post"], url_path="mark-all-read")
+    def mark_all_read(self, request):
+        self.get_queryset().filter(read=False).update(read=True)
+        return Response({"detail": "All notifications marked as read."})
+
+    @action(detail=True, methods=["post"], url_path="mark-read")
+    def mark_read(self, request, pk=None):
+        notification = self.get_object()
+        notification.read = True
+        notification.save(update_fields=["read"])
+        return Response(self.get_serializer(notification).data)
+    
+    @action(detail=True, methods=["delete"], url_path="clear")
+    def clear(self, request, pk=None):
+        notification = self.get_object()
+        notification.delete()
+        return Response(status=204)
 
 
 def preview_order_email(request):
