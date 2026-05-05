@@ -13,7 +13,7 @@ class Category(models.Model):
         max_length=100, 
         unique=True
         )
-    
+
     # Category Description
     description = models.TextField()
 
@@ -91,17 +91,21 @@ class Product(models.Model):
     
     # Unit type
     unit = models.CharField(
-        max_length=10, 
-        choices=UNIT_CHOICES, 
+        max_length=10,
+        choices=UNIT_CHOICES,
         default='unit'
         )
-    
+
     # Amount of producr in stock
     stock = models.IntegerField(default=0, validators=[MinValueValidator(0)])
 
-    # Stock level at or below which producers should be alerted
-    low_stock_threshold = models.PositiveIntegerField(default=10)
-    
+    # low stock alert threshold
+    low_stock_threshold = models.PositiveIntegerField(
+        default=10,
+        validators=[MinValueValidator(0)],
+        help_text="Warn producers when stock is at or below this quantity"
+    )
+
     # Seasonal availability
     availability_mode = models.CharField(
         max_length=20,
