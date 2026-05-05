@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Navigate, Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -35,7 +35,7 @@ import CheckoutSuccess from "./pages/Checkout/CheckoutSuccess";
 import ProducerDashboard from "./pages/Producer/ProducerDashboard";
 import ProducerMyAccount from "./pages/Producer/ProducerMyAccount";
 
-// Farm stories pages
+// Explore pages
 import FarmStories from "./components/Marketplace/FarmStories";
 
 // Admin pages
@@ -70,10 +70,12 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/products" element={<Products />} />
         <Route path="/products/:productId" element={<ProductDetail />} />
+        <Route path="/producer/:producerId" element={<ProducerDetail />} />
         <Route path="/producers/:producerId" element={<ProducerDetail />} />
         <Route path="/surplus-deals" element={<SurplusDeals />} />
         <Route path="/about" element={<About />} />
-        <Route path="/farm-stories" element={<FarmStories />} />
+        <Route path="/explore" element={<FarmStories />} />
+        <Route path="/farm-stories" element={<Navigate to="/explore" replace />} />
         <Route path="/faq" element={<FAQ />} />
 
         <Route path="/login" element={<Login />} />

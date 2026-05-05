@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   LuLeaf,
   LuMapPinned,
@@ -99,6 +99,7 @@ export default function ProductHero({
   foodMiles = null,
   onAddToBasket,
 }) {
+  const location = useLocation();
   const [qty, setQty] = useState(1);
   const [addStatus, setAddStatus] = useState("idle");
   const [addError, setAddError] = useState("");
@@ -136,6 +137,15 @@ export default function ProductHero({
   }, [addBlockedByStock, addError, addStatus, availableToAdd, cannotAddMore, cartQty, isUnavailable, stockLimit]);
 
   const total = useMemo(() => (currentPrice * qty).toFixed(2), [currentPrice, qty]);
+  const producerPath = `/producers/${product.producer_id || product.producer_profile_id || product.producer}`;
+  const producerLinkState = {
+    from: {
+      pathname: location.pathname,
+      search: location.search,
+      hash: location.hash,
+    },
+    fromLabel: product.name || "Product",
+  };
 
   function handleQtyChange(next) {
     if (isUnavailable) {
@@ -231,7 +241,11 @@ export default function ProductHero({
             </div>
 
             <div className={styles.imageBottomPanel}>
-              <Link to={`/producers/${product.producer_id || product.producer_profile_id || product.producer}`} className={styles.originPill}>
+              <Link
+                to={producerPath}
+                state={producerLinkState}
+                className={styles.originPill}
+              >
                 <LuMapPinned size={14} />
                 From {product.producer_name}
               </Link>
@@ -253,7 +267,11 @@ export default function ProductHero({
       >
         <div className={styles.infoShell}>
           <div className={styles.metaRow}>
-            <Link to={`/producers/${product.producer_id || product.producer_profile_id || product.producer}`} className={styles.producerChip}>
+            <Link
+              to={producerPath}
+              state={producerLinkState}
+              className={styles.producerChip}
+            >
               <LuBadgeCheck size={14} />
               {product.producer_name}
             </Link>
