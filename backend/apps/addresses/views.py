@@ -3,6 +3,8 @@ from rest_framework.viewsets import ModelViewSet
 
 from .models import Address
 from .serializers import AddressSerializer
+from django.core.exceptions import ValidationError as DjangoValidationError
+from rest_framework import serializers
 
 
 def is_admin_user(user):
@@ -34,7 +36,12 @@ class AddressViewSet(ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(account=self.request.user)
+        try:
+            serializer.save(account=self.request.user)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(
+                e.message_dict if hasattr(e, "message_dict") else {"detail": e.messages}
+            )
 
     def perform_update(self, serializer):
         serializer.save(account=self.request.user)

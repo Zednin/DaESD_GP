@@ -82,6 +82,15 @@ function buildPayload(form, hasOrganisationProfile) {
 
   return payload;
 }
+
+function hasCompleteAddress(form) {
+  return (
+    form.address_line_1.trim() &&
+    form.city.trim() &&
+    form.postcode.trim()
+  );
+}
+
 function flattenError(err) {
   const data = err?.response?.data;
 
@@ -245,12 +254,18 @@ export default function Settings() {
   async function handleSubmit(event) {
     event.preventDefault();
 
+    if (!hasCompleteAddress(form)) {
+      setError("Address line 1, city, and postcode are required.");
+      setSuccess("");
+      return;
+    }
+
     try {
       setSaving(true);
       setError("");
       setSuccess("");
 
-      const payload = buildPayload(form);
+      const payload = buildPayload(form, hasOrganisationProfile);
       const { data } = await apiClient.patch("/account/settings/", payload);
 
       const normalised = normaliseSettingsResponse(data);
@@ -408,6 +423,7 @@ export default function Settings() {
                 value={form.address_line_1}
                 onChange={handleChange}
                 placeholder="House number and street"
+                required
               />
             </Field>
 
@@ -428,6 +444,7 @@ export default function Settings() {
                 value={form.city}
                 onChange={handleChange}
                 placeholder="City or town"
+                required
               />
             </Field>
 
@@ -438,6 +455,7 @@ export default function Settings() {
                 value={form.postcode}
                 onChange={handleChange}
                 placeholder="Postcode"
+                required
               />
             </Field>
           </div>
