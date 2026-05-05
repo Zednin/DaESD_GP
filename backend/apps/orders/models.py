@@ -36,6 +36,21 @@ class Order(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     stripe_session_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status__in=[
+                    "pending",
+                    "confirmed",
+                    "cancelled",
+                    "in transit",
+                    "ready for collection",
+                    "completed",
+                ]),
+                name="order_valid_status",
+            ),
+        ]
 
     def __str__(self):
         return f"Order {self.id} - {self.account.username}"
@@ -65,7 +80,19 @@ class ProducerOrder(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["order", "producer"], name="uniq_order_producer")
+            models.UniqueConstraint(fields=["order", "producer"], name="uniq_order_producer"),
+            models.CheckConstraint(
+                condition=models.Q(status__in=[
+                    "pending",
+                    "accepted",
+                    "rejected",
+                    "preparing",
+                    "ready",
+                    "delivered",
+                    "cancelled",
+                ]),
+                name="producerorder_valid_status",
+            ),
         ]
 
     def __str__(self):
@@ -136,6 +163,18 @@ class RecurringOrder(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status__in=[
+                    "active",
+                    "paused",
+                    "cancelled",
+                ]),
+                name="recurringorder_valid_status",
+            ),
+        ]
+    
     def __str__(self) -> str:
         return f"RecurringOrder {self.name} ID: {self.id} for {self.organisation.name}"
     
@@ -194,12 +233,16 @@ class RecurringOrderEvent(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["recurring_order", "scheduled_for"], 
-                name="uniq_recurringorder_scheduledfor"
+                name="uniq_recur_event_schedule"
             ),
-        ]
-        indexes = [
-            models.Index(fields=["recurring_order", "scheduled_for"]),
-            models.Index(fields=["scheduled_for"]), # for efficient querying of upcoming events
+            models.CheckConstraint(
+                condition=models.Q(status__in=[
+                    "created",
+                    "failed",
+                    "skipped",
+                ]),
+                name="recur_event_valid_status",
+            ),
         ]
         
     def __str__(self) -> str:
@@ -227,7 +270,16 @@ class WeeklySettlement(models.Model):
             models.UniqueConstraint(
                 fields=["start_period", "end_period"],
                 name="uniq_weeklysettlement_period"
-            )
+            ),
+            models.CheckConstraint(
+                condition=models.Q(status__in=[
+                    "pending",
+                    "processing",
+                    "completed",
+                    "failed",
+                ]),
+                name="weeklysettlement_valid_status",
+            ),
         ]
 
     def __str__(self):
@@ -257,7 +309,15 @@ class SettlementLine(models.Model):
             models.UniqueConstraint(
                 fields=["settlement", "producer"],
                 name="uniq_settlement_producer"
-            )
+            ),
+            models.CheckConstraint(
+                condition=models.Q(payout_status__in=[
+                    "pending",
+                    "paid",
+                    "failed",
+                ]),
+                name="settlementline_valid_payout_status",
+            ),
         ]
 
     def __str__(self):
