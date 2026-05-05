@@ -20,6 +20,7 @@ export default function Products() {
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [recsOpen, setRecsOpen] = useState(false);
+  const [loadingRecs, setLoadingRecs] = useState(true);
   const [lastOrder, setLastOrder] = useState(null);
   const [reorderAdding, setReorderAdding] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
@@ -65,10 +66,12 @@ export default function Products() {
 
   // Personalised recommendations for logged-in users.
   useEffect(() => {
+    setLoadingRecs(true);
     apiClient
       .get("/products/recommendations/", { params: { limit: 5 } })
       .then(({ data }) => setRecommendations(Array.isArray(data) ? data : []))
-      .catch(() => setRecommendations([]));
+      .catch(() => setRecommendations([]))
+      .finally(() => setLoadingRecs(false));
   }, []);
 
   // Last completed order for quick re-order banner (logged-in users only).
@@ -236,7 +239,7 @@ export default function Products() {
         </motion.div>
       )}
       
-      {recommendations.length > 0 && (
+      {(loadingRecs || recommendations.length > 0) && (
         <motion.section
           className={styles.recsSection}
           variants={fadeUp(0.25)}
@@ -252,9 +255,10 @@ export default function Products() {
               Recommended for You
               <span className={styles.recsSubtext}>Based on your recent orders, we have curated a selection just for you.</span>
             </span>
-            <FiChevronDown
-              className={`${styles.recsArrow} ${recsOpen ? styles.recsArrowOpen : ""}`}
-            />
+            {loadingRecs
+              ? <span className={styles.recsSpinner} />
+              : <FiChevronDown className={`${styles.recsArrow} ${recsOpen ? styles.recsArrowOpen : ""}`} />
+            }
           </button>
 
           <AnimatePresence initial={false}>
