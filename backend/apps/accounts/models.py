@@ -3,44 +3,6 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 
 from django.conf import settings
-#'AbstractUser' Built in django class for users
-# contains username, password, email, firstname, lastname, user authentication, permissions, group 
-
-# Create your models here.
-
-''' # This should be deleted in the future if decided not to use it
-# Custom Account Class
-class AccountManager(BaseUserManager):
-    def create_user(self, email, password=None, **extra_fields):
-        if not email: 
-            raise ValueError("Email required")
-    
-        email = self.normalize_email(email.strip())
-        user = self.model(email=email, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
-    
-    def create_superuser(self, email, password=None, **extra_fields):
-        extra_fields.setdefault("is_staff", True)
-        extra_fields.setdefault("is_superuser", True)
-        extra_fields.setdefault("is_active", True)
-        
-        # Error handelling :
-        if extra_fields.get("is_staff") is not True:
-            raise ValueError("Superuser must have is_staff=True")
-        if extra_fields.get("is_superuser") is not True:
-            raise ValueError("Superuser must have is_superuser=True")
-        
-        return self.create_user(email, password, **extra_fields)
-'''    
-
-            
-    
-
-
-
-
 
 
 class Account(AbstractUser):
@@ -57,7 +19,7 @@ class Account(AbstractUser):
     account_type = models.CharField(max_length=20, 
                                     choices=ACCOUNT_TYPE_CHOICES, 
                                     default='customer',
-                                    db_index=True
+                                    db_index=True,
                                     )
     
     
