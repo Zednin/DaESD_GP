@@ -82,6 +82,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
         read_only_fields = [
             "id",
+            "producer",
             "created_at",
             "updated_at",
             "surplus_price",

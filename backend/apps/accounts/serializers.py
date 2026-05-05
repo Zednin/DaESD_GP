@@ -50,9 +50,9 @@ class OrganisationSettingsSerializer(serializers.ModelSerializer):
 
 
 class AccountSettingsSerializer(serializers.ModelSerializer):
-    phone_number = serializers.SerializerMethodField()
-    default_delivery_address = serializers.SerializerMethodField()
-    organisation = serializers.SerializerMethodField()
+    phone_number = serializers.CharField(required=False, allow_blank=True)
+    default_delivery_address = AddressSettingsSerializer(required=False)
+    organisation = OrganisationSettingsSerializer(required=False)
 
     class Meta:
         model = Account
@@ -69,34 +69,38 @@ class AccountSettingsSerializer(serializers.ModelSerializer):
     def validate_email(self, value):
         return value.lower().strip()
 
-    def get_phone_number(self, obj):
+    def to_representation(self, obj):
+        data = super().to_representation(obj)
+
         customer = getattr(obj, "customer_profile", None)
-        if not customer or not customer.phone_number:
-            return ""
-        return customer.phone_number
 
-    def get_default_delivery_address(self, obj):
-        customer = getattr(obj, "customer_profile", None)
-        if not customer or not customer.default_delivery_address:
-            return None
+        data["phone_number"] = (
+            customer.phone_number
+            if customer and customer.phone_number
+            else ""
+        )
 
-        return AddressSettingsSerializer(customer.default_delivery_address).data
+        data["default_delivery_address"] = (
+            AddressSettingsSerializer(customer.default_delivery_address).data
+            if customer and customer.default_delivery_address
+            else None
+        )
 
-    def get_organisation(self, obj):
-        customer = getattr(obj, "customer_profile", None)
-        if not customer:
-            return None
+        organisation = getattr(customer, "organisation", None) if customer else None
 
-        organisation = getattr(customer, "organisation", None)
-        if not organisation:
-            return None
+        data["organisation"] = (
+            OrganisationSettingsSerializer(organisation).data
+            if organisation
+            else None
+        )
 
-        return OrganisationSettingsSerializer(organisation).data
+        return data
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        customer_data = validated_data.pop("customer_profile", {})
-        request = self.context.get("request")
+        phone_number = validated_data.pop("phone_number", None)
+        address_payload = validated_data.pop("default_delivery_address", None)
+        organisation_payload = validated_data.pop("organisation", None)
 
         # Update Account fields
         for attr, value in validated_data.items():
@@ -107,26 +111,17 @@ class AccountSettingsSerializer(serializers.ModelSerializer):
         customer, _ = Customer.objects.get_or_create(account=instance)
 
         # Update phone number
-        if "phone_number" in customer_data:
-            customer.phone_number = customer_data["phone_number"]
+        if phone_number is not None:
+            customer.phone_number = phone_number
             customer.save()
 
         # Update/create address
-        address_payload = {}
-        if request:
-            address_payload = request.data.get("default_delivery_address") or {}
-
-        has_any_address_value = any(
-            str(address_payload.get(key, "")).strip()
-            for key in ["address_line_1", "address_line_2", "city", "postcode"]
-        )
-
-        if has_any_address_value:
+        if address_payload is not None:
             address = customer.default_delivery_address
 
             try:
                 if address is None:
-                    address = Address(
+                    address = Address.objects.create(
                         account=instance,
                         address_type=Address.AddressType.DELIVERY,
                         is_default=True,
@@ -135,26 +130,21 @@ class AccountSettingsSerializer(serializers.ModelSerializer):
                         city=address_payload.get("city", "").strip(),
                         postcode=address_payload.get("postcode", "").strip(),
                     )
-                    address.save()
                     customer.default_delivery_address = address
                     customer.save()
                 else:
-                    address.address_line_1 = address_payload.get(
-                        "address_line_1",
-                        address.address_line_1,
-                    ).strip()
-                    address.address_line_2 = address_payload.get(
-                        "address_line_2",
-                        address.address_line_2 or "",
-                    ).strip()
-                    address.city = address_payload.get(
-                        "city",
-                        address.city,
-                    ).strip()
-                    address.postcode = address_payload.get(
-                        "postcode",
-                        address.postcode,
-                    ).strip()
+                    if "address_line_1" in address_payload:
+                        address.address_line_1 = address_payload["address_line_1"].strip()
+
+                    if "address_line_2" in address_payload:
+                        address.address_line_2 = address_payload.get("address_line_2", "").strip()
+
+                    if "city" in address_payload:
+                        address.city = address_payload["city"].strip()
+
+                    if "postcode" in address_payload:
+                        address.postcode = address_payload["postcode"].strip()
+
                     address.account = instance
                     address.address_type = Address.AddressType.DELIVERY
                     address.is_default = True
@@ -166,16 +156,7 @@ class AccountSettingsSerializer(serializers.ModelSerializer):
                 )
 
         # Update/create organisation
-        organisation_payload = {}
-        if request:
-            organisation_payload = request.data.get("organisation") or {}
-
-        has_any_org_value = any(
-            str(organisation_payload.get(key, "")).strip()
-            for key in ["organisation_name", "organisation_email", "organisation_type"]
-        )
-
-        if has_any_org_value:
+        if organisation_payload is not None:
             organisation, _ = Organisation.objects.get_or_create(
                 customer=customer,
                 defaults={
@@ -185,29 +166,19 @@ class AccountSettingsSerializer(serializers.ModelSerializer):
                 },
             )
 
-            organisation.organisation_name = organisation_payload.get(
-                "organisation_name",
-                organisation.organisation_name,
-            ).strip()
+            if "organisation_name" in organisation_payload:
+                organisation.organisation_name = organisation_payload["organisation_name"].strip()
 
-            organisation.organisation_email = organisation_payload.get(
-                "organisation_email",
-                organisation.organisation_email,
-            ).strip()
+            if "organisation_email" in organisation_payload:
+                organisation.organisation_email = organisation_payload["organisation_email"].strip()
 
-            organisation.organisation_type = (
-                organisation_payload.get(
-                    "organisation_type",
-                    organisation.organisation_type,
-                )
-                or None
-            )
+            if "organisation_type" in organisation_payload:
+                organisation.organisation_type = organisation_payload["organisation_type"] or None
 
             organisation.save()
 
+        instance.refresh_from_db()
         return instance
-
-
 class BaseRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
 

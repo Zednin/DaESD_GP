@@ -26,16 +26,25 @@ const initialForm = {
 };
 
 function normaliseProducer(producer, address = null) {
+  const businessAddress =
+    typeof producer?.business_address === "object"
+      ? producer.business_address
+      : address;
+
   return {
     company_name: producer?.company_name || "",
     company_number: producer?.company_number || "",
     company_description: producer?.company_description || "",
     lead_time_hours: producer?.lead_time_hours || 48,
-    business_address: producer?.business_address || address?.id || null,
-    address_line_1: address?.address_line_1 || "",
-    address_line_2: address?.address_line_2 || "",
-    city: address?.city || "",
-    postcode: address?.postcode || "",
+    business_address:
+      businessAddress?.id ||
+      producer?.business_address ||
+      address?.id ||
+      null,
+    address_line_1: businessAddress?.address_line_1 || "",
+    address_line_2: businessAddress?.address_line_2 || "",
+    city: businessAddress?.city || "",
+    postcode: businessAddress?.postcode || "",
   };
 }
 
@@ -64,6 +73,14 @@ function hasAddressValues(form) {
     form.address_line_1.trim() ||
     form.address_line_2.trim() ||
     form.city.trim() ||
+    form.postcode.trim()
+  );
+}
+
+function hasCompleteAddress(form) {
+  return (
+    form.address_line_1.trim() &&
+    form.city.trim() &&
     form.postcode.trim()
   );
 }
@@ -150,10 +167,24 @@ export default function Settings() {
       let businessAddress = null;
 
       if (producer.business_address) {
-        const { data } = await apiClient.get(
-          `/addresses/${producer.business_address}/`
+        if (typeof producer.business_address === "object") {
+          businessAddress = producer.business_address;
+        } else {
+          const { data } = await apiClient.get(
+            `/addresses/${producer.business_address}/`
+          );
+          businessAddress = data;
+        }
+      } else {
+        // fallback: fetch existing BUSINESS address
+        const { data: addresses } = await apiClient.get(
+          "/addresses/?address_type=BUSINESS"
         );
-        businessAddress = data;
+
+        businessAddress =
+          Array.isArray(addresses) && addresses.length > 0
+            ? addresses[0]
+            : null;
       }
 
       const normalised = normaliseProducer(producer, businessAddress);
@@ -192,6 +223,12 @@ export default function Settings() {
     event.preventDefault();
 
     if (!producerId) return;
+
+    if (!hasCompleteAddress(form)) {
+      setError("Address line 1, city, and postcode are required.");
+      setSuccess("");
+      return;
+    }
 
     try {
       setSaving(true);
@@ -384,6 +421,7 @@ export default function Settings() {
                 value={form.address_line_1}
                 onChange={handleChange}
                 placeholder="House number and street"
+                required
               />
             </Field>
 
@@ -404,6 +442,7 @@ export default function Settings() {
                 value={form.city}
                 onChange={handleChange}
                 placeholder="City or town"
+                required
               />
             </Field>
 
@@ -414,6 +453,7 @@ export default function Settings() {
                 value={form.postcode}
                 onChange={handleChange}
                 placeholder="Postcode"
+                required
               />
             </Field>
           </div>
