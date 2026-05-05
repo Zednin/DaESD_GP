@@ -23,25 +23,32 @@ const navItems = [
 const SPLASH_LETTERS = ["B", "R", "F", "N"];
 const SPLASH_SESSION_KEY_PREFIX = "producer-dashboard-splash-seen";
 
+function hasSeenDashboardSplash(key) {
+  try {
+    return sessionStorage.getItem(key) === "true";
+  } catch {
+    return false;
+  }
+}
+
 export default function ProducerDashboard() {
   const { user } = useAuth();
   const splashSessionKey = user?.id
     ? `${SPLASH_SESSION_KEY_PREFIX}:${user.id}`
     : SPLASH_SESSION_KEY_PREFIX;
 
-  const [showSplash, setShowSplash] = useState(() => {
-    try {
-      return sessionStorage.getItem(splashSessionKey) !== "true";
-    } catch {
-      return true;
-    }
-  });
+  const [dismissedSplashKey, setDismissedSplashKey] = useState("");
   const [splashFading, setSplashFading] = useState(false);
   const [activeSection, setActiveSection] = useState("overview");
   const [allProducers, setAllProducers] = useState([]);
   const [selectedProducerId, setSelectedProducerId] = useState("");
+  // keeps the orders badge updated in the side nav
+  const [pendingOrderCount, setPendingOrderCount] = useState(0);
 
   const isAdmin = user?.account_type === "admin";
+  const showSplash = splashFading || (
+    dismissedSplashKey !== splashSessionKey && !hasSeenDashboardSplash(splashSessionKey)
+  );
 
   const endSplash = useCallback(() => {
     try {
@@ -51,17 +58,10 @@ export default function ProducerDashboard() {
     }
 
     setSplashFading(true);
-    setTimeout(() => setShowSplash(false), 600);
-  }, [splashSessionKey]);
-
-  useEffect(() => {
-    try {
-      const hasSeenSplash = sessionStorage.getItem(splashSessionKey) === "true";
-      setShowSplash(!hasSeenSplash);
+    setTimeout(() => {
+      setDismissedSplashKey(splashSessionKey);
       setSplashFading(false);
-    } catch {
-      setShowSplash(true);
-    }
+    }, 600);
   }, [splashSessionKey]);
 
   useEffect(() => {
@@ -114,6 +114,38 @@ export default function ProducerDashboard() {
   const producerName =
     allProducers.find((p) => p.id === producerId)?.company_name ?? "";
 
+  useEffect(() => {
+    if (!producerId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    // load pending count even before opening orders
+    async function fetchPendingOrders() {
+      try {
+        const { data } = await apiClient.get("/producer-orders/", {
+          params: { producer: producerId },
+        });
+        if (cancelled) return;
+
+        const rows = data.results ?? data;
+        setPendingOrderCount(rows.filter((order) => order.status === "pending").length);
+      } catch (error) {
+        if (!cancelled) {
+          console.error("[producer dashboard] failed to fetch pending orders:", error);
+          setPendingOrderCount(0);
+        }
+      }
+    }
+
+    fetchPendingOrders();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [producerId]);
+
   const renderSection = () => {
     switch (activeSection) {
       case "overview":
@@ -121,7 +153,8 @@ export default function ProducerDashboard() {
       case "products":
         return <ProducerProducts producerId={producerId} producerName={producerName} />;
       case "orders":
-        return <ProducerOrders producerId={producerId} producerName={producerName} />;
+        // orders page can push a fresh pending count back here
+        return <ProducerOrders producerId={producerId} producerName={producerName} onPendingCountChange={setPendingOrderCount} />;
       case "payments":
         return <ProducerPayments producerId={producerId} producerName={producerName} />;
       case "surplus":
@@ -168,7 +201,12 @@ export default function ProducerDashboard() {
               className={`${styles.navBtn} ${activeSection === key ? styles.active : ""}`}
               onClick={() => setActiveSection(key)}
             >
-              {label}
+              <span className={styles.navLabel}>{label}</span>
+              {key === "orders" && producerId && pendingOrderCount > 0 && (
+                <span className={styles.navPendingDot} aria-label={`${pendingOrderCount} pending orders`}>
+                  {pendingOrderCount}
+                </span>
+              )}
             </button>
           ))}
         </nav>

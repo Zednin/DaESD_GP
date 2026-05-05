@@ -8,6 +8,7 @@ from apps.addresses.models import Address
 from apps.producers.models import Producer
 from apps.catalog.models import Product
 
+from django.core.validators import MinValueValidator
 
 
 class Order(models.Model):
@@ -35,6 +36,21 @@ class Order(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     stripe_session_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status__in=[
+                    "pending",
+                    "confirmed",
+                    "cancelled",
+                    "in transit",
+                    "ready for collection",
+                    "completed",
+                ]),
+                name="order_valid_status",
+            ),
+        ]
 
     def __str__(self):
         return f"Order {self.id} - {self.account.username}"
@@ -64,7 +80,19 @@ class ProducerOrder(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["order", "producer"], name="uniq_order_producer")
+            models.UniqueConstraint(fields=["order", "producer"], name="uniq_order_producer"),
+            models.CheckConstraint(
+                condition=models.Q(status__in=[
+                    "pending",
+                    "accepted",
+                    "rejected",
+                    "preparing",
+                    "ready",
+                    "delivered",
+                    "cancelled",
+                ]),
+                name="producerorder_valid_status",
+            ),
         ]
 
     def __str__(self):
@@ -75,7 +103,7 @@ class OrderItem(models.Model):
     producer_order = models.ForeignKey(ProducerOrder, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="order_items")
 
-    quantity = models.PositiveIntegerField(default=1)
+    quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
     price_snapshot = models.DecimalField(max_digits=10, decimal_places=2)
     line_total = models.DecimalField(max_digits=10, decimal_places=2)
 
@@ -83,7 +111,14 @@ class OrderItem(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["producer_order", "product"], name="uniq_producerorder_product")
+            models.UniqueConstraint(
+                fields=["producer_order", "product"],
+                name="uniq_producerorder_product",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0),
+                name="orderitem_quantity_gt_0",
+            ),
         ]
 
     def __str__(self):
@@ -99,9 +134,19 @@ class RecurringOrder(models.Model):
     ]
     
     FREQUENCY_CHOICES = [
-        ("daily", "Daily"),
         ("weekly", "Weekly"),
-        ("monthly", "Monthly"),
+        ("fortnightly", "Fortnightly"),
+    ]
+
+    # Days for order / delivery
+    WEEKDAY_CHOICES = [
+        (0, "Monday"),
+        (1, "Tuesday"),
+        (2, "Wednesday"),
+        (3, "Thursday"),
+        (4, "Friday"),
+        (5, "Saturday"),
+        (6, "Sunday"),
     ]
     
     organisation = models.ForeignKey(
@@ -112,12 +157,8 @@ class RecurringOrder(models.Model):
         )
     name = models.CharField(max_length=100)
     frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES)
-    interval = models.PositiveIntegerField(default=1)  # e.g., every 2 weeks
-    
-    # e.g. 0=Monday, 1=Tuesday, ..., 6=Sunday (only relevant for weekly)
-    weekday = models.PositiveSmallIntegerField(blank=True, null=True)
-    # e.g. 1-31 (only relevant for monthly)
-    monthday = models.PositiveSmallIntegerField(blank=True, null=True)
+    order_day = models.PositiveSmallIntegerField(choices=WEEKDAY_CHOICES, default=0)
+    delivery_day = models.PositiveSmallIntegerField(choices=WEEKDAY_CHOICES, default=2)
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
     
@@ -128,8 +169,20 @@ class RecurringOrder(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status__in=[
+                    "active",
+                    "paused",
+                    "cancelled",
+                ]),
+                name="recurringorder_valid_status",
+            ),
+        ]
+    
     def __str__(self) -> str:
-        return f"RecurringOrder {self.name} ID: {self.id} for {self.organisation.name}"
+        return f"RecurringOrder {self.name} ID: {self.id} for {self.organisation.organisation_name}"
     
 class RecurringOrderItem(models.Model):
     recurring_order = models.ForeignKey(
@@ -138,13 +191,18 @@ class RecurringOrderItem(models.Model):
     product = models.ForeignKey(
         Product, on_delete=models.PROTECT, related_name="recurring_order_items"
     )
-    quantity = models.PositiveIntegerField(default=1)
+    quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
     
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["recurring_order", "product"], name="uniq_recurringorder_product"
-            )
+                fields=["recurring_order", "product"],
+                name="uniq_recurringorder_product",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0),
+                name="recurringorderitem_quantity_gt_0",
+            ),
         ]
         
     def __str__(self) -> str:
@@ -181,12 +239,16 @@ class RecurringOrderEvent(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["recurring_order", "scheduled_for"], 
-                name="uniq_recurringorder_scheduledfor"
+                name="uniq_recur_event_schedule"
             ),
-        ]
-        indexes = [
-            models.Index(fields=["recurring_order", "scheduled_for"]),
-            models.Index(fields=["scheduled_for"]), # for efficient querying of upcoming events
+            models.CheckConstraint(
+                condition=models.Q(status__in=[
+                    "created",
+                    "failed",
+                    "skipped",
+                ]),
+                name="recur_event_valid_status",
+            ),
         ]
         
     def __str__(self) -> str:
@@ -214,7 +276,16 @@ class WeeklySettlement(models.Model):
             models.UniqueConstraint(
                 fields=["start_period", "end_period"],
                 name="uniq_weeklysettlement_period"
-            )
+            ),
+            models.CheckConstraint(
+                condition=models.Q(status__in=[
+                    "pending",
+                    "processing",
+                    "completed",
+                    "failed",
+                ]),
+                name="weeklysettlement_valid_status",
+            ),
         ]
 
     def __str__(self):
@@ -244,7 +315,15 @@ class SettlementLine(models.Model):
             models.UniqueConstraint(
                 fields=["settlement", "producer"],
                 name="uniq_settlement_producer"
-            )
+            ),
+            models.CheckConstraint(
+                condition=models.Q(payout_status__in=[
+                    "pending",
+                    "paid",
+                    "failed",
+                ]),
+                name="settlementline_valid_payout_status",
+            ),
         ]
 
     def __str__(self):

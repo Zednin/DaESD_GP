@@ -5,6 +5,7 @@ import {
   LuChevronUp,
   LuCircleAlert,
   LuClock3,
+  LuFilter,
   LuPackage,
   LuRefreshCw,
   LuShoppingBag,
@@ -12,6 +13,7 @@ import {
   LuTruck,
   LuX,
 } from "react-icons/lu";
+import DatePicker from "../DatePicker/DatePicker";
 import apiClient from "../../utils/apiClient";
 import {
   createReview,
@@ -22,6 +24,9 @@ import {
 import { addToCart } from "../../utils/cartStorage";
 import styles from "./OrderHistory.module.css";
 import { AnimatePresence, motion } from "framer-motion";
+
+const MotionButton = motion.button;
+const MotionDiv = motion.div;
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("en-GB", {
@@ -49,13 +54,25 @@ function normaliseOrdersResponse(data) {
 function getStatusTone(status = "") {
   const s = status.toLowerCase();
 
-  if (["paid", "confirmed", "accepted"].includes(s)) return "confirmed";
-  if (["pending", "processing"].includes(s)) return "pending";
-  if (["dispatched", "shipped", "out_for_delivery", "out for delivery"].includes(s)) return "dispatched";
+  if (["paid", "confirmed", "accepted", "preparing", "processing"].includes(s)) return "preparing";
+  if (["pending"].includes(s)) return "pending";
+  if (["ready", "dispatched", "shipped", "out_for_delivery", "out for delivery"].includes(s)) return "ready";
   if (["delivered", "complete", "completed"].includes(s)) return "delivered";
-  if (["cancelled", "canceled", "failed", "refunded"].includes(s)) return "cancelled";
+  if (["cancelled", "canceled", "failed", "refunded", "rejected"].includes(s)) return "cancelled";
 
   return "neutral";
+}
+
+function getStatusDescription(status = "") {
+  const s = status.toLowerCase();
+
+  if (s === "pending") return "Confirming order with producers";
+  if (["accepted", "preparing", "confirmed"].includes(s)) return "Producers are preparing items";
+  if (["ready", "dispatched", "shipped", "out_for_delivery", "out for delivery"].includes(s)) return "Items Ready for Collection / Delivery";
+  if (["delivered", "complete", "completed"].includes(s)) return "All items received";
+  if (["cancelled", "canceled"].includes(s)) return "Order is no longer being processed";
+
+  return getStatusLabel(status);
 }
 
 function getStatusLabel(status = "") {
@@ -96,6 +113,15 @@ function buildOrderItems(order) {
 
 function getDisplayOrderStatus(order) {
   const producerOrders = Array.isArray(order.producer_orders) ? order.producer_orders : [];
+  const orderStatus = (order.status || "").toLowerCase();
+
+  if (["completed", "complete", "delivered"].includes(orderStatus)) {
+    return "delivered";
+  }
+
+  if (orderStatus === "cancelled" || orderStatus === "canceled") {
+    return "cancelled";
+  }
 
   if (!producerOrders.length) {
     return order.status;
@@ -107,16 +133,27 @@ function getDisplayOrderStatus(order) {
     return "delivered";
   }
 
-  if (statuses.some((status) => status === "preparing" || status === "ready")) {
-    return "processing";
+  if (statuses.every((status) => status === "cancelled" || status === "rejected")) {
+    return "cancelled";
+  }
+
+  if (
+    statuses.some((status) => status === "delivered") &&
+    statuses.every((status) => ["delivered", "cancelled", "rejected"].includes(status))
+  ) {
+    return "delivered";
+  }
+
+  if (statuses.some((status) => status === "ready")) {
+    return "ready";
+  }
+
+  if (statuses.some((status) => status === "preparing")) {
+    return "preparing";
   }
 
   if (statuses.some((status) => status === "accepted")) {
-    return "confirmed";
-  }
-
-  if (statuses.every((status) => status === "cancelled")) {
-    return "cancelled";
+    return "preparing";
   }
 
   if (statuses.some((status) => status === "pending")) {
@@ -188,6 +225,58 @@ function getOrderItemPrice(item) {
   );
 }
 
+function getReviewFormInitial(existingReview) {
+  if (!existingReview) {
+    return {
+      rating: 5,
+      review_title: "",
+      review_text: "",
+      is_anonymous: false,
+    };
+  }
+
+  return {
+    rating: existingReview.rating || 5,
+    review_title: existingReview.review_title || "",
+    review_text: existingReview.review_text || "",
+    is_anonymous: Boolean(existingReview.is_anonymous),
+  };
+}
+
+function getFulfillmentSummary(order) {
+  const summary = order.fulfillment_summary || {};
+
+  return {
+    hasUnfulfilledItems: Boolean(
+      order.has_unfulfilled_items ||
+      summary.has_unfulfilled_items ||
+      summary.unfulfilled_items?.length
+    ),
+    unfulfilledItemNames: order.unfulfilled_item_names || summary.unfulfilled_item_names || [],
+    unavailableItemNames: order.unavailable_item_names || summary.unavailable_item_names || [],
+    refundDueAmount: summary.refund_due_amount ?? order.refund_due_amount ?? 0,
+    effectiveTotalAmount: summary.effective_total_amount ?? order.effective_total_amount ?? getOrderTotal(order),
+    isPartiallyFulfilled: Boolean(summary.is_partially_fulfilled),
+  };
+}
+
+function isUnfulfilledItem(item) {
+  const status = (item.fulfillment_status || item.producer_order_status || "").toLowerCase();
+  return ["unfulfilled", "cancelled", "rejected"].includes(status);
+}
+
+function isUnavailableItem(item) {
+  if (item.product_available === false) return true;
+  const status = (item.product_status || item.product?.status || "available").toLowerCase();
+  return status && status !== "available";
+}
+
+function isBulkOrder(order, items) {
+  if (order.is_bulk_order || order.order_type === "bulk") return true;
+  if (Array.isArray(order.order_tags) && order.order_tags.includes("bulk")) return true;
+  return items.some((item) => Number(getOrderItemQuantity(item) || 0) > 20);
+}
+
 function InteractiveStarRating({ value, onChange }) {
   const [hovered, setHovered] = useState(null);
   const activeValue = hovered ?? value;
@@ -201,7 +290,7 @@ function InteractiveStarRating({ value, onChange }) {
         const active = star <= activeValue;
 
         return (
-          <motion.button
+          <MotionButton
             key={star}
             type="button"
             className={styles.starPickerBtn}
@@ -218,7 +307,7 @@ function InteractiveStarRating({ value, onChange }) {
               fill={active ? "currentColor" : "none"}
               strokeWidth={1.9}
             />
-          </motion.button>
+          </MotionButton>
         );
       })}
     </div>
@@ -280,6 +369,21 @@ function ErrorState({ message, onRetry }) {
   );
 }
 
+function NoResultsState({ onClear }) {
+  return (
+    <div className={styles.emptyState}>
+      <div className={styles.emptyIconWrap}>
+        <LuFilter size={28} />
+      </div>
+      <h3>No orders match your filters</h3>
+      <p>Try adjusting the date range or producer filter to see more orders.</p>
+      <button type="button" className={styles.retryBtn} onClick={onClear}>
+        Clear filters
+      </button>
+    </div>
+  );
+}
+
 function ReviewModal({
   open,
   onClose,
@@ -290,34 +394,9 @@ function ReviewModal({
   loadingExisting,
   submitting,
 }) {
-  const [form, setForm] = useState({
-    rating: 5,
-    review_title: "",
-    review_text: "",
-    is_anonymous: false,
-  });
+  const [form, setForm] = useState(() => getReviewFormInitial(existingReview));
 
   const isEditing = Boolean(existingReview?.id);
-
-  useEffect(() => {
-    if (!open) return;
-
-    if (existingReview) {
-      setForm({
-        rating: existingReview.rating || 5,
-        review_title: existingReview.review_title || "",
-        review_text: existingReview.review_text || "",
-        is_anonymous: Boolean(existingReview.is_anonymous),
-      });
-    } else {
-      setForm({
-        rating: 5,
-        review_title: "",
-        review_text: "",
-        is_anonymous: false,
-      });
-    }
-  }, [open, existingReview]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -327,14 +406,14 @@ function ReviewModal({
   return (
     <AnimatePresence>
       {open && item && (
-        <motion.div
+        <MotionDiv
           className={styles.reviewModalBackdrop}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <motion.div
+          <MotionDiv
             className={styles.reviewComposer}
             initial={{ opacity: 0, y: 24, scale: 0.985 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -385,7 +464,7 @@ function ReviewModal({
                       }
                     />
 
-                    <motion.div
+                    <MotionDiv
                       key={form.rating}
                       className={styles.ratingFeedback}
                       initial={{ opacity: 0, y: 4, scale: 0.98 }}
@@ -393,7 +472,7 @@ function ReviewModal({
                       transition={{ duration: 0.18 }}
                     >
                       {getRatingLabel(form.rating)}
-                    </motion.div>
+                    </MotionDiv>
                   </div>
 
                   <label className={styles.reviewField}>
@@ -487,8 +566,8 @@ function ReviewModal({
                 </div>
               </form>
             )}
-          </motion.div>
-        </motion.div>
+          </MotionDiv>
+        </MotionDiv>
       )}
     </AnimatePresence>
   );
@@ -524,9 +603,16 @@ function OrderCard({ order, onOpenReview, onReorder, reorderState }) {
 
   const items = useMemo(() => buildOrderItems(order), [order]);
   const total = getOrderTotal(order);
+  const fulfillmentSummary = getFulfillmentSummary(order);
+  const refundDue = Number(fulfillmentSummary.refundDueAmount || 0);
+  const hasPartialTotal = refundDue > 0 && fulfillmentSummary.isPartiallyFulfilled;
+  const displayTotal = hasPartialTotal ? fulfillmentSummary.effectiveTotalAmount : total;
+  const displayStatus = getDisplayOrderStatus(order);
+  const statusTone = getStatusTone(displayStatus);
   const placedDate = getOrderPlacedDate(order);
   const deliveryDate = getDeliveryDate(order);
   const itemCount = items.reduce((sum, item) => sum + Number(getOrderItemQuantity(item)), 0);
+  const bulkOrder = isBulkOrder(order, items);
 
   return (
     <article className={styles.orderCard}>
@@ -534,10 +620,16 @@ function OrderCard({ order, onOpenReview, onReorder, reorderState }) {
         <div className={styles.orderIdentity}>
           <div className={styles.orderRefRow}>
             <h3>Order #{order.id}</h3>
-            <StatusBadge status={getDisplayOrderStatus(order)} />
+            <StatusBadge status={displayStatus} />
+            {bulkOrder && <span className={styles.bulkTag}>Bulk</span>}
           </div>
 
           <div className={styles.metaRow}>
+            <span className={`${styles.metaChip} ${styles.statusSentence} ${styles[`statusSentence--${statusTone}`] || ""}`}>
+              <LuClock3 size={14} />
+              {getStatusDescription(displayStatus)}
+            </span>
+
             <span className={styles.metaChip}>
               <LuCalendarDays size={14} />
               Placed {formatDate(placedDate)}
@@ -558,10 +650,23 @@ function OrderCard({ order, onOpenReview, onReorder, reorderState }) {
         </div>
 
         <div className={styles.orderSummary}>
-          <span className={styles.summaryLabel}>Total</span>
-          <strong className={styles.orderTotal}>{formatCurrency(total)}</strong>
+          <span className={styles.summaryLabel}>{hasPartialTotal ? "Final total" : "Total"}</span>
+          <strong className={styles.orderTotal}>{formatCurrency(displayTotal)}</strong>
         </div>
       </div>
+
+      {(fulfillmentSummary.hasUnfulfilledItems || fulfillmentSummary.unavailableItemNames.length > 0) && (
+        <div className={styles.alertRow}>
+          {fulfillmentSummary.hasUnfulfilledItems && (
+            <span className={styles.alertChip}>Unfulfilled Items</span>
+          )}
+          {fulfillmentSummary.unavailableItemNames.map((name) => (
+            <span key={`${order.id}-unavailable-${name}`} className={styles.alertChip}>
+              Unavailable: {name}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className={styles.previewRow}>
         {items.slice(0, 3).map((item, index) => (
@@ -608,7 +713,7 @@ function OrderCard({ order, onOpenReview, onReorder, reorderState }) {
 
       <AnimatePresence>
         {reorderState?.message && (
-          <motion.div
+          <MotionDiv
             className={`${styles.reorderNotice} ${
               reorderState.type === "error" ? styles.reorderNoticeError : ""
             }`}
@@ -618,7 +723,7 @@ function OrderCard({ order, onOpenReview, onReorder, reorderState }) {
             transition={{ duration: 0.2 }}
           >
             {reorderState.message}
-          </motion.div>
+          </MotionDiv>
         )}
       </AnimatePresence>
 
@@ -631,33 +736,47 @@ function OrderCard({ order, onOpenReview, onReorder, reorderState }) {
               {items.length === 0 ? (
                 <p className={styles.noItemsText}>No item breakdown is available for this order yet.</p>
               ) : (
-                items.map((item, index) => (
-                  <div
-                    key={`${order.id}-item-${index}-${getOrderItemName(item)}`}
-                    className={styles.itemRow}
-                  >
-                    <div className={styles.itemMain}>
-                      <div className={styles.itemNameRow}>
-                        <strong>{getOrderItemName(item)}</strong>
-                        {item.producer_name && (
-                          <span className={styles.itemProducer}>{item.producer_name}</span>
-                        )}
+                items.map((item, index) => {
+                  const itemUnfulfilled = isUnfulfilledItem(item);
+                  const itemUnavailable = isUnavailableItem(item);
+                  const itemMuted = itemUnfulfilled || itemUnavailable;
+
+                  return (
+                    <div
+                      key={`${order.id}-item-${index}-${getOrderItemName(item)}`}
+                      className={`${styles.itemRow} ${itemMuted ? styles.itemRowMuted : ""}`}
+                    >
+                      <div className={styles.itemMain}>
+                        <div className={styles.itemNameRow}>
+                          <strong className={itemMuted ? styles.itemNameStruck : ""}>
+                            {getOrderItemName(item)}
+                          </strong>
+                          {item.producer_name && (
+                            <span className={styles.itemProducer}>{item.producer_name}</span>
+                          )}
+                          {itemUnfulfilled && (
+                            <span className={styles.itemStatusTag}>Cancelled</span>
+                          )}
+                          {itemUnavailable && (
+                            <span className={styles.itemStatusTag}>Unavailable</span>
+                          )}
+                        </div>
+
+                        <span className={styles.itemMeta}>
+                          Quantity: {getOrderItemQuantity(item)}
+                        </span>
+
+                        <div className={styles.itemReviewRow}>
+                          <ItemReviewAction item={item} onOpenReview={onOpenReview} />
+                        </div>
                       </div>
 
-                      <span className={styles.itemMeta}>
-                        Quantity: {getOrderItemQuantity(item)}
-                      </span>
-
-                      <div className={styles.itemReviewRow}>
-                        <ItemReviewAction item={item} onOpenReview={onOpenReview} />
+                      <div className={styles.itemPrice}>
+                        {formatCurrency(getOrderItemTotal(item))}
                       </div>
                     </div>
-
-                    <div className={styles.itemPrice}>
-                      {formatCurrency(getOrderItemTotal(item))}
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
@@ -665,7 +784,7 @@ function OrderCard({ order, onOpenReview, onReorder, reorderState }) {
           <div className={styles.detailGrid}>
             <div className={styles.detailCard}>
               <span className={styles.detailLabel}>Order status</span>
-              <strong>{getStatusLabel(getDisplayOrderStatus(order))}</strong>
+              <strong>{getStatusLabel(displayStatus)}</strong>
             </div>
 
             <div className={styles.detailCard}>
@@ -682,6 +801,20 @@ function OrderCard({ order, onOpenReview, onReorder, reorderState }) {
               <span className={styles.detailLabel}>Order total</span>
               <strong>{formatCurrency(total)}</strong>
             </div>
+
+            {hasPartialTotal && (
+              <>
+                <div className={`${styles.detailCard} ${styles.detailCardRefund}`}>
+                  <span className={styles.detailLabel}>Refund due</span>
+                  <strong>{formatCurrency(refundDue)}</strong>
+                </div>
+
+                <div className={styles.detailCard}>
+                  <span className={styles.detailLabel}>Final total</span>
+                  <strong>{formatCurrency(fulfillmentSummary.effectiveTotalAmount)}</strong>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -698,6 +831,53 @@ export default function OrderHistory() {
   const [loadingExistingReview, setLoadingExistingReview] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reorderStates, setReorderStates] = useState({});
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [producerFilter, setProducerFilter] = useState("");
+
+  const allProducers = useMemo(() => {
+    const names = new Set();
+    for (const order of orders) {
+      for (const item of buildOrderItems(order)) {
+        if (item.producer_name) names.add(item.producer_name);
+      }
+    }
+    return [...names].sort();
+  }, [orders]);
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      const placedDate = getOrderPlacedDate(order);
+      const placedDateStr = placedDate
+        ? new Date(placedDate).toISOString().slice(0, 10)
+        : null;
+
+      if (dateFrom && placedDateStr && placedDateStr < dateFrom) return false;
+      if (dateTo && placedDateStr && placedDateStr > dateTo) return false;
+
+      if (producerFilter) {
+        const hasProducer = buildOrderItems(order).some(
+          (item) => item.producer_name === producerFilter
+        );
+        if (!hasProducer) return false;
+      }
+
+      return true;
+    });
+  }, [orders, dateFrom, dateTo, producerFilter]);
+
+  const hasActiveFilters = Boolean(dateFrom || dateTo || producerFilter);
+
+  function clearFilters() {
+    setDateFrom("");
+    setDateTo("");
+    setProducerFilter("");
+  }
+
+  const today = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }, []);
 
   async function loadOrders() {
     try {
@@ -769,7 +949,7 @@ export default function OrderHistory() {
         setLoadingExistingReview(true);
         const review = await getReview(item.review_status.existing_review_id);
         setExistingReview(review);
-      } catch (err) {
+      } catch {
         alert("Failed to load existing review.");
         setReviewItem(null);
       } finally {
@@ -787,7 +967,7 @@ export default function OrderHistory() {
       setReviewItem(null);
       setExistingReview(null);
       await loadOrders();
-    } catch (err) {
+    } catch {
       alert("Failed to delete review.");
     }
   }
@@ -876,15 +1056,78 @@ async function handleReorder(order) {
         </button>
       </div>
 
+      {!loading && !error && orders.length > 0 && (
+        <div className={styles.filterBar}>
+          <div className={styles.filterBarLeft}>
+            <LuFilter size={15} className={styles.filterIcon} />
+            <span className={styles.filterBarLabel}>Filter</span>
+          </div>
+
+          <label className={styles.filterGroup}>
+            <span className={styles.filterLabel}>From</span>
+            <DatePicker
+              value={dateFrom}
+              onChange={setDateFrom}
+              max={dateTo || today}
+              placeholder="From date"
+              ariaLabel="Choose start date"
+              className={styles.filterDatePicker}
+            />
+          </label>
+
+          <label className={styles.filterGroup}>
+            <span className={styles.filterLabel}>To</span>
+            <DatePicker
+              value={dateTo}
+              onChange={setDateTo}
+              min={dateFrom || undefined}
+              max={today}
+              placeholder="To date"
+              ariaLabel="Choose end date"
+              className={styles.filterDatePicker}
+            />
+          </label>
+
+          {allProducers.length > 0 && (
+            <label className={styles.filterGroup}>
+              <span className={styles.filterLabel}>Producer</span>
+              <select
+                className={styles.filterSelect}
+                value={producerFilter}
+                onChange={(e) => setProducerFilter(e.target.value)}
+              >
+                <option value="">All producers</option>
+                {allProducers.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              className={styles.clearFiltersBtn}
+              onClick={clearFilters}
+            >
+              <LuX size={13} />
+              Clear
+            </button>
+          )}
+        </div>
+      )}
+
       {loading ? (
         <OrderSkeleton />
       ) : error ? (
         <ErrorState message={error} onRetry={loadOrders} />
       ) : orders.length === 0 ? (
         <EmptyState />
+      ) : filteredOrders.length === 0 ? (
+        <NoResultsState onClear={clearFilters} />
       ) : (
         <div className={styles.orderList}>
-          {orders.map((order) => (
+          {filteredOrders.map((order) => (
             <OrderCard
               key={order.id}
               order={order}
@@ -897,6 +1140,7 @@ async function handleReorder(order) {
       )}
 
       <ReviewModal
+        key={`${reviewItem?.id || "none"}-${existingReview?.id || "new"}`}
         open={Boolean(reviewItem)}
         onClose={() => {
           setReviewItem(null);
