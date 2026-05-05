@@ -2,14 +2,22 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import styles from "../Customer/MyAccount.module.css";
 
+// order history
+import OrderHistory from "../../components/Customer/OrderHistory";
+
 import Settings from "../../components/Producer/Settings";
 import ProducerOnboarding from "../../components/Producer/ProducerOnboarding";
+
+const MotionDiv = motion.div;
 
 export default function ProducerMyAccount() {
   const [activeSection, setActiveSection] = useState("settings");
 
   function renderSection() {
     switch (activeSection) {
+      // added order history button
+      case "orderHistory":
+        return <OrderHistory />;
       case "settings":
         return <Settings />;
       case "onboarding":
@@ -24,7 +32,16 @@ export default function ProducerMyAccount() {
       <aside className={styles.sidebar}>
         <h2 className={styles.sidebarTitle}>My Account</h2>
 
-        <nav className={styles.nav}>
+        <nav className={styles.nav}> 
+          <button
+            className={`${styles.navBtn} ${
+              activeSection === "orderHistory" ? styles.active : ""
+            }`}
+            onClick={() => setActiveSection("orderHistory")}
+          >
+            Orders
+          </button>
+
           <button
             className={`${styles.navBtn} ${
               activeSection === "settings" ? styles.active : ""
@@ -47,7 +64,7 @@ export default function ProducerMyAccount() {
 
       <section className={styles.content}>
         <AnimatePresence mode="wait">
-          <motion.div
+          <MotionDiv
             key={activeSection}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -55,7 +72,7 @@ export default function ProducerMyAccount() {
             transition={{ duration: 0.22, ease: "easeOut" }}
           >
             {renderSection()}
-          </motion.div>
+          </MotionDiv>
         </AnimatePresence>
       </section>
     </div>
