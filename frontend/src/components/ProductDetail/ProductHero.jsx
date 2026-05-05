@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   LuLeaf,
@@ -14,6 +14,7 @@ import {
 } from "react-icons/lu";
 import { motion } from "framer-motion";
 import { getAllergenInfo, formatAllergenList } from "../../utils/allergenIcons";
+import { getCartQtyForProduct, readCart } from "../../utils/cartStorage";
 import styles from "./ProductHero.module.css";
 
 function formatAvailability(product) {
@@ -99,6 +100,10 @@ export default function ProductHero({
   onAddToBasket,
 }) {
   const [qty, setQty] = useState(1);
+  const [addStatus, setAddStatus] = useState("idle");
+  const [addError, setAddError] = useState("");
+  const [cartQty, setCartQty] = useState(() => getCartQtyForProduct(product?.id, readCart()));
+  const resetTimerRef = useRef(null);
 
   const currentPrice = useMemo(() => {
     if (!product) return 0;
@@ -116,6 +121,19 @@ export default function ProductHero({
   }, [product]);
 
   const isUnavailable = product?.status === "unavailable" || stockLimit <= 0;
+  const availableToAdd = Number.isFinite(stockLimit)
+    ? Math.max(0, stockLimit - cartQty)
+    : Infinity;
+  const addBlockedByStock = !isUnavailable && qty > availableToAdd;
+  const cannotAddMore = !isUnavailable && availableToAdd <= 0;
+  const addDisabled = isUnavailable || (addStatus === "idle" && (addBlockedByStock || cannotAddMore));
+  const stockMessage = useMemo(() => {
+    if (addError) return addError;
+    if (isUnavailable || addStatus !== "idle" || !Number.isFinite(stockLimit)) return "";
+    if (cannotAddMore) return "Stock limit reached.";
+    if (addBlockedByStock) return `${availableToAdd} more available.`;
+    return "";
+  }, [addBlockedByStock, addError, addStatus, availableToAdd, cannotAddMore, cartQty, isUnavailable, stockLimit]);
 
   const total = useMemo(() => (currentPrice * qty).toFixed(2), [currentPrice, qty]);
 
@@ -125,12 +143,51 @@ export default function ProductHero({
       return;
     }
 
+    setAddError("");
     setQty(Math.min(Math.max(1, next), stockLimit));
   }
 
-  function handleAdd() {
-    if (isUnavailable) return;
-    onAddToBasket?.(product, qty);
+  useEffect(() => {
+    if (resetTimerRef.current) {
+      clearTimeout(resetTimerRef.current);
+    }
+    setAddStatus("idle");
+    setAddError("");
+  }, [product]);
+
+  useEffect(() => {
+    function syncCartQty() {
+      setCartQty(getCartQtyForProduct(product?.id, readCart()));
+    }
+
+    syncCartQty();
+    window.addEventListener("cart:updated", syncCartQty);
+    return () => window.removeEventListener("cart:updated", syncCartQty);
+  }, [product]);
+
+  useEffect(() => {
+    return () => {
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current);
+      }
+    };
+  }, []);
+
+  async function handleAdd() {
+    if (addDisabled || addStatus !== "idle") return;
+
+    try {
+      await onAddToBasket?.(product, qty);
+      setAddStatus("added");
+      setAddError("");
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current);
+      }
+      resetTimerRef.current = setTimeout(() => setAddStatus("idle"), 1400);
+    } catch (err) {
+      setAddStatus("idle");
+      setAddError(err?.message || "This quantity could not be added to your basket.");
+    }
   }
 
   return (
@@ -325,10 +382,13 @@ export default function ProductHero({
               type="button"
               className={styles.addBtn}
               onClick={handleAdd}
-              disabled={isUnavailable}
+              disabled={addDisabled}
             >
-              {isUnavailable ? "Out of stock" : `Add to basket — £${total}`}
+              {isUnavailable && "Out of stock"}
+              {!isUnavailable && addStatus === "added" && "Added ✓"}
+              {!isUnavailable && addStatus === "idle" && `Add to basket — £${total}`}
             </button>
+            {stockMessage && <p className={styles.stockMessage}>{stockMessage}</p>}
           </div>
         </div>
       </motion.div>
