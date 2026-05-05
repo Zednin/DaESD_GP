@@ -33,8 +33,8 @@ const NavbarMenu = [
     },
     {
         id: 5,
-        title: "Farm Stories",
-        link: "/farm-stories",
+        title: "Explore",
+        link: "/explore",
     }
 ]
 

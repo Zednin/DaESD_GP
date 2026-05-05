@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { FiBookOpen } from "react-icons/fi";
-import { LuLeaf } from "react-icons/lu";
 import { fadeRight, fadeUp } from "../../animations/heroAnimations";
 import apiClient from "../../utils/apiClient";
 import styles from "./FarmStories.module.css";
@@ -31,19 +31,40 @@ function getStoryPreview(content, wordLimit = 25, sentenceLimit = 2) {
 }
 
 const PAGE_SIZE = 4;
+const PRODUCER_ACCENT_COUNT = 6;
 
 export default function FarmStories() {
+  const location = useLocation();
   const [stories, setStories] = useState([]);
+  const [producers, setProducers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [producerError, setProducerError] = useState(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selectedStory, setSelectedStory] = useState(null);
 
   useEffect(() => {
-    apiClient
-      .get("/farm-stories/", { params: { is_published: true } })
-      .then(({ data }) => {
-        setStories(data.results ?? data);
+    Promise.allSettled([
+      apiClient.get("/farm-stories/", { params: { is_published: true } }),
+      apiClient.get("/producers/"),
+    ])
+      .then(([storiesResult, producersResult]) => {
+        if (storiesResult.status === "fulfilled") {
+          const { data } = storiesResult.value;
+          setStories(data.results ?? data);
+          setError(null);
+        } else {
+          setError(storiesResult.reason);
+        }
+
+        if (producersResult.status === "fulfilled") {
+          const { data } = producersResult.value;
+          setProducers(data.results ?? data);
+          setProducerError(null);
+        } else {
+          setProducerError(producersResult.reason);
+        }
+
         setLoading(false);
       })
       .catch((err) => {
@@ -68,7 +89,7 @@ export default function FarmStories() {
       <main className={`container ${styles.page}`}>
         <div className={styles.loadingState}>
           <div className={styles.spinner} />
-          <p>Loading farm stories...</p>
+          <p>Loading explore...</p>
         </div>
       </main>
     );
@@ -84,7 +105,7 @@ export default function FarmStories() {
             initial="hidden"
             animate="visible"
           >
-            Farm Stories
+            Explore
           </motion.h1>
 
           <motion.p
@@ -93,29 +114,62 @@ export default function FarmStories() {
             initial="hidden"
             animate="visible"
           >
-            Behind-the-scenes from the producers who grow, raise and craft your
-            food
+            
           </motion.p>
         </div>
 
-        <motion.div
-          className={styles.tag}
-          variants={fadeUp(0.25)}
-          initial="hidden"
-          animate="visible"
-        >
-          <LuLeaf className={styles.tagIcon} />
-          <span>Straight from the farm</span>
-        </motion.div>
       </header>
 
-      <motion.p
-        className={styles.resultCount}
+      <motion.section
+        className={styles.producerSection}
         variants={fadeUp(0.3)}
         initial="hidden"
         animate="visible"
+        aria-labelledby="producer-strip-title"
       >
-        {stories.length} {stories.length === 1 ? "story" : "stories"}
+        <div className={styles.sectionHeader}>
+          <h2 id="producer-strip-title">Producers</h2>
+          <span>{producers.length}</span>
+        </div>
+
+        {producerError ? (
+          <p className={styles.stripNote}>Producer list is unavailable right now.</p>
+        ) : producers.length === 0 ? (
+          <p className={styles.stripNote}>No producers to show yet.</p>
+        ) : (
+          <div className={styles.producerRail}>
+            <div className={styles.producerStrip}>
+              {producers.map((producer) => (
+                <Link
+                  key={producer.id}
+                  to={`/producer/${producer.id}`}
+                  state={{
+                    from: {
+                      pathname: location.pathname,
+                      search: location.search,
+                      hash: location.hash,
+                    },
+                    fromLabel: "Explore",
+                  }}
+                  className={`${styles.producerBox} ${
+                    styles[`producerAccent${producer.id % PRODUCER_ACCENT_COUNT}`]
+                  }`}
+                >
+                  <span>{producer.company_name ?? `Producer #${producer.id}`}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </motion.section>
+
+      <motion.p
+        className={styles.resultCount}
+        variants={fadeUp(0.35)}
+        initial="hidden"
+        animate="visible"
+      >
+        Feed - {stories.length} {stories.length === 1 ? "story" : "stories"}
       </motion.p>
 
       {error ? (
@@ -138,7 +192,7 @@ export default function FarmStories() {
         <>
           <motion.section
             className={styles.feed}
-            variants={fadeUp(0.35)}
+            variants={fadeUp(0.4)}
             initial="hidden"
             animate="visible"
           >
