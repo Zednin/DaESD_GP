@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { LuArrowLeft } from "react-icons/lu";
 
 import apiClient from "../utils/apiClient";
 
@@ -17,6 +18,12 @@ const TABS = [
 
 export default function ProducerDetail() {
   const { producerId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const backTarget = location.state?.from;
+  const backLabel = location.state?.fromLabel
+    ? `Back to ${location.state.fromLabel}`
+    : "Back";
 
   const [activeTab, setActiveTab] = useState("products");
   const [producer, setProducer] = useState(null);
@@ -42,9 +49,29 @@ export default function ProducerDetail() {
     loadProducer();
   }, [producerId]);
 
+  function handleBack() {
+    if (backTarget?.pathname) {
+      navigate(
+        `${backTarget.pathname}${backTarget.search ?? ""}${backTarget.hash ?? ""}`
+      );
+      return;
+    }
+
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+
+    navigate("/explore");
+  }
+
   if (loading) {
     return (
-      <main className="container">
+      <main className={`container ${styles.page}`}>
+        <button type="button" className={styles.backButton} onClick={handleBack}>
+          <LuArrowLeft size={18} />
+          <span>{backLabel}</span>
+        </button>
         <p>Loading producer...</p>
       </main>
     );
@@ -52,7 +79,11 @@ export default function ProducerDetail() {
 
   if (error || !producer) {
     return (
-      <main className="container">
+      <main className={`container ${styles.page}`}>
+        <button type="button" className={styles.backButton} onClick={handleBack}>
+          <LuArrowLeft size={18} />
+          <span>{backLabel}</span>
+        </button>
         <p>{error || "Producer not found."}</p>
       </main>
     );
@@ -60,6 +91,11 @@ export default function ProducerDetail() {
 
   return (
     <main className={`container ${styles.page}`}>
+      <button type="button" className={styles.backButton} onClick={handleBack}>
+        <LuArrowLeft size={18} />
+        <span>{backLabel}</span>
+      </button>
+
       <section className={styles.hero}>
         <div>
           <p className={styles.eyebrow}>Producer profile</p>

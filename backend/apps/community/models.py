@@ -193,3 +193,33 @@ class FarmStory(models.Model):
 
     def __str__(self):
         return f"{self.title} by {self.producer}"
+
+
+class FarmStoryLike(models.Model):
+    story = models.ForeignKey(
+        FarmStory,
+        on_delete=models.CASCADE,
+        related_name="likes",
+    )
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="farm_story_likes",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["story", "customer"],
+                name="uniq_farm_story_like_story_customer",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["story", "-created_at"]),
+            models.Index(fields=["customer", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.customer} likes {self.story}"
