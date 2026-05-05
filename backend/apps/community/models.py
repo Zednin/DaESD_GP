@@ -15,8 +15,8 @@ class Review(models.Model):
         related_name='reviews'
     )
 
-    # Customer Review FK
-    customer = models.ForeignKey(
+    # Account Review FK
+    account = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='reviews'
@@ -70,18 +70,18 @@ class Review(models.Model):
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
-                fields=["product", "customer"],
-                name="uniq_review_product_customer"
+                fields=["product", "account"],
+                name="uniq_review_product_account"
             )
         ]
         indexes = [
             models.Index(fields=["product", "-created_at"]),
-            models.Index(fields=["customer", "-created_at"]),
+            models.Index(fields=["account", "-created_at"]),
             models.Index(fields=["order_item"]),
         ]
 
     def __str__(self):
-        return f"{self.product} - {self.rating} by {self.customer}"
+        return f"{self.product} - {self.rating} by {self.account}"
     
 class Recipe(models.Model):
     """21 Recipe"""

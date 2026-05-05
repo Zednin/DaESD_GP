@@ -1,5 +1,3 @@
-from django.shortcuts import render
-
 from django.db.models import Avg, Count
 from rest_framework import status, permissions
 from rest_framework.decorators import action
@@ -24,7 +22,7 @@ class ReviewViewSet(ModelViewSet):
             Review.objects
             .select_related(
                 "product",
-                "customer",
+                "account",
                 "order_item",
                 "order_item__producer_order",
                 "order_item__producer_order__order",
@@ -36,7 +34,7 @@ class ReviewViewSet(ModelViewSet):
         sort = self.request.query_params.get("sort", "newest")
 
         if self.action == "mine":
-            queryset = queryset.filter(customer=self.request.user)
+            queryset = queryset.filter(account=self.request.user)
 
         if product_id:
             queryset = queryset.filter(product_id=product_id)
@@ -65,19 +63,19 @@ class ReviewViewSet(ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         review = self.get_object()
-        if review.customer_id != request.user.id:
+        if review.account_id != request.user.id:
             raise PermissionDenied("You can only edit your own review.")
         return super().update(request, *args, **kwargs)
 
     def partial_update(self, request, *args, **kwargs):
         review = self.get_object()
-        if review.customer_id != request.user.id:
+        if review.account_id != request.user.id:
             raise PermissionDenied("You can only edit your own review.")
         return super().partial_update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         review = self.get_object()
-        if review.customer_id != request.user.id:
+        if review.account_id != request.user.id:
             raise PermissionDenied("You can only delete your own review.")
         return super().destroy(request, *args, **kwargs)
 
@@ -110,7 +108,7 @@ class ReviewViewSet(ModelViewSet):
 
         if request.user.is_authenticated:
             existing_review = Review.objects.filter(
-                customer=request.user,
+                account=request.user,
                 product_id=product_id,
             ).only("id").first()
 
@@ -141,7 +139,7 @@ class ReviewViewSet(ModelViewSet):
             )
 
         existing_review = Review.objects.filter(
-            customer=request.user,
+            account=request.user,
             product_id=product_id,
         ).only("id").first()
 
@@ -180,7 +178,12 @@ class ReviewViewSet(ModelViewSet):
             "existing_review_id": None,
         })
 
-    @action(detail=True, methods=["patch"], permission_classes=[permissions.IsAuthenticated], url_path="producer-response")
+    @action(
+        detail=True,
+        methods=["patch"],
+        permission_classes=[permissions.IsAuthenticated],
+        url_path="producer-response",
+    )
     def producer_response(self, request, pk=None):
         review = self.get_object()
         product = review.product
