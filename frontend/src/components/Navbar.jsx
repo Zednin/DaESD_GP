@@ -8,6 +8,7 @@ import NotificationMenu from "./NotificationMenu/NotificationMenu";
 import { Link } from "react-router-dom";
 import {readCart, getCartCount, getCartSubtotal, updateCartQty,removeFromCart} from "../utils/cartStorage";
 import { useAuth } from "../auth/AuthContext";
+import apiClient from "../utils/apiClient";
 
 
 const NavbarMenu = [
@@ -107,6 +108,7 @@ export default function Navbar({ onOpenTerms }) {
   const cartWrapRef = useRef(null);
 
   const [cartItems, setCartItems] = useState(() => readCart());
+  const [notifications, setNotifications] = useState([]);
 
   const itemCount = getCartCount(cartItems);
   const subtotal = getCartSubtotal(cartItems);
@@ -132,6 +134,58 @@ export default function Navbar({ onOpenTerms }) {
 
   async function removeItem(item) {
     await removeFromCart(item.productId);
+  }
+
+  async function loadNotifications() {
+    if (!user) {
+      setNotifications([]);
+      return;
+    }
+
+    try {
+      const { data } = await apiClient.get("/notifications/");
+      setNotifications(data.results ?? data);
+    } catch (err) {
+      console.error("Failed to load notifications", err);
+    }
+  }
+
+  async function handleNotificationClick(notification) {
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.id === notification.id ? { ...n, read: true } : n
+      )
+    );
+
+    try {
+      await apiClient.post(`/notifications/${notification.id}/mark-read/`);
+      await loadNotifications();
+    } catch (err) {
+      console.error("Failed to mark notification as read", err);
+    }
+  }
+
+  async function handleMarkAllRead() {
+    try {
+      await apiClient.post("/notifications/mark-all-read/");
+      await loadNotifications();
+    } catch (err) {
+      console.error("Failed to mark all notifications as read", err);
+    }
+  }
+
+  async function handleClearNotification(notification) {
+    setNotifications((prev) =>
+      prev.filter((n) => n.id !== notification.id)
+    );
+
+    try {
+      await apiClient.delete(`/notifications/${notification.id}/clear/`);
+      await loadNotifications();
+    } catch (err) {
+      console.error("Failed to clear notification", err);
+      await loadNotifications();
+    }
   }
 
   function handleCheckoutClick(e) {
@@ -172,6 +226,14 @@ export default function Navbar({ onOpenTerms }) {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  useEffect(() => {
+    if (!loading && user) {
+      loadNotifications();
+    } else {
+      setNotifications([]);
+    }
+  }, [loading, user]);
+
   return (
     <nav className={styles.nav}>
       <div className={`container ${styles.inner}`}>
@@ -209,7 +271,14 @@ export default function Navbar({ onOpenTerms }) {
         {/* RIGHT SIDE */}
         <div className={styles.right}>
           {/* Notifications (logged-in only) */}
-          {!loading && user && <NotificationMenu notifications={[]} />}
+          {!loading && user && (
+            <NotificationMenu
+              notifications={notifications}
+              onNotificationClick={handleNotificationClick}
+              onMarkAllRead={handleMarkAllRead}
+              onClearNotification={handleClearNotification}
+            />
+          )}
 
           {/* Cart */}
           <div className={styles.cartWrap} ref={cartWrapRef}>
