@@ -48,11 +48,20 @@ class CreateCheckoutSessionView(APIView):
 
     def post(self, request):
         cart, _ = Cart.objects.get_or_create(account=request.user)
-        items = cart.items.select_related("product").all()
+        items = cart.items.select_related("product").prefetch_related("product__allergens").all()
 
         if not items.exists():
             return Response(
                 {"detail": "Cart is empty."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        has_allergen_products = any(item.product.allergens.exists() for item in items)
+        if has_allergen_products and not request.data.get("allergen_acknowledged"):
+            return Response(
+                {
+                    "detail": "Please confirm that you have reviewed the allergen information before checkout."
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
