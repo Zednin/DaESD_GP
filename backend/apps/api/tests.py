@@ -18,8 +18,12 @@ Account = get_user_model()
 
 
 class BackendMarketplaceTests(APITestCase):
+    VERBOSE_VALIDATION = False
 
     def print_validation(self, title, response=None, extra=None):
+        if not self.VERBOSE_VALIDATION:
+            return
+
         print(f"\n[VALIDATION] {title}")
 
         if response is not None:
@@ -127,9 +131,7 @@ class BackendMarketplaceTests(APITestCase):
 
         return order, producer_order
 
-    # ----------------------------
     # AUTH / REGISTRATION
-    # ----------------------------
 
     def test_customer_registration(self):
         url = reverse("customer-register")
@@ -204,6 +206,7 @@ class BackendMarketplaceTests(APITestCase):
 
         settings_url = reverse("account-settings")
         response = self.client.get(settings_url)
+
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["email"], "customer1@test.com")
 
@@ -218,11 +221,15 @@ class BackendMarketplaceTests(APITestCase):
         }
 
         response = self.client.patch(settings_url, payload, format="json")
+
         self.print_validation("Account settings update", response)
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["first_name"], "Test")
-        self.assertEqual(response.data["default_delivery_address"]["address_line_1"], "99 New Road")
+        self.assertEqual(
+            response.data["default_delivery_address"]["address_line_1"],
+            "99 New Road",
+        )
 
     def test_weak_password_rejected(self):
         url = reverse("customer-register")
@@ -246,9 +253,53 @@ class BackendMarketplaceTests(APITestCase):
 
         self.assertEqual(response.status_code, 400)
 
-    # ----------------------------
+    # ADDRESSES
+
+    def test_duplicate_business_address_returns_400(self):
+        self.auth_producer()
+
+        url = reverse("address-list")
+
+        response = self.client.post(
+            url,
+            {
+                "address_type": Address.AddressType.BUSINESS,
+                "address_line_1": "Another Farm",
+                "city": "Bristol",
+                "postcode": "BS1 1AA",
+            },
+            format="json",
+        )
+
+        self.print_validation("Duplicate business address rejected", response)
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_producer_can_update_business_address(self):
+        self.auth_producer()
+
+        url = reverse("address-detail", args=[self.business_address.id])
+
+        response = self.client.patch(
+            url,
+            {
+                "address_line_1": "Updated Farm",
+                "city": "Bristol",
+                "postcode": "BS2 2AA",
+            },
+            format="json",
+        )
+
+        self.print_validation("Producer business address update", response)
+
+        self.assertEqual(response.status_code, 200)
+
+        self.business_address.refresh_from_db()
+        self.assertEqual(self.business_address.address_line_1, "Updated Farm")
+        self.assertEqual(self.business_address.city, "Bristol")
+        self.assertEqual(self.business_address.postcode, "BS2 2AA")
+
     # PRODUCT
-    # ----------------------------
 
     def test_producer_can_create_product(self):
         self.auth_producer()
@@ -306,6 +357,7 @@ class BackendMarketplaceTests(APITestCase):
         self.print_validation("Product update", response)
 
         self.assertEqual(response.status_code, 200)
+
         self.product.refresh_from_db()
         self.assertEqual(self.product.price, Decimal("4.00"))
 
@@ -316,6 +368,7 @@ class BackendMarketplaceTests(APITestCase):
             password="StrongPass123!",
             account_type="producer",
         )
+
         other_business_address = Address.objects.create(
             account=other_user,
             address_type=Address.AddressType.BUSINESS,
@@ -324,6 +377,7 @@ class BackendMarketplaceTests(APITestCase):
             city="Bristol",
             postcode="BS1 4DJ",
         )
+
         other_producer = Producer.objects.create(
             account=other_user,
             company_name="Farm 2",
@@ -331,6 +385,7 @@ class BackendMarketplaceTests(APITestCase):
             business_address=other_business_address,
             lead_time_hours=48,
         )
+
         other_product = Product.objects.create(
             producer=other_producer,
             category=self.category,
@@ -343,6 +398,7 @@ class BackendMarketplaceTests(APITestCase):
         )
 
         self.auth_producer()
+
         url = reverse("product-detail", args=[other_product.id])
         response = self.client.patch(url, {"price": "6.00"}, format="json")
 
@@ -369,12 +425,11 @@ class BackendMarketplaceTests(APITestCase):
         self.print_validation("Organic filter", response)
 
         self.assertEqual(response.status_code, 200)
+
         product_names = [item["name"] for item in response.data]
         self.assertIn("Organic Milk", product_names)
 
-    # ----------------------------
     # CART
-    # ----------------------------
 
     def test_add_to_cart(self):
         self.auth_customer()
@@ -396,7 +451,9 @@ class BackendMarketplaceTests(APITestCase):
 
     def test_update_cart_item_quantity(self):
         self.auth_customer()
+
         cart, _ = Cart.objects.get_or_create(account=self.customer)
+
         cart_item = CartItem.objects.create(
             cart=cart,
             product=self.product,
@@ -410,12 +467,15 @@ class BackendMarketplaceTests(APITestCase):
         self.print_validation("Update cart item quantity", response)
 
         self.assertEqual(response.status_code, 200)
+
         cart_item.refresh_from_db()
         self.assertEqual(cart_item.quantity, 5)
 
     def test_delete_cart_item(self):
         self.auth_customer()
+
         cart, _ = Cart.objects.get_or_create(account=self.customer)
+
         cart_item = CartItem.objects.create(
             cart=cart,
             product=self.product,
@@ -451,6 +511,7 @@ class BackendMarketplaceTests(APITestCase):
         self.auth_customer()
 
         cart = Cart.objects.create(account=self.customer)
+
         CartItem.objects.create(
             cart=cart,
             product=self.product,
@@ -468,7 +529,9 @@ class BackendMarketplaceTests(APITestCase):
 
     def test_cart_list_returns_items(self):
         self.auth_customer()
+
         Cart.objects.create(account=self.customer)
+
         CartItem.objects.create(
             cart=self.customer.cart,
             product=self.product,
@@ -485,9 +548,7 @@ class BackendMarketplaceTests(APITestCase):
         self.assertEqual(len(response.data["items"]), 1)
         self.assertEqual(response.data["items"][0]["product_id"], self.product.id)
 
-    # ----------------------------
     # ORDERS
-    # ----------------------------
 
     def test_order_history(self):
         Order.objects.create(
@@ -497,8 +558,8 @@ class BackendMarketplaceTests(APITestCase):
         )
 
         self.auth_customer()
-        url = reverse("order-list")
 
+        url = reverse("order-list")
         response = self.client.get(url)
 
         self.print_validation("Order history", response)
@@ -508,6 +569,7 @@ class BackendMarketplaceTests(APITestCase):
 
     def test_last_completed_order_returns_items(self):
         self.auth_customer()
+
         self.create_producer_order(status="delivered")
 
         url = reverse("order-last-completed")
@@ -545,6 +607,7 @@ class BackendMarketplaceTests(APITestCase):
         self.create_producer_order(status="pending")
 
         self.auth_customer()
+
         url = reverse("producer-order-list")
         response = self.client.get(url)
 
@@ -553,14 +616,16 @@ class BackendMarketplaceTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 0)
 
-    # ----------------------------
-    # COMMISSION (REAL TEST)
-    # ----------------------------
+    # COMMISSION
 
     def test_commission_via_api(self):
-        _, producer_order = self.create_producer_order(status="delivered", total_amount=Decimal("100.00"))
+        _, producer_order = self.create_producer_order(
+            status="delivered",
+            total_amount=Decimal("100.00"),
+        )
 
         self.auth_producer()
+
         url = reverse("producer-order-detail", args=[producer_order.id])
         response = self.client.get(url)
 
@@ -570,11 +635,11 @@ class BackendMarketplaceTests(APITestCase):
         self.assertEqual(Decimal(response.data["commission"]), Decimal("5.00"))
         self.assertEqual(Decimal(response.data["payout_amount"]), Decimal("95.00"))
 
-    # ----------------------------
     # RECOMMENDATIONS
 
     def test_recommendation_log_invalid_event(self):
         self.auth_customer()
+
         url = reverse("product-recommendations-log")
 
         response = self.client.post(
@@ -595,6 +660,7 @@ class BackendMarketplaceTests(APITestCase):
 
     def test_recommendation_log_success(self):
         self.auth_customer()
+
         url = reverse("product-recommendations-log")
 
         response = self.client.post(
