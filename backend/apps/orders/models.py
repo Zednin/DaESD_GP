@@ -134,9 +134,19 @@ class RecurringOrder(models.Model):
     ]
     
     FREQUENCY_CHOICES = [
-        ("daily", "Daily"),
         ("weekly", "Weekly"),
-        ("monthly", "Monthly"),
+        ("fortnightly", "Fortnightly"),
+    ]
+
+    # Days for order / delivery
+    WEEKDAY_CHOICES = [
+        (0, "Monday"),
+        (1, "Tuesday"),
+        (2, "Wednesday"),
+        (3, "Thursday"),
+        (4, "Friday"),
+        (5, "Saturday"),
+        (6, "Sunday"),
     ]
     
     organisation = models.ForeignKey(
@@ -147,12 +157,8 @@ class RecurringOrder(models.Model):
         )
     name = models.CharField(max_length=100)
     frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES)
-    interval = models.PositiveIntegerField(default=1)  # e.g., every 2 weeks
-    
-    # e.g. 0=Monday, 1=Tuesday, ..., 6=Sunday (only relevant for weekly)
-    weekday = models.PositiveSmallIntegerField(blank=True, null=True)
-    # e.g. 1-31 (only relevant for monthly)
-    monthday = models.PositiveSmallIntegerField(blank=True, null=True)
+    order_day = models.PositiveSmallIntegerField(choices=WEEKDAY_CHOICES, default=0)
+    delivery_day = models.PositiveSmallIntegerField(choices=WEEKDAY_CHOICES, default=2)
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
     
@@ -176,7 +182,7 @@ class RecurringOrder(models.Model):
         ]
     
     def __str__(self) -> str:
-        return f"RecurringOrder {self.name} ID: {self.id} for {self.organisation.name}"
+        return f"RecurringOrder {self.name} ID: {self.id} for {self.organisation.organisation_name}"
     
 class RecurringOrderItem(models.Model):
     recurring_order = models.ForeignKey(
