@@ -31,6 +31,11 @@ const NavbarMenu = [
         title: "Reduced to Clear",
         link: "/surplus-deals",
     },
+    {
+        id: 5,
+        title: "Farm Stories",
+        link: "/farm-stories",
+    }
 ]
 
 
@@ -96,7 +101,7 @@ function AnimatedValue({ value, className, prefix = "", suffix = "" }) {
   );
 }
 
-export default function Navbar() {
+export default function Navbar({ onOpenTerms }) {
   const { user, loading, logout } = useAuth();
   const [cartOpen, setCartOpen] = useState(false);
   const cartWrapRef = useRef(null);
@@ -282,10 +287,10 @@ export default function Navbar() {
                       <div className={styles.deliveryText}>
                         {freeDeliveryRemaining > 0 ? (
                           <span>
-                            £{freeDeliveryRemaining.toFixed(2)} away from suggested free delivery
+                            £{freeDeliveryRemaining.toFixed(2)} away from free delivery
                           </span>
                         ) : (
-                          <span>Suggested free delivery reached</span>
+                          <span>Free delivery reached</span>
                         )}
                       </div>
 
@@ -409,7 +414,13 @@ export default function Navbar() {
           </div>
 
           {/* Auth */}
-          {!loading && <AccountMenu user={user} onLogout={logout} />}
+          {!loading && (
+            <AccountMenu
+              user={user}
+              onLogout={logout}
+              onOpenTerms={onOpenTerms}
+            />
+          )}
 
         </div>
       </div>

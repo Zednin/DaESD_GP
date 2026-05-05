@@ -3,6 +3,7 @@ import shared from '../../pages/Producer/ProducerShared.module.css';
 import local from './ProducerOrders.module.css';
 const styles = { ...shared, ...local };
 import { FiSearch, FiX, FiCheck, FiUser, FiMapPin, FiPackage, FiFileText, FiChevronUp, FiChevronDown, FiMail, FiClock } from 'react-icons/fi';
+import DatePicker from '../DatePicker/DatePicker';
 import apiClient from '../../utils/apiClient';
 
 const ORDER_STATUS_CLASS = {
@@ -299,11 +300,25 @@ export default function ProducerOrders({ producerId }) {
         </label>
         <label className={styles.dateLabel}>
           From
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+          <DatePicker
+            value={dateFrom}
+            onChange={setDateFrom}
+            max={dateTo || undefined}
+            placeholder="From date"
+            ariaLabel="Choose start date"
+            className={styles.filterDatePicker}
+          />
         </label>
         <label className={styles.dateLabel}>
           To
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+          <DatePicker
+            value={dateTo}
+            onChange={setDateTo}
+            min={dateFrom || undefined}
+            placeholder="To date"
+            ariaLabel="Choose end date"
+            className={styles.filterDatePicker}
+          />
         </label>
         {hasActiveFilters && (
           <button className={styles.clearFiltersBtn} onClick={clearFilters}>

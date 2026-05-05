@@ -2,7 +2,7 @@ from django.db import models
 from rest_framework import permissions, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
@@ -11,6 +11,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Producer
 from .serializers import ProducerSerializer, RecipeSerializer, FarmStorySerializer
 from apps.accounts.permissions import IsProducer
+
 from apps.community.models import Recipe, FarmStory
 from apps.api.cloudinary_utils import upload_file_to_cloudinary
 
@@ -37,6 +38,9 @@ class ProducerViewSet(ModelViewSet):
     serializer_class = ProducerSerializer
 
     def get_permissions(self):
+        if self.action == "me":
+            return [IsAuthenticated(), IsProducer()]
+
         if self.request.method in permissions.SAFE_METHODS:
             return []
 
@@ -46,14 +50,34 @@ class ProducerViewSet(ModelViewSet):
         queryset = Producer.objects.select_related("account", "business_address")
         user = self.request.user
 
-        if self.request.method in permissions.SAFE_METHODS:
-            return queryset.all()
-
         if is_admin_user(user):
             return queryset.all()
 
+        # Public browsing/detail pages
+        if self.request.method in permissions.SAFE_METHODS:
+            return queryset.all()
+
+        # Writes are only own producer
         return queryset.filter(account=user)
 
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated, IsProducer])
+    def me(self, request):
+        try:
+            producer = Producer.objects.select_related(
+                "account",
+                "business_address",
+            ).get(account=request.user)
+        except Producer.DoesNotExist:
+            return Response(
+                {"detail": "No producer profile was found for your account."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = self.get_serializer(producer)
+        return Response(serializer.data)
+    
+    
+    
 
 # PUBLIC READ / PRIVATE WRITE
 
@@ -79,7 +103,7 @@ class RecipeViewSet(ModelViewSet):
     serializer_class = RecipeSerializer
     permission_classes = [IsOwnerProducerOrAdminForWrites]
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["producer", "is_published", "seasonal_tag"]
+    filterset_fields = ["producer", "is_published", "seasonal_tag", "products"]
 
     def get_queryset(self):
         queryset = Recipe.objects.select_related(

@@ -3,6 +3,7 @@ import { FiSearch, FiX, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 import shared from '../../pages/Producer/ProducerShared.module.css';
 import local from '../Producer/ProducerOrders.module.css';
 const styles = { ...shared, ...local };
+import DatePicker from '../DatePicker/DatePicker';
 import apiClient from '../../utils/apiClient';
 
 const ORDER_STATUS_CLASS = {
@@ -130,8 +131,28 @@ export default function AdminOrders() {
           <FiSearch size={15} />
           <input type="text" placeholder="Search by customer, producer, or order ref…" value={search} onChange={e => setSearch(e.target.value)} />
         </label>
-        <label className={styles.dateLabel}>From <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></label>
-        <label className={styles.dateLabel}>To <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} /></label>
+        <label className={styles.dateLabel}>
+          From
+          <DatePicker
+            value={dateFrom}
+            onChange={setDateFrom}
+            max={dateTo || undefined}
+            placeholder="From date"
+            ariaLabel="Choose start date"
+            className={styles.filterDatePicker}
+          />
+        </label>
+        <label className={styles.dateLabel}>
+          To
+          <DatePicker
+            value={dateTo}
+            onChange={setDateTo}
+            min={dateFrom || undefined}
+            placeholder="To date"
+            ariaLabel="Choose end date"
+            className={styles.filterDatePicker}
+          />
+        </label>
         {hasActiveFilters && (
           <button className={styles.clearFiltersBtn} onClick={() => { setSearch(''); setDateFrom(''); setDateTo(''); }}>
             <FiX size={14} /> Clear

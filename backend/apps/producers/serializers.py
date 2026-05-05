@@ -21,6 +21,7 @@ class ProducerSerializer(serializers.ModelSerializer):
 
 class RecipeSerializer(serializers.ModelSerializer):
     product_names = serializers.SerializerMethodField()
+    linked_products = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipe
@@ -35,6 +36,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             "seasonal_tag",
             "products",
             "product_names",
+            "linked_products",
             "is_published",
             "created_at",
             "updated_at",
@@ -44,15 +46,20 @@ class RecipeSerializer(serializers.ModelSerializer):
     def get_product_names(self, obj):
         return list(obj.products.values_list("name", flat=True))
 
+    def get_linked_products(self, obj):
+        return list(obj.products.values("id", "name"))
+
 
 class FarmStorySerializer(serializers.ModelSerializer):
     content = serializers.CharField(source="body")
+    company_name = serializers.CharField(source="producer.company_name", read_only=True)
 
     class Meta:
         model = FarmStory
         fields = [
             "id",
             "producer",
+            "company_name",
             "title",
             "content",
             "image",

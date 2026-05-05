@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import TermsModal from "./components/Legal/TermsModal";
 
 // Auth
 import RequireAuth from "./auth/RequireAuth";
@@ -14,32 +16,54 @@ import CustomerAccountRedirect from "./pages/CustomerAccountRedirect";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
-import ProducerDetail from "./pages/ProducerDetail"; // General as Customers can access
+import ProducerDetail from "./pages/ProducerDetail";
 import SurplusDeals from "./components/Marketplace/SurplusDeals";
 import About from "./pages/About";
 import Login from "./pages/Login";
 import Cart from "./pages/Cart";
+import FAQ from "./components/Legal/FAQ";
 
-// New signup pages
+// Signup pages
 import SignupSelect from "./pages/SignupSelect";
 import Signup from "./pages/Signup";
 
 // Customer pages
 import Checkout from "./pages/Checkout/Checkout";
-import CustomerMyAccount from "./pages/Customer/MyAccount";
 import CheckoutSuccess from "./pages/Checkout/CheckoutSuccess";
 
 // Producer pages
 import ProducerDashboard from "./pages/Producer/ProducerDashboard";
 import ProducerMyAccount from "./pages/Producer/ProducerMyAccount";
 
+// Farm stories pages
+import FarmStories from "./components/Marketplace/FarmStories";
+
 // Admin pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 
 export default function App() {
+  const [termsOpen, setTermsOpen] = useState(false);
+
+  // Cyberpunk Effects ////////////////////
+  useEffect(() => {
+    function handleMove(e) {
+      const x = `${(e.clientX / window.innerWidth) * 100}%`;
+      const y = `${(e.clientY / window.innerHeight) * 100}%`;
+
+      document.documentElement.style.setProperty("--cp-x", x);
+      document.documentElement.style.setProperty("--cp-y", y);
+    }
+
+    window.addEventListener("mousemove", handleMove);
+    return () => window.removeEventListener("mousemove", handleMove);
+  }, []);
+  //////////////////////////////////
+
+
+
   return (
     <>
-      <Navbar />
+      <Navbar onOpenTerms={() => setTermsOpen(true)} />
 
       <Routes>
         {/* General */}
@@ -49,7 +73,8 @@ export default function App() {
         <Route path="/producers/:producerId" element={<ProducerDetail />} />
         <Route path="/surplus-deals" element={<SurplusDeals />} />
         <Route path="/about" element={<About />} />
-        
+        <Route path="/farm-stories" element={<FarmStories />} />
+        <Route path="/faq" element={<FAQ />} />
 
         <Route path="/login" element={<Login />} />
         <Route path="/cart" element={<Cart />} />
@@ -104,6 +129,7 @@ export default function App() {
             </RequireProducer>
           }
         />
+
         {/* Admin */}
         <Route
           path="/admin/dashboard"
@@ -115,7 +141,8 @@ export default function App() {
         />
       </Routes>
 
-      <Footer />
+      <Footer onOpenTerms={() => setTermsOpen(true)} />
+      <TermsModal open={termsOpen} onClose={() => setTermsOpen(false)} />
     </>
   );
 }

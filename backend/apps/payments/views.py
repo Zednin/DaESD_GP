@@ -16,6 +16,7 @@ from apps.cart.models import Cart
 from apps.orders.models import Order, OrderItem, ProducerOrder, CommissionLedger
 from apps.payments.models import Payment
 from apps.addresses.models import Address
+from apps.catalog.models import Product
 from apps.communications.email_service import (
     send_customer_order_confirmation,
     send_producer_new_order_notification,
@@ -28,6 +29,23 @@ COMMISSION_RATE = Decimal("0.05")
 
 def money(value):
     return Decimal(value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def get_cart_stock_error(cart_items):
+    for item in cart_items:
+        product = item.product
+
+        if product.status != "available":
+            return f"{product.name} is currently unavailable."
+
+        if item.quantity > product.stock:
+            return (
+                f"Only {product.stock} {product.unit or 'item'}"
+                f"{'' if product.stock == 1 else 's'} of {product.name} are in stock."
+            )
+
+    return None
+
 
 def safe_send_customer_email(order):
     try:
@@ -48,11 +66,27 @@ class CreateCheckoutSessionView(APIView):
 
     def post(self, request):
         cart, _ = Cart.objects.get_or_create(account=request.user)
-        items = cart.items.select_related("product").all()
+        items = cart.items.select_related("product").prefetch_related("product__allergens").all()
 
         if not items.exists():
             return Response(
                 {"detail": "Cart is empty."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        stock_error = get_cart_stock_error(items)
+        if stock_error:
+            return Response(
+                {"detail": stock_error},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        has_allergen_products = any(item.product.allergens.exists() for item in items)
+        if has_allergen_products and not request.data.get("allergen_acknowledged"):
+            return Response(
+                {
+                    "detail": "Please confirm that you have reviewed the allergen information before checkout."
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -154,6 +188,25 @@ def handle_checkout_session_completed(session):
         return
 
     with transaction.atomic():
+        product_ids = [item.product_id for item in cart_items]
+        locked_products = {
+            product.id: product
+            for product in Product.objects.select_for_update().filter(id__in=product_ids)
+        }
+
+        for cart_item in cart_items:
+            locked_product = locked_products.get(cart_item.product_id)
+
+            if locked_product is None:
+                return
+
+            cart_item.product = locked_product
+
+        stock_error = get_cart_stock_error(cart_items)
+        if stock_error:
+            print(f"Stripe webhook stock validation failed: {stock_error}")
+            return
+
         delivery_address = Address.objects.create(
             account_id=user_id,
             address_type=Address.AddressType.DELIVERY,
@@ -221,6 +274,14 @@ def handle_checkout_session_completed(session):
                     price_snapshot=cart_item.price_snapshot,
                     line_total=line_total,
                 )
+
+                cart_item.product.stock -= cart_item.quantity
+                if cart_item.product.stock <= 0:
+                    cart_item.product.stock = 0
+                    cart_item.product.status = "unavailable"
+                    cart_item.product.save(update_fields=["stock", "status", "updated_at"])
+                else:
+                    cart_item.product.save(update_fields=["stock", "updated_at"])
 
             CommissionLedger.objects.create(
                 producer_order=producer_order,
