@@ -124,7 +124,6 @@ export default function SurplusDeals() {
 
   async function handleAddToBasket(product, qty) {
     await addToCart(product, qty);
-    setQuickAddOpen(false);
   }
 
   const totalImpact = products.reduce(

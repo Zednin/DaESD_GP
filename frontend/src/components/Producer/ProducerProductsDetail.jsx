@@ -109,7 +109,6 @@ export default function ProducerProductsDetail({ producerId }) {
 
   async function handleAddToBasket(product, qty) {
     await addToCart(product, qty);
-    setQuickAddOpen(false);
   }
 
   if (loading) {
