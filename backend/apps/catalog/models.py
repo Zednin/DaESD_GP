@@ -181,6 +181,18 @@ class Product(models.Model):
                 condition=models.Q(discount_percentage__gte=0) & models.Q(discount_percentage__lte=100),
                 name="product_discount_0_100",
             ),
+            models.CheckConstraint(
+                condition=models.Q(season_start_month__isnull=True) | (
+                    models.Q(season_start_month__gte=1) & models.Q(season_start_month__lte=12)
+                ),
+                name="product_season_start_month_1_12",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(season_end_month__isnull=True) | (
+                    models.Q(season_end_month__gte=1) & models.Q(season_end_month__lte=12)
+                ),
+                name="product_season_end_month_1_12",
+            ),
         ]
 
     
