@@ -41,6 +41,11 @@ export function getCartCount(items) {
   return items.reduce((sum, i) => sum + i.qty, 0);
 }
 
+export function getCartQtyForProduct(productId, items = readCart()) {
+  const target = items.find((i) => i.productId === productId);
+  return Number(target?.qty || 0);
+}
+
 // --------------------
 // Auth detection (adapt if you store auth differently)
 // --------------------
@@ -103,7 +108,17 @@ export async function addToCart(product, qty) {
     const items = readCart();
     const existing = items.find((i) => i.productId === product.id);
     const existingQty = Number(existing?.qty || 0);
-    const nextQty = Math.min(existingQty + requestedQty, stockLimit);
+    const remainingQty = stockLimit - existingQty;
+
+    if (requestedQty > remainingQty) {
+      throw new Error(
+        remainingQty > 0
+          ? `${remainingQty} more ${product?.name || "item"} available.`
+          : `${product?.name || "This product"} is already at the available stock limit in your basket.`
+      );
+    }
+
+    const nextQty = existingQty + requestedQty;
 
     const next = existing
       ? items.map((i) =>
@@ -118,7 +133,7 @@ export async function addToCart(product, qty) {
             stock: product.stock,
             status: product.status,
             price: Number(product.price),
-            qty: Math.min(requestedQty, stockLimit),
+            qty: requestedQty,
           },
         ];
 
@@ -127,6 +142,18 @@ export async function addToCart(product, qty) {
   }
 
   // signed in (server)
+  const cachedItems = readCart();
+  const cachedQty = getCartQtyForProduct(product.id, cachedItems);
+  const remainingQty = stockLimit - cachedQty;
+
+  if (requestedQty > remainingQty) {
+    throw new Error(
+      remainingQty > 0
+        ? `${remainingQty} more ${product?.name || "item"} available.`
+        : `${product?.name || "This product"} is already at the available stock limit in your basket.`
+    );
+  }
+
   console.log("[cart] addServerItem ->", { productId: product.id, qty: requestedQty });
   await addServerItem(product.id, requestedQty);
 

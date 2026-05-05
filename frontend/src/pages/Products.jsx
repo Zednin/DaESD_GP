@@ -147,7 +147,6 @@ export default function Products() {
     if (product._rec_score !== undefined) {
       logRecommendationInteraction(product, "added_to_cart");
     }
-    setQuickAddOpen(false);
   }
 
   // interaction log for recommendation cards
