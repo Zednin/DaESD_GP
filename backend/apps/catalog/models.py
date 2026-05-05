@@ -97,7 +97,7 @@ class Product(models.Model):
         )
     
     # Amount of producr in stock
-    stock = models.IntegerField(default=0)
+    stock = models.IntegerField(default=0, validators=[MinValueValidator(0)])
 
     # Stock level at or below which producers should be alerted
     low_stock_threshold = models.PositiveIntegerField(default=10)
@@ -166,6 +166,24 @@ class Product(models.Model):
 
     # Product listing updated from inventory_adjustment
     updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(price__gte=0),
+                name="product_price_gte_0",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(stock__gte=0),
+                name="product_stock_gte_0",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(discount_percentage__gte=0) & models.Q(discount_percentage__lte=100),
+                name="product_discount_0_100",
+            ),
+        ]
+
+    
 
     @property
     def surplus_price(self):
