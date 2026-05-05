@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { FiBookOpen } from "react-icons/fi";
+import Fuse from "fuse.js";
+import { FiBookOpen, FiChevronDown, FiSearch, FiSliders, FiX } from "react-icons/fi";
 import { fadeRight, fadeUp } from "../../animations/heroAnimations";
 import apiClient from "../../utils/apiClient";
 import styles from "./FarmStories.module.css";
@@ -33,15 +34,55 @@ function getStoryPreview(content, wordLimit = 25, sentenceLimit = 2) {
 const PAGE_SIZE = 4;
 const PRODUCER_ACCENT_COUNT = 6;
 
+function getProducerName(producer) {
+  return producer.company_name ?? producer.name ?? `Producer #${producer.id}`;
+}
+
+function getStoryProducerKey(story) {
+  return String(story.producer ?? story.producer_id ?? story.producer_profile_id ?? "");
+}
+
 export default function FarmStories() {
   const location = useLocation();
   const [stories, setStories] = useState([]);
   const [producers, setProducers] = useState([]);
+  const [producerSearchInput, setProducerSearchInput] = useState("");
+  const [producerSearch, setProducerSearch] = useState("");
+  const [selectedFeedProducer, setSelectedFeedProducer] = useState("");
+  const [feedFilterOpen, setFeedFilterOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [producerError, setProducerError] = useState(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selectedStory, setSelectedStory] = useState(null);
+  const feedFilterRef = useRef(null);
+
+  const producerFuse = useMemo(
+    () =>
+      new Fuse(producers, {
+        keys: ["company_name", "name", "company_description"],
+        threshold: 0.35,
+        ignoreLocation: true,
+      }),
+    [producers]
+  );
+
+  const visibleProducers = useMemo(() => {
+    const query = producerSearch.trim();
+    if (!query) return producers;
+    return producerFuse.search(query).map((result) => result.item);
+  }, [producerFuse, producerSearch, producers]);
+
+  const filteredStories = useMemo(() => {
+    if (!selectedFeedProducer) return stories;
+    return stories.filter((story) => getStoryProducerKey(story) === selectedFeedProducer);
+  }, [selectedFeedProducer, stories]);
+
+  const selectedFeedProducerName = useMemo(() => {
+    if (!selectedFeedProducer) return "";
+    const producer = producers.find((p) => String(p.id) === selectedFeedProducer);
+    return producer ? getProducerName(producer) : "";
+  }, [producers, selectedFeedProducer]);
 
   useEffect(() => {
     Promise.allSettled([
@@ -71,6 +112,26 @@ export default function FarmStories() {
         setError(err);
         setLoading(false);
       });
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setProducerSearch(producerSearchInput), 250);
+    return () => clearTimeout(timer);
+  }, [producerSearchInput]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [selectedFeedProducer]);
+
+  useEffect(() => {
+    function handleOutside(e) {
+      if (feedFilterRef.current && !feedFilterRef.current.contains(e.target)) {
+        setFeedFilterOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
 
   useEffect(() => {
@@ -128,18 +189,47 @@ export default function FarmStories() {
         aria-labelledby="producer-strip-title"
       >
         <div className={styles.sectionHeader}>
-          <h2 id="producer-strip-title">Producers</h2>
-          <span>{producers.length}</span>
+          <div>
+            <h2 id="producer-strip-title">Producers</h2>
+            <p>Search by producer name</p>
+          </div>
+          <span>
+            {visibleProducers.length} of {producers.length}
+          </span>
+        </div>
+
+        <div className={styles.producerSearchWrap}>
+          <FiSearch className={styles.searchIcon} />
+          <input
+            className={styles.producerSearch}
+            type="text"
+            placeholder="Search producers..."
+            value={producerSearchInput}
+            onChange={(e) => setProducerSearchInput(e.target.value)}
+            aria-label="Search producers"
+          />
+          {producerSearchInput && (
+            <button
+              type="button"
+              className={styles.clearSearch}
+              onClick={() => setProducerSearchInput("")}
+              aria-label="Clear producer search"
+            >
+              <FiX />
+            </button>
+          )}
         </div>
 
         {producerError ? (
           <p className={styles.stripNote}>Producer list is unavailable right now.</p>
         ) : producers.length === 0 ? (
           <p className={styles.stripNote}>No producers to show yet.</p>
+        ) : visibleProducers.length === 0 ? (
+          <p className={styles.stripNote}>No producers match that search.</p>
         ) : (
           <div className={styles.producerRail}>
             <div className={styles.producerStrip}>
-              {producers.map((producer) => (
+              {visibleProducers.map((producer) => (
                 <Link
                   key={producer.id}
                   to={`/producer/${producer.id}`}
@@ -155,7 +245,7 @@ export default function FarmStories() {
                     styles[`producerAccent${producer.id % PRODUCER_ACCENT_COUNT}`]
                   }`}
                 >
-                  <span>{producer.company_name ?? `Producer #${producer.id}`}</span>
+                  <span>{getProducerName(producer)}</span>
                 </Link>
               ))}
             </div>
@@ -169,8 +259,108 @@ export default function FarmStories() {
         initial="hidden"
         animate="visible"
       >
-        Feed - {stories.length} {stories.length === 1 ? "story" : "stories"}
+        Feed - {filteredStories.length}{" "}
+        {filteredStories.length === 1 ? "story" : "stories"}
       </motion.p>
+
+      <motion.div
+        className={styles.feedControls}
+        variants={fadeUp(0.38)}
+        initial="hidden"
+        animate="visible"
+      >
+        <div className={styles.feedFilterWrapper} ref={feedFilterRef}>
+          <button
+            type="button"
+            className={`${styles.filterTrigger} ${
+              feedFilterOpen ? styles.filterTriggerOpen : ""
+            }`}
+            onClick={() => setFeedFilterOpen((open) => !open)}
+            aria-expanded={feedFilterOpen}
+          >
+            <FiSliders className={styles.filterIcon} />
+            <span>Filters</span>
+            {selectedFeedProducer && <span className={styles.filterBadge}>1</span>}
+            <motion.span
+              className={styles.filterChevron}
+              animate={{ rotate: feedFilterOpen ? 180 : 0 }}
+              transition={{ duration: 0.22, ease: "easeInOut" }}
+            >
+              <FiChevronDown />
+            </motion.span>
+          </button>
+
+          <AnimatePresence>
+            {feedFilterOpen && (
+              <motion.div
+                className={styles.filterPanel}
+                initial={{ opacity: 0, y: -10, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.97 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+              >
+                <div className={styles.filterSection}>
+                  <p className={styles.filterSectionLabel}>Producer</p>
+                  <div className={styles.filterChips}>
+                    <button
+                      type="button"
+                      className={`${styles.filterChip} ${
+                        !selectedFeedProducer ? styles.filterChipActive : ""
+                      }`}
+                      onClick={() => {
+                        setSelectedFeedProducer("");
+                        setFeedFilterOpen(false);
+                      }}
+                    >
+                      All
+                    </button>
+
+                    {producers.map((producer) => {
+                      const value = String(producer.id);
+                      const active = selectedFeedProducer === value;
+
+                      return (
+                        <button
+                          key={producer.id}
+                          type="button"
+                          className={`${styles.filterChip} ${
+                            active ? styles.filterChipActive : ""
+                          }`}
+                          onClick={() => {
+                            setSelectedFeedProducer(active ? "" : value);
+                            setFeedFilterOpen(false);
+                          }}
+                        >
+                          {getProducerName(producer)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {selectedFeedProducer && (
+                  <button
+                    type="button"
+                    className={styles.filterClearBtn}
+                    onClick={() => {
+                      setSelectedFeedProducer("");
+                      setFeedFilterOpen(false);
+                    }}
+                  >
+                    Clear all filters (1)
+                  </button>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {selectedFeedProducerName && (
+          <span className={styles.activeFilterText}>
+            Showing {selectedFeedProducerName}
+          </span>
+        )}
+      </motion.div>
 
       {error ? (
         <div className={styles.emptyState}>
@@ -180,12 +370,12 @@ export default function FarmStories() {
           <h3>Couldn't load stories</h3>
           <p>Please try again in a moment.</p>
         </div>
-      ) : stories.length === 0 ? (
+      ) : filteredStories.length === 0 ? (
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>
             <FiBookOpen size={32} />
           </div>
-          <h3>No stories yet</h3>
+          <h3>No stories found</h3>
           <p>Producers haven't shared any stories — check back soon.</p>
         </div>
       ) : (
@@ -196,7 +386,7 @@ export default function FarmStories() {
             initial="hidden"
             animate="visible"
           >
-            {stories.slice(0, visibleCount).map((story) => (
+            {filteredStories.slice(0, visibleCount).map((story) => (
               <article key={story.id} className={styles.card}>
                 <div className={styles.imageArea}>
                   {story.image ? (
@@ -241,7 +431,7 @@ export default function FarmStories() {
           </motion.section>
 
           <div className={styles.feedFooter}>
-            {visibleCount < stories.length ? (
+            {visibleCount < filteredStories.length ? (
               <button
                 type="button"
                 className={styles.loadMoreBtn}
