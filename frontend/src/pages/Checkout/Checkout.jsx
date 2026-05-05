@@ -177,7 +177,9 @@ export default function Checkout() {
       }
 
       const payload = {
-        allergen_acknowledged: allergenAcknowledged,
+        allergen_acknowledged: requiresAllergenAcknowledgement
+          ? allergenAcknowledged
+          : true,
       };
       if (recurringPrefs) {
         payload.recurring = recurringPrefs;
@@ -257,14 +259,16 @@ export default function Checkout() {
               <p>No common allergens are declared for the products currently in your basket.</p>
             )}
 
-            <label className={styles.acknowledgement}>
-              <input
-                type="checkbox"
-                checked={allergenAcknowledged}
-                onChange={(e) => setAllergenAcknowledged(e.target.checked)}
-              />
-              <span>I have reviewed the allergen information for my basket.</span>
-            </label>
+            {requiresAllergenAcknowledgement && (
+              <label className={styles.acknowledgement}>
+                <input
+                  type="checkbox"
+                  checked={allergenAcknowledged}
+                  onChange={(e) => setAllergenAcknowledged(e.target.checked)}
+                />
+                <span>I have reviewed the allergen information for my basket.</span>
+              </label>
+            )}
           </div>
 
           {error && <p className={styles.error}>{error}</p>}
