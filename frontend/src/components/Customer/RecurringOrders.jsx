@@ -26,13 +26,6 @@ const weekdays = [
   "Sunday",
 ];
 
-function isRestaurantCustomer(user) {
-  return (
-    user?.account_type === "restaurant" ||
-    user?.organisation?.organisation_type === "restaurant"
-  );
-}
-
 function normaliseResponse(data) {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.results)) return data.results;
@@ -639,8 +632,7 @@ function EditRecurringOrderModal({
 }
 
 export default function RecurringOrders() {
-  const { user } = useAuth();
-  const canUseRecurringOrders = isRestaurantCustomer(user);
+  const { canUseRecurringOrders } = useAuth();
   const [orders, setOrders] = useState([]);
   const [producers, setProducers] = useState([]);
   const [products, setProducts] = useState([]);
@@ -787,17 +779,7 @@ export default function RecurringOrders() {
   }
 
   if (!canUseRecurringOrders) {
-    return (
-      <section className={styles.wrapper}>
-        <div className={styles.header}>
-          <p className={styles.eyebrow}>Account</p>
-          <h2 className={styles.title}>Recurring orders</h2>
-          <p className={styles.subtitle}>
-            Recurring orders are available for restaurant customers.
-          </p>
-        </div>
-      </section>
-    );
+    return null;
   }
 
   return (

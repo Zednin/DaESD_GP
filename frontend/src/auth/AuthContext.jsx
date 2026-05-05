@@ -91,14 +91,20 @@ export function AuthProvider({ children }) {
     migrateCartAfterLogin();
   }, [user]);
 
+  // check user / account type
+  const customerType = user?.organisation?.organisation_type || user?.account_type;
+  const canUseRecurringOrders = customerType === "restaurant";
+
+  
   const value = useMemo(
     () => ({
       user,
       loading,
       refresh,
       logout,
+      canUseRecurringOrders, //Allow only for restaurant users
     }),
-    [user, loading, refresh, logout]
+    [user, loading, refresh, logout, canUseRecurringOrders]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
