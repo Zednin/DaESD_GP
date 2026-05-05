@@ -161,7 +161,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
             }
 
         existing_review = Review.objects.filter(
-            customer=user,
+            account=user,
             product=obj.product,
         ).only("id").first()
 
