@@ -1,16 +1,21 @@
 import { useState } from "react";
 import styles from "./MyAccount.module.css";
 
+import { useAuth } from "../../auth/AuthContext";
 import OrderHistory from "../../components/Customer/OrderHistory";
 import RecurringOrders from "../../components/Customer/RecurringOrders";
 import Reviews from "../../components/Customer/Reviews";
 import Settings from "../../components/Customer/Settings";
 
 export default function MyAccount() {
+  const { canUseRecurringOrders } = useAuth();
   const [activeSection, setActiveSection] = useState("orderHistory");
+  const visibleSection = !canUseRecurringOrders && activeSection === "recurringOrders"
+    ? "orderHistory"
+    : activeSection;
 
   function renderSection() {
-    switch (activeSection) {
+    switch (visibleSection) {
       case "orderHistory":
         return <OrderHistory />;
       case "recurringOrders":
@@ -34,25 +39,27 @@ export default function MyAccount() {
         <nav className={styles.nav}>
           <button
             className={`${styles.navBtn} ${
-              activeSection === "orderHistory" ? styles.active : ""
+              visibleSection === "orderHistory" ? styles.active : ""
             }`}
             onClick={() => setActiveSection("orderHistory")}
           >
             Orders
           </button>
 
-          <button
-            className={`${styles.navBtn} ${
-              activeSection === "recurringOrders" ? styles.active : ""
-            }`}
-            onClick={() => setActiveSection("recurringOrders")}
-          >
-            Recurring Orders
-          </button>
+          {canUseRecurringOrders && (
+            <button
+              className={`${styles.navBtn} ${
+                visibleSection === "recurringOrders" ? styles.active : ""
+              }`}
+              onClick={() => setActiveSection("recurringOrders")}
+            >
+              Recurring Orders
+            </button>
+          )}
 
           <button
             className={`${styles.navBtn} ${
-              activeSection === "reviews" ? styles.active : ""
+              visibleSection === "reviews" ? styles.active : ""
             }`}
             onClick={() => setActiveSection("reviews")}
           >
@@ -61,7 +68,7 @@ export default function MyAccount() {
 
           <button
             className={`${styles.navBtn} ${
-              activeSection === "settings" ? styles.active : ""
+              visibleSection === "settings" ? styles.active : ""
             }`}
             onClick={() => setActiveSection("settings")}
           >
