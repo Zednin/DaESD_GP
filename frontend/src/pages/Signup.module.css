@@ -327,3 +327,57 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+
+.popupOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.48);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.popup {
+  width: min(100%, 420px);
+  padding: 2rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.popup h2 {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-heading);
+  color: var(--text);
+}
+
+.popup p {
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+}
+
+.popupButton {
+  border: 1px solid var(--primary-border);
+  border-radius: 999px;
+  padding: 0.85rem 1.5rem;
+  background: var(--primary);
+  color: var(--primary-contrast, #ffffff);
+  font-weight: 700;
+  box-shadow: var(--focus);
+}
+
+.popupButton:hover {
+  background: var(--primary-muted-hover);
+  color: var(--primary);
+}
+
+.popupButton:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
