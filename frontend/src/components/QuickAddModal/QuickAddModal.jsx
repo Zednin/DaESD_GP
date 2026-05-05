@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import styles from "./QuickAddModal.module.css";
 import { getAllergenInfo, formatAllergenList } from "../../utils/allergenIcons";
+import { getCartQtyForProduct, readCart } from "../../utils/cartStorage";
 
 export default function QuickAddModal({
   product,
@@ -12,6 +13,10 @@ export default function QuickAddModal({
 }) {
   const [qty, setQty] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
+  const [addStatus, setAddStatus] = useState("idle");
+  const [addError, setAddError] = useState("");
+  const [cartQty, setCartQty] = useState(() => getCartQtyForProduct(product?.id, readCart()));
+  const closeTimerRef = useRef(null);
 
   const images = useMemo(() => {
     return product?.image ? [product.image] : [];
@@ -19,6 +24,34 @@ export default function QuickAddModal({
 
   const progress = Math.min(cartSubtotal / freeShippingThreshold, 1);
   const remaining = Math.max(freeShippingThreshold - cartSubtotal, 0);
+  const stockLimit = useMemo(() => {
+    const stock = Number(product?.stock);
+    return Number.isFinite(stock) ? Math.max(0, stock) : Infinity;
+  }, [product]);
+  const isUnavailable = product?.status === "unavailable" || stockLimit <= 0;
+  const availableToAdd = Number.isFinite(stockLimit)
+    ? Math.max(0, stockLimit - cartQty)
+    : Infinity;
+  const addBlockedByStock = !isUnavailable && qty > availableToAdd;
+  const cannotAddMore = !isUnavailable && availableToAdd <= 0;
+  const addDisabled = isUnavailable || (addStatus === "idle" && (addBlockedByStock || cannotAddMore));
+  const stockMessage = useMemo(() => {
+    if (addError) return addError;
+    if (isUnavailable || addStatus !== "idle" || !Number.isFinite(stockLimit)) return "";
+    if (cannotAddMore) return "Stock limit reached.";
+    if (addBlockedByStock) return `${availableToAdd} more available.`;
+    return "";
+  }, [addBlockedByStock, addError, addStatus, availableToAdd, cannotAddMore, cartQty, isUnavailable, stockLimit]);
+
+  function updateQty(next) {
+    if (isUnavailable) {
+      setQty(1);
+      return;
+    }
+
+    setAddError("");
+    setQty(Math.min(Math.max(1, next), stockLimit));
+  }
 
   useEffect(() => {
     function onKeyDown(e) {
@@ -29,9 +62,49 @@ export default function QuickAddModal({
   }, [onClose]);
 
   useEffect(() => {
+    function syncCartQty() {
+      setCartQty(getCartQtyForProduct(product?.id, readCart()));
+    }
+
+    syncCartQty();
+    window.addEventListener("cart:updated", syncCartQty);
+    return () => window.removeEventListener("cart:updated", syncCartQty);
+  }, [product]);
+
+  useEffect(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+    }
     setQty(1);
     setActiveImage(0);
+    setAddStatus("idle");
+    setAddError("");
   }, [product]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
+
+  async function handleAdd() {
+    if (addDisabled || addStatus !== "idle") return;
+
+    try {
+      await onAdd(product, qty);
+      setAddStatus("added");
+      setAddError("");
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+      closeTimerRef.current = setTimeout(onClose, 1100);
+    } catch (err) {
+      setAddStatus("idle");
+      setAddError(err?.message || "This quantity could not be added to your basket.");
+    }
+  }
 
   return (
     <motion.div
@@ -145,13 +218,19 @@ export default function QuickAddModal({
             </div>
 
             <div className={styles.controls}>
-              <label className={styles.qtyLabel}>Quantity</label>
+              <label className={styles.qtyLabel}>
+                Quantity
+                {Number.isFinite(stockLimit) && (
+                  <span> · {stockLimit} in stock</span>
+                )}
+              </label>
               <br />
               <div className={styles.qtyRow}>
                 <button
                   type="button"
                   className={styles.qtyBtn}
-                  onClick={() => setQty((v) => Math.max(1, v - 1))}
+                  disabled={isUnavailable || qty <= 1}
+                  onClick={() => updateQty(qty - 1)}
                 >
                   −
                 </button>
@@ -159,18 +238,21 @@ export default function QuickAddModal({
                 <input
                   type="number"
                   min={1}
+                  max={Number.isFinite(stockLimit) ? stockLimit : undefined}
+                  disabled={isUnavailable}
                   className={styles.qtyInput}
                   value={qty}
                   onChange={(e) => {
                     const n = Number(e.target.value);
-                    setQty(Number.isFinite(n) ? Math.max(1, n) : 1);
+                    updateQty(Number.isFinite(n) ? n : 1);
                   }}
                 />
 
                 <button
                   type="button"
                   className={styles.qtyBtn}
-                  onClick={() => setQty((v) => v + 1)}
+                  disabled={isUnavailable || qty >= stockLimit}
+                  onClick={() => updateQty(qty + 1)}
                 >
                   +
                 </button>
@@ -179,10 +261,14 @@ export default function QuickAddModal({
               <button
                 type="button"
                 className={styles.addBtn}
-                onClick={() => onAdd(product, qty)}
+                disabled={addDisabled}
+                onClick={handleAdd}
               >
-                Add to basket — £{(Number(product.price) * qty).toFixed(2)}
-                {product.original_price && (
+                {isUnavailable && "Out of stock"}
+                {!isUnavailable && addStatus === "added" && "Added ✓"}
+                {!isUnavailable && addStatus === "idle" &&
+                  `Add to basket — £${(Number(product.price) * qty).toFixed(2)}`}
+                {!isUnavailable && addStatus === "idle" && product.original_price && (
                   <span className={styles.btnSaving}>
                     {" "}
                     (save £
@@ -194,6 +280,7 @@ export default function QuickAddModal({
                   </span>
                 )}
               </button>
+              {stockMessage && <p className={styles.stockMessage}>{stockMessage}</p>}
             </div>
 
             <div className={styles.shipping}>

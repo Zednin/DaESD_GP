@@ -20,6 +20,7 @@ export default function Products() {
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [recsOpen, setRecsOpen] = useState(false);
+  const [loadingRecs, setLoadingRecs] = useState(true);
   const [lastOrder, setLastOrder] = useState(null);
   const [reorderAdding, setReorderAdding] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
@@ -65,10 +66,12 @@ export default function Products() {
 
   // Personalised recommendations for logged-in users.
   useEffect(() => {
+    setLoadingRecs(true);
     apiClient
       .get("/products/recommendations/", { params: { limit: 5 } })
       .then(({ data }) => setRecommendations(Array.isArray(data) ? data : []))
-      .catch(() => setRecommendations([]));
+      .catch(() => setRecommendations([]))
+      .finally(() => setLoadingRecs(false));
   }, []);
 
   // Last completed order for quick re-order banner (logged-in users only).
@@ -144,7 +147,6 @@ export default function Products() {
     if (product._rec_score !== undefined) {
       logRecommendationInteraction(product, "added_to_cart");
     }
-    setQuickAddOpen(false);
   }
 
   // interaction log for recommendation cards
@@ -236,7 +238,7 @@ export default function Products() {
         </motion.div>
       )}
       
-      {recommendations.length > 0 && (
+      {(loadingRecs || recommendations.length > 0) && (
         <motion.section
           className={styles.recsSection}
           variants={fadeUp(0.25)}
@@ -252,9 +254,10 @@ export default function Products() {
               Recommended for You
               <span className={styles.recsSubtext}>Based on your recent orders, we have curated a selection just for you.</span>
             </span>
-            <FiChevronDown
-              className={`${styles.recsArrow} ${recsOpen ? styles.recsArrowOpen : ""}`}
-            />
+            {loadingRecs
+              ? <span className={styles.recsSpinner} />
+              : <FiChevronDown className={`${styles.recsArrow} ${recsOpen ? styles.recsArrowOpen : ""}`} />
+            }
           </button>
 
           <AnimatePresence initial={false}>
@@ -419,10 +422,12 @@ export default function Products() {
           initial="hidden"
           animate="visible"
         >
-          {products.map((product) => (
+          {products.map((product) => {
+              const isOutOfStock = product.stock === 0 || product.status === 'unavailable';
+              return (
               <div
                 key={product.id}
-                className={`${styles.card} ${product.surplus_active ? styles.surplusCard : ""}`}
+                className={`${styles.card} ${product.surplus_active ? styles.surplusCard : ""} ${isOutOfStock ? styles.outOfStockCard : ""}`}
                 onClick={() => goToProduct(product.id)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -443,6 +448,9 @@ export default function Products() {
                 )}
                 {product.surplus_active && (
                   <span className={styles.surplusBadge}>-{product.discount_percentage}% OFF</span>
+                )}
+                {isOutOfStock && (
+                  <span className={styles.outOfStockBadge}>Out of Stock</span>
                 )}
               </div>
 
@@ -472,19 +480,22 @@ export default function Products() {
                     })}
                   </div>
                 )}
-                <button
-                  type="button"
-                  className={styles.quickAddBtn}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openQuickAdd(product);
-                  }}
-                >
-                  Quick add
-                </button>
+                {!isOutOfStock && (
+                  <button
+                    type="button"
+                    className={styles.quickAddBtn}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openQuickAdd(product);
+                    }}
+                  >
+                    Quick add
+                  </button>
+                )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </motion.section>
       ) : (
         <motion.section
@@ -493,10 +504,12 @@ export default function Products() {
           initial="hidden"
           animate="visible"
         >
-          {products.map((product) => (
+          {products.map((product) => {
+            const isOutOfStock = product.stock === 0 || product.status === 'unavailable';
+            return (
             <div
               key={product.id}
-              className={styles.listCard}
+              className={`${styles.listCard} ${isOutOfStock ? styles.outOfStockCard : ""}`}
               onClick={() => goToProduct(product.id)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -508,9 +521,12 @@ export default function Products() {
               tabIndex={0}
               aria-label={`View ${product.name}`}
             >
-              <div className={styles.listImagePlaceholder}>
+              <div className={`${styles.listImagePlaceholder} ${styles.listImageRelative}`}>
                 {product.image && (
                   <img src={product.image} alt={product.name} className={styles.listImage} />
+                )}
+                {isOutOfStock && (
+                  <span className={styles.listOutOfStockOverlay}>Out of Stock</span>
                 )}
               </div>
               <div className={styles.listBody}>
@@ -544,18 +560,21 @@ export default function Products() {
                   £{Number(product.price).toFixed(2)} / {product.unit}
                 </span>
               )}
-              <button
-                type="button"
-                className={styles.listQuickAddBtn}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openQuickAdd(product);
-                }}
-              >
-                Quick add
-              </button>
+              {!isOutOfStock && (
+                <button
+                  type="button"
+                  className={styles.listQuickAddBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openQuickAdd(product);
+                  }}
+                >
+                  Quick add
+                </button>
+              )}
             </div>
-          ))}
+            );
+          })}
         </motion.section>
       )}
 

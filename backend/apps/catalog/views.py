@@ -2,6 +2,8 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework import filters, status
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
@@ -21,9 +23,38 @@ class ProductViewSet(ModelViewSet):
     queryset = Product.objects.all()
     #queryset = Product.objects.filter(status="available") for future use when we want to show only available products
     serializer_class = ProductSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
     filterset_class = ProductFilter
     ordering_fields = ['name', 'price', 'created_at']
     ordering = ['name']
+     
+     
+     
+    #Fixing bug where customer could update products
+    def perform_create(self, serializer):
+        user = self.request.user
+
+        if not hasattr(user, "producer_profile"):
+            raise PermissionDenied("Only producers can create products.")
+
+        serializer.save(producer=user.producer_profile)
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        product = self.get_object()
+
+        if not hasattr(user, "producer_profile"):
+            raise PermissionDenied("Only producers can update products.")
+
+        if product.producer != user.producer_profile:
+            raise PermissionDenied("You can only update your own products.")
+
+        serializer.save()
+        
+        
+    
+    
+    
 
     # Enable filtering + ordering
     filter_backends = [
@@ -104,6 +135,7 @@ class ProductViewSet(ModelViewSet):
         detail=False,
         methods=["post"],
         url_path="recommendations/log",
+        url_name="recommendations-log",
         permission_classes=[IsAuthenticated],
     )
     def log_recommendation_interaction(self, request):

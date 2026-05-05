@@ -6,8 +6,8 @@ class CartItemSerializer(serializers.ModelSerializer):
     product_id = serializers.IntegerField(source="product.id", read_only=True)
     name = serializers.CharField(source="product.name", read_only=True)
     unit = serializers.CharField(source="product.unit", read_only=True)
-
-    # producer info on each item
+    stock = serializers.IntegerField(source="product.stock", read_only=True)
+    status = serializers.CharField(source="product.status", read_only=True)
     producer_id = serializers.IntegerField(source="product.producer_id", read_only=True)
     producer_name = serializers.CharField(source="product.producer.company_name", read_only=True)
     lead_time_hours = serializers.IntegerField(source="product.producer.lead_time_hours", read_only=True)
@@ -19,6 +19,8 @@ class CartItemSerializer(serializers.ModelSerializer):
             "product_id",
             "name",
             "unit",
+            "stock",
+            "status",
             "producer_id",
             "producer_name",
             "lead_time_hours",

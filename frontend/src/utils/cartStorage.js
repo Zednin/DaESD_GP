@@ -41,6 +41,11 @@ export function getCartCount(items) {
   return items.reduce((sum, i) => sum + i.qty, 0);
 }
 
+export function getCartQtyForProduct(productId, items = readCart()) {
+  const target = items.find((i) => i.productId === productId);
+  return Number(target?.qty || 0);
+}
+
 // --------------------
 // Auth detection (adapt if you store auth differently)
 // --------------------
@@ -54,12 +59,19 @@ function isAuthed() {
   return CART_AUTHED;
 }
 
+function getStockLimit(itemOrProduct) {
+  const stock = Number(itemOrProduct?.stock);
+  return Number.isFinite(stock) ? Math.max(0, stock) : Infinity;
+}
+
 function mapServerCartToUiItems(serverCart) {
   return (serverCart.items || []).map((it) => ({
     cartItemId: it.id,
     productId: it.product_id,
     name: it.name,
     unit: it.unit,
+    stock: it.stock,
+    status: it.status,
     qty: it.quantity,
     price: Number(it.price_snapshot),
     // producer metadata and lead time
@@ -87,14 +99,33 @@ export async function refreshCartFromServer() {
 // --------------------
 export async function addToCart(product, qty) {
   console.log("[cart] addToCart", { authed: isAuthed(), productId: product?.id, qty });
+  const stockLimit = getStockLimit(product);
+  const requestedQty = Math.max(1, Number(qty || 1));
+
+  if (stockLimit <= 0 || product?.status === "unavailable") {
+    throw new Error(`${product?.name || "This product"} is currently unavailable.`);
+  }
+
   if (!isAuthed()) {
     // guest (local)
     const items = readCart();
     const existing = items.find((i) => i.productId === product.id);
+    const existingQty = Number(existing?.qty || 0);
+    const remainingQty = stockLimit - existingQty;
+
+    if (requestedQty > remainingQty) {
+      throw new Error(
+        remainingQty > 0
+          ? `${remainingQty} more ${product?.name || "item"} available.`
+          : `${product?.name || "This product"} is already at the available stock limit in your basket.`
+      );
+    }
+
+    const nextQty = existingQty + requestedQty;
 
     const next = existing
       ? items.map((i) =>
-          i.productId === product.id ? { ...i, qty: i.qty + qty } : i
+          i.productId === product.id ? { ...i, qty: nextQty } : i
         )
       : [
           ...items,
@@ -102,8 +133,10 @@ export async function addToCart(product, qty) {
             productId: product.id,
             name: product.name,
             unit: product.unit,
+            stock: product.stock,
+            status: product.status,
             price: Number(product.price),
-            qty,
+            qty: requestedQty,
             producer_id: product.producer_id || product.producer_profile_id || product.producer,
             producer_name: product.producer_name,
             leadTimeHours: product.lead_time_hours,
@@ -115,18 +148,37 @@ export async function addToCart(product, qty) {
   }
 
   // signed in (server)
-  console.log("[cart] addServerItem ->", { productId: product.id, qty });
-  await addServerItem(product.id, qty);
+  const cachedItems = readCart();
+  const cachedQty = getCartQtyForProduct(product.id, cachedItems);
+  const remainingQty = stockLimit - cachedQty;
+
+  if (requestedQty > remainingQty) {
+    throw new Error(
+      remainingQty > 0
+        ? `${remainingQty} more ${product?.name || "item"} available.`
+        : `${product?.name || "This product"} is already at the available stock limit in your basket.`
+    );
+  }
+
+  console.log("[cart] addServerItem ->", { productId: product.id, qty: requestedQty });
+  await addServerItem(product.id, requestedQty);
 
   console.log("[cart] refreshCartFromServer");
   return refreshCartFromServer();
 }
 
 export async function updateCartQty(productId, qty) {
-  const nextQty = Math.max(1, Number(qty || 1));
+  const items = readCart();
+  const target = items.find((i) => i.productId === productId);
+  const stockLimit = getStockLimit(target);
+
+  if (stockLimit <= 0 || target?.status === "unavailable") {
+    throw new Error(`${target?.name || "This product"} is currently unavailable.`);
+  }
+
+  const nextQty = Math.min(Math.max(1, Number(qty || 1)), stockLimit);
 
   if (!isAuthed()) {
-    const items = readCart();
     const next = items.map((i) =>
       i.productId === productId ? { ...i, qty: nextQty } : i
     );
@@ -135,8 +187,6 @@ export async function updateCartQty(productId, qty) {
   }
 
   // signed in: update by cartItemId (found in cached items)
-  const items = readCart();
-  const target = items.find((i) => i.productId === productId);
   if (!target?.cartItemId) return refreshCartFromServer();
 
   await updateServerItem(target.cartItemId, nextQty);

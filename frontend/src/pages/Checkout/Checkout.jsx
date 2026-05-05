@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { FiCalendar, FiEdit3, FiFileText, FiRepeat, FiTag, FiTruck, FiX } from "react-icons/fi";
 import { readCart, getCartSubtotal } from "../../utils/cartStorage";
@@ -61,6 +61,8 @@ function isRestaurantCustomer(user) {
 export default function Checkout() {
   const { user } = useAuth();
   const [items] = useState(() => readCart());
+  const [productDetails, setProductDetails] = useState({});
+  const [allergenAcknowledged, setAllergenAcknowledged] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   // stores the extra checkout options
@@ -104,8 +106,58 @@ export default function Checkout() {
   const itemCount = items.reduce((total, item) => total + Number(item.qty || 0), 0);
   const recurringFrequency = recurringPrefs?.frequency === "fortnightly" ? "Fortnightly" : "Weekly";
 
+  const productIdsKey = useMemo(() => {
+    return [...new Set(items.map((item) => item.productId).filter(Boolean))]
+      .sort()
+      .join(",");
+  }, [items]);
+
+  useEffect(() => {
+    const productIds = productIdsKey ? productIdsKey.split(",") : [];
+
+    if (productIds.length === 0) {
+      setProductDetails({});
+      return;
+    }
+
+    Promise.all(
+      productIds.map((id) =>
+        apiClient
+          .get(`/products/${id}/`)
+          .then(({ data }) => [id, data])
+          .catch(() => [id, null])
+      )
+    ).then((entries) => {
+      setProductDetails(
+        Object.fromEntries(entries.filter(([, product]) => product))
+      );
+    });
+  }, [productIdsKey]);
+
+  const allergenItems = useMemo(() => {
+    return items
+      .map((item) => {
+        const product = productDetails[item.productId];
+        const allergens = product?.allergens ?? [];
+
+        return {
+          ...item,
+          name: product?.name || item.name,
+          allergens,
+        };
+      })
+      .filter((item) => item.allergens.length > 0);
+  }, [items, productDetails]);
+
+  const requiresAllergenAcknowledgement = allergenItems.length > 0;
+
   async function handleSubmit(e) {
     e.preventDefault();
+    if (requiresAllergenAcknowledgement && !allergenAcknowledged) {
+      setError("Please confirm that you have reviewed the allergen information.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -124,7 +176,12 @@ export default function Checkout() {
         throw new Error("Choose a delivery date that respects producer lead time.");
       }
 
-      const payload = recurringPrefs ? { recurring: recurringPrefs } : {};
+      const payload = {
+        allergen_acknowledged: allergenAcknowledged,
+      };
+      if (recurringPrefs) {
+        payload.recurring = recurringPrefs;
+      }
       if (isBulkCheckout) {
         // send bulk notes, and date only for normal bulk
         if (!recurringPrefs) {
@@ -177,6 +234,38 @@ export default function Checkout() {
           <p className={styles.note}>
             You’ll confirm payment and delivery details securely on the next page.
           </p>
+
+          <div className={styles.allergenNotice}>
+            <h3>Allergen information</h3>
+            {requiresAllergenAcknowledgement ? (
+              <>
+                <p>
+                  The following basket items include declared allergens. Please review them before continuing.
+                </p>
+                <ul className={styles.allergenList}>
+                  {allergenItems.map((item) => (
+                    <li key={item.productId}>
+                      <strong>{item.name}</strong>
+                      <span>
+                        {item.allergens.map((allergen) => allergen.name).join(", ")}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : (
+              <p>No common allergens are declared for the products currently in your basket.</p>
+            )}
+
+            <label className={styles.acknowledgement}>
+              <input
+                type="checkbox"
+                checked={allergenAcknowledged}
+                onChange={(e) => setAllergenAcknowledged(e.target.checked)}
+              />
+              <span>I have reviewed the allergen information for my basket.</span>
+            </label>
+          </div>
 
           {error && <p className={styles.error}>{error}</p>}
 
@@ -309,7 +398,7 @@ export default function Checkout() {
           <button
             onClick={handleSubmit}
             className={styles.payBtn}
-            disabled={loading}
+            disabled={loading || (requiresAllergenAcknowledgement && !allergenAcknowledged)}
           >
             {loading ? "Redirecting..." : "Continue to payment"}
           </button>

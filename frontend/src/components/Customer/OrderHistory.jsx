@@ -980,6 +980,16 @@ async function handleReorder(order) {
             Review your previous purchases, check statuses, and revisit product details.
           </p>
         </div>
+
+        <button
+          type="button"
+          className={styles.recheckStatusBtn}
+          onClick={loadOrders}
+          disabled={loading}
+        >
+          <LuRefreshCw size={16} className={loading ? styles.spinIcon : ""} />
+          {loading ? "Checking..." : "Recheck order status"}
+        </button>
       </div>
 
       {loading ? (
