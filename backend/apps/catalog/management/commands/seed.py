@@ -369,11 +369,20 @@ class Command(BaseCommand):
             Order.objects.filter(pk=order.pk).update(created_at=created_at)
 
             delivery_date = (created_at + timedelta(days=del_days)).date() if del_days else None
+            producer_order_status_map = {
+                "completed": "delivered",
+                "delivered": "delivered",
+                "preparing": "preparing",
+                "accepted": "accepted",
+                "pending": "pending",
+                "cancelled": "cancelled",
+            }
+            producer_order_status = producer_order_status_map.get(status, "pending")
 
             po = ProducerOrder.objects.create(
                 order=order,
                 producer=producer,
-                status=status,
+                status=producer_order_status,
                 total_amount=subtotal,
                 delivery_date=delivery_date,
             )
@@ -393,7 +402,7 @@ class Command(BaseCommand):
 
             self.stdout.write(
                 f"  [+] Order #{order.id}: {cust_user} -> {prod_user} "
-                f"({status}, £{subtotal})"
+                f"({producer_order_status}, £{subtotal})"
             )
 
         self.stdout.write(self.style.SUCCESS("\nSeeding complete!"))
