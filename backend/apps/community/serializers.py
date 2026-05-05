@@ -14,14 +14,14 @@ class ReviewListSerializer(serializers.ModelSerializer):
     verified_purchase = serializers.SerializerMethodField()
     updated = serializers.SerializerMethodField()
     product_id = serializers.IntegerField(source="product.id", read_only=True)
-    customer_id = serializers.IntegerField(source="customer.id", read_only=True)
+    customer_id = serializers.IntegerField(source="account.id", read_only=True)
 
     class Meta:
         model = Review
         fields = [
             "id",
             "product_id",
-            "customer_id",
+            "customer_id",  # kept for frontend compatibility
             "rating",
             "review_title",
             "review_text",
@@ -39,8 +39,8 @@ class ReviewListSerializer(serializers.ModelSerializer):
         if obj.is_anonymous:
             return "Anonymous"
 
-        full_name = f"{obj.customer.first_name} {obj.customer.last_name}".strip()
-        return full_name or obj.customer.username
+        full_name = f"{obj.account.first_name} {obj.account.last_name}".strip()
+        return full_name or obj.account.username
 
     def get_verified_purchase(self, obj):
         return obj.order_item_id is not None
@@ -107,7 +107,7 @@ class ReviewWriteSerializer(serializers.ModelSerializer):
             })
 
         duplicate_qs = Review.objects.filter(
-            customer=user,
+            account=user,
             product_id=product_id,
         )
 
@@ -123,7 +123,7 @@ class ReviewWriteSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop("product_id", None)
-        validated_data["customer"] = self.context["request"].user
+        validated_data["account"] = self.context["request"].user
 
         try:
             return super().create(validated_data)
