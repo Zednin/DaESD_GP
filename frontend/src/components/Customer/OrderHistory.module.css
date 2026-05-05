@@ -87,34 +87,34 @@
   border: 1px solid transparent;
 }
 
-.statusBadge--confirmed {
-  background: var(--success-muted);
-  color: var(--success);
-  border-color: rgba(34, 197, 94, 0.28);
-}
-
 .statusBadge--pending {
   background: var(--warning-muted);
   color: #facc15;
   border-color: var(--warning-border);
 }
 
-.statusBadge--dispatched {
-  background: var(--primary-muted);
-  color: var(--primary);
-  border-color: var(--primary-border);
+.statusBadge--preparing {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.statusBadge--ready {
+  background: rgba(139, 92, 246, 0.12);
+  color: #8b5cf6;
+  border-color: rgba(139, 92, 246, 0.3);
 }
 
 .statusBadge--delivered {
-  background: rgba(14, 165, 233, 0.12);
-  color: #38bdf8;
-  border-color: rgba(56, 189, 248, 0.28);
+  background: var(--success-muted);
+  color: var(--success);
+  border-color: rgba(34, 197, 94, 0.28);
 }
 
 .statusBadge--cancelled {
-  background: var(--error-muted);
-  color: var(--error);
-  border-color: var(--error-border);
+  background: var(--neutral-badge-bg);
+  color: var(--neutral-badge);
+  border-color: rgba(148, 163, 184, 0.3);
 }
 
 .statusBadge--neutral {
@@ -141,6 +141,26 @@
   font-size: 13px;
   font-weight: 600;
   border: 1px solid var(--border);
+}
+
+.alertRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.alertChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  border: 1px solid var(--warning-border);
+  border-radius: 999px;
+  background: var(--warning-muted);
+  color: var(--warning);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 0 12px;
 }
 
 .orderSummary {
@@ -275,6 +295,10 @@
   padding-bottom: 0;
 }
 
+.itemRowMuted {
+  opacity: 0.72;
+}
+
 .itemMain {
   min-width: 0;
   flex: 1;
@@ -293,6 +317,12 @@
   font-size: 0.98rem;
 }
 
+.itemNameStruck {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--muted-2);
+}
+
 .itemProducer {
   color: var(--secondary);
   background: rgba(251, 146, 60, 0.12);
@@ -301,6 +331,16 @@
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
+}
+
+.itemStatusTag {
+  color: var(--muted);
+  background: var(--neutral-badge-bg);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .itemMeta {
@@ -345,6 +385,11 @@
 .detailCard strong {
   color: var(--text);
   font-size: 0.98rem;
+}
+
+.detailCardRefund {
+  border-color: var(--warning-border);
+  background: var(--warning-muted);
 }
 
 .emptyState,
@@ -898,4 +943,52 @@
 .reorderNoticeError {
   background: rgba(220, 38, 38, 0.12);
   border-color: rgba(220, 38, 38, 0.35);
+}
+
+.statusSentence {
+  font-weight: 800;
+}
+
+.statusSentence--pending {
+  background: var(--warning-muted);
+  color: var(--warning);
+  border-color: var(--warning-border);
+}
+
+.statusSentence--preparing {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+  border-color: rgba(59, 130, 246, 0.28);
+}
+
+.statusSentence--ready {
+  background: rgba(139, 92, 246, 0.1);
+  color: #7c3aed;
+  border-color: rgba(139, 92, 246, 0.28);
+}
+
+.statusSentence--delivered {
+  background: var(--success-muted);
+  color: var(--success);
+  border-color: rgba(34, 197, 94, 0.28);
+}
+
+.statusSentence--cancelled,
+.statusSentence--neutral {
+  background: var(--neutral-badge-bg);
+  color: var(--neutral-badge);
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.bulkTag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(251, 146, 60, 0.12);
+  color: var(--secondary);
+  border: 1px solid rgba(251, 146, 60, 0.32);
+  font-size: 12px;
+  font-weight: 900;
 }
