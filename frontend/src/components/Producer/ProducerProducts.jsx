@@ -13,7 +13,7 @@ const EMPTY_FORM = {
   price: '',
   unit: 'unit',
   stock: '',
-  low_stock_threshold: 10,
+  low_stock_threshold: '10',
   availability_mode: 'year_round',
   season_start_month: '',
   season_end_month: '',
@@ -118,7 +118,7 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
 
         setCategories(categoriesRes.data.results ?? categoriesRes.data);
         setAllergensList(allergensRes.data.results ?? allergensRes.data);
-      } catch (err) {
+      } catch {
         setError("Failed to load form data.");
       }
     }
