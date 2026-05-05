@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { FiBell, FiCheckCircle } from "react-icons/fi";
+import { FiBell, FiCheckCircle, FiX } from "react-icons/fi";
 import styles from "../AccountMenu/AccountMenu.module.css";
 import localStyles from "./NotificationMenu.module.css";
 
@@ -14,8 +14,10 @@ export default function NotificationMenu({
   notifications = [],
   onNotificationClick,
   onMarkAllRead,
+  onClearNotification,
 }) {
   const [open, setOpen] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
   const wrapRef = useRef(null);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -25,11 +27,17 @@ export default function NotificationMenu({
       if (!wrapRef.current) return;
       if (!wrapRef.current.contains(e.target)) setOpen(false);
     }
+
     function onKeyDown(e) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+        setSelectedNotification(null);
+      }
     }
+
     document.addEventListener("mousedown", onMouseDown);
     document.addEventListener("keydown", onKeyDown);
+
     return () => {
       document.removeEventListener("mousedown", onMouseDown);
       document.removeEventListener("keydown", onKeyDown);
@@ -40,8 +48,14 @@ export default function NotificationMenu({
     setOpen(false);
   }
 
-  function handleItemClick(notification) {
-    onNotificationClick?.(notification);
+  async function handleItemClick(notification) {
+    setSelectedNotification(notification);
+    await onNotificationClick?.(notification);
+  }
+
+  async function handleMarkAllReadClick() {
+    await onMarkAllRead?.();
+    setSelectedNotification(null);
     close();
   }
 
@@ -69,10 +83,15 @@ export default function NotificationMenu({
           <motion.div
             className={styles.menu}
             role="menu"
-            initial={{ opacity: 0, y: -10, scale: 0.98 }}
+            initial={{ opacity: 0, y: 20, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.985 }}
-            transition={{ duration: 0.16, ease: "easeInOut" }}
+            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+            transition={{
+              type: "spring",
+              stiffness: 260,
+              damping: 24,
+              mass: 0.8,
+            }}
           >
             <div className={styles.header}>
               <span className={styles.headerSpacer} />
@@ -87,7 +106,7 @@ export default function NotificationMenu({
               </button>
             </div>
 
-            <div className={styles.body}>
+            <div className={`${styles.body} ${localStyles.notificationBodyWrap}`}>
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key="notifications"
@@ -112,59 +131,76 @@ export default function NotificationMenu({
                     </div>
                   ) : (
                     <>
-                      {notifications.map((n) => (
-                        <button
-                          key={n.id}
-                          type="button"
-                          className={`${styles.row} ${
-                            !n.read ? localStyles.rowUnread : ""
-                          }`}
-                          onClick={() => handleItemClick(n)}
-                        >
-                          <span className={styles.iconCircle}>
-                            <FiBell />
-                          </span>
-                          <span className={localStyles.notificationText}>
-                            <span className={styles.rowTitle}>{n.title}</span>
-                            {n.body && (
-                              <span className={localStyles.notificationBody}>
-                                {n.body}
+                      <div className={localStyles.notificationList}>
+                        {notifications.map((n) => (
+                          <div
+                            key={n.id}
+                            className={`${styles.row} ${localStyles.notificationRow} ${
+                              !n.read ? localStyles.rowUnread : ""
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              className={localStyles.notificationMainBtn}
+                              onClick={() => handleItemClick(n)}
+                            >
+                              <span className={styles.iconCircle}>
+                                <FiBell />
                               </span>
-                            )}
-                            {n.created_at && (
-                              <span className={localStyles.notificationTime}>
-                                {new Date(n.created_at).toLocaleString(
-                                  "en-GB",
-                                  {
-                                    day: "numeric",
-                                    month: "short",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  }
+
+                              <span className={localStyles.notificationText}>
+                                <span className={styles.rowTitle}>{n.title}</span>
+
+                                {n.body && (
+                                  <span className={localStyles.notificationBody}>
+                                    {n.body}
+                                  </span>
+                                )}
+
+                                {n.created_at && (
+                                  <span className={localStyles.notificationTime}>
+                                    {new Date(n.created_at).toLocaleString("en-GB", {
+                                      day: "numeric",
+                                      month: "short",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </span>
                                 )}
                               </span>
-                            )}
-                          </span>
-                          {!n.read && <span className={localStyles.dot} />}
-                        </button>
-                      ))}
 
-                      {onMarkAllRead && unreadCount > 0 && (
+                              {!n.read && <span className={localStyles.dot} />}
+                            </button>
+
+                            <button
+                              type="button"
+                              className={localStyles.clearNotificationBtn}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                await onClearNotification?.(n);
+                              }}
+                              aria-label="Clear notification"
+                              title="Clear notification"
+                            >
+                              <FiX />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {onMarkAllRead && notifications.length > 0 && (
                         <>
                           <div className={styles.divider} />
                           <button
                             type="button"
                             className={styles.row}
-                            onClick={() => {
-                              onMarkAllRead();
-                              close();
-                            }}
+                            onClick={handleMarkAllReadClick}
                           >
                             <span className={styles.iconCircle}>
                               <FiCheckCircle />
                             </span>
                             <span className={styles.rowTitle}>
-                              Mark all as read
+                              Clear all notifications
                             </span>
                             <span className={styles.rowRight} />
                           </button>
@@ -175,6 +211,86 @@ export default function NotificationMenu({
                 </motion.div>
               </AnimatePresence>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {selectedNotification && (
+          <motion.div
+            className={localStyles.modalOverlay}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedNotification(null)}
+          >
+            <motion.div
+              className={localStyles.modal}
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.98 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={localStyles.modalHeader}>
+                <div>
+                  <p className={localStyles.modalEyebrow}>Notification</p>
+                  <h3>{selectedNotification.title}</h3>
+                </div>
+
+                <button
+                  type="button"
+                  className={localStyles.modalClose}
+                  onClick={() => setSelectedNotification(null)}
+                  aria-label="Close notification"
+                >
+                  <FiX />
+                </button>
+              </div>
+
+              {selectedNotification.created_at && (
+                <p className={localStyles.modalTime}>
+                  {new Date(selectedNotification.created_at).toLocaleString(
+                    "en-GB",
+                    {
+                      weekday: "short",
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }
+                  )}
+                </p>
+              )}
+
+              <p className={localStyles.modalBody}>
+                {selectedNotification.body || "No extra details provided."}
+              </p>
+
+              <div className={localStyles.modalActions}>
+                {selectedNotification.link && (
+                  <button
+                    type="button"
+                    className={localStyles.modalPrimaryBtn}
+                    onClick={() => {
+                      setSelectedNotification(null);
+                      close();
+                      window.location.href = "/my-account";
+                    }}
+                  >
+                    View My Orders
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className={localStyles.modalSecondaryBtn}
+                  onClick={() => setSelectedNotification(null)}
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

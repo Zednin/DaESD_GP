@@ -18,6 +18,13 @@ from .serializers import (
 from .recurring_services import get_payable_event, skip_next_event
 from apps.payments.views import create_recurring_checkout_session
 
+import logging
+
+from apps.communications.models import Notification
+from apps.communications.email_service import send_customer_order_status_update
+
+logger = logging.getLogger(__name__)
+
 # Checks to see if logged customer is a restaurant
 def is_restaurant_customer(user):
     if getattr(user, "account_type", "") == "restaurant":
@@ -153,9 +160,12 @@ class ProducerOrderViewSet(ModelViewSet):
         return ProducerOrder.objects.none()
 
     def partial_update(self, request, *args, **kwargs):
+        status_changed = False
+
         with transaction.atomic():
             instance = self.get_object()
             previous_status = instance.status
+
             serializer = self.get_serializer(instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             new_status = serializer.validated_data.get("status", previous_status)
@@ -164,7 +174,29 @@ class ProducerOrderViewSet(ModelViewSet):
                 self.apply_order_inventory_adjustments(instance, request.user)
 
             self.perform_update(serializer)
+
+            status_changed = previous_status != new_status
+
+            if status_changed:
+                Notification.objects.create(
+                    account=instance.order.account,
+                    title=f"Order #{instance.order.id} update",
+                    body=f"{instance.producer.company_name} changed your order status from {previous_status} to {new_status}.",
+                    link=f"/account/orders/{instance.order.id}",
+                )
+
             sync_order_status_from_producer_orders(instance.order)
+
+        if status_changed:
+            try:
+                send_customer_order_status_update(
+                    order=instance.order,
+                    producer_order=instance,
+                    previous_status=previous_status,
+                    new_status=new_status,
+                )
+            except Exception:
+                logger.exception("Failed to send customer order status update email")
 
         return Response(serializer.data)
 
@@ -190,6 +222,25 @@ class ProducerOrderViewSet(ModelViewSet):
                 reason="order_adjustment",
                 changed_by=user,
             )
+    @action(detail=True, methods=["post"], url_path="contact-customer")
+    def contact_customer(self, request, pk=None):
+        producer_order = self.get_object()
+        message = (request.data.get("message") or "").strip()
+
+        if not message:
+            return Response(
+                {"detail": "Message cannot be empty."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        Notification.objects.create(
+            account=producer_order.order.account,
+            title=f"Message from {producer_order.producer.company_name}",
+            body=message,
+            link="/my-account",
+        )
+
+        return Response({"detail": "Message sent to customer."})
 
 
 class OrderItemViewSet(ModelViewSet):
