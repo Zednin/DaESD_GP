@@ -8,6 +8,7 @@ from apps.addresses.models import Address
 from apps.producers.models import Producer
 from apps.catalog.models import Product
 
+from django.core.validators import MinValueValidator
 
 
 class Order(models.Model):
@@ -75,7 +76,7 @@ class OrderItem(models.Model):
     producer_order = models.ForeignKey(ProducerOrder, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="order_items")
 
-    quantity = models.PositiveIntegerField(default=1)
+    quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
     price_snapshot = models.DecimalField(max_digits=10, decimal_places=2)
     line_total = models.DecimalField(max_digits=10, decimal_places=2)
 
@@ -83,7 +84,14 @@ class OrderItem(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["producer_order", "product"], name="uniq_producerorder_product")
+            models.UniqueConstraint(
+                fields=["producer_order", "product"],
+                name="uniq_producerorder_product",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0),
+                name="orderitem_quantity_gt_0",
+            ),
         ]
 
     def __str__(self):
@@ -138,13 +146,18 @@ class RecurringOrderItem(models.Model):
     product = models.ForeignKey(
         Product, on_delete=models.PROTECT, related_name="recurring_order_items"
     )
-    quantity = models.PositiveIntegerField(default=1)
+    quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
     
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["recurring_order", "product"], name="uniq_recurringorder_product"
-            )
+                fields=["recurring_order", "product"],
+                name="uniq_recurringorder_product",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0),
+                name="recurringorderitem_quantity_gt_0",
+            ),
         ]
         
     def __str__(self) -> str:
