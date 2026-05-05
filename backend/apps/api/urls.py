@@ -20,6 +20,7 @@ from apps.orders.views import (
     OrderViewSet,
     ProducerOrderViewSet,
     OrderItemViewSet,
+    RecurringOrderViewSet,
 )
 from apps.producers.views import (
     ProducerViewSet,
@@ -46,6 +47,7 @@ router.register(r'cart-items', CartItemViewSet, basename='cart-item')
 router.register(r'orders', OrderViewSet, basename='order')
 router.register(r'producer-orders', ProducerOrderViewSet, basename='producer-order')
 router.register(r'order-items', OrderItemViewSet, basename='order-item')
+router.register(r'recurring-orders', RecurringOrderViewSet, basename='recurring-order')
 router.register(r'producers', ProducerViewSet, basename='producer')
 router.register(r'recipes', RecipeViewSet, basename='recipe')
 router.register(r'farm-stories', FarmStoryViewSet, basename='farm-story')

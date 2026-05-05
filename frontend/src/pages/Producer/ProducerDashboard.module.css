@@ -156,6 +156,10 @@
 }
 
 .navBtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   width: 100%;
   text-align: left;
   padding: 10px 14px;
@@ -167,6 +171,27 @@
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s ease, color 0.2s ease;
+}
+
+.navLabel {
+  min-width: 0;
+}
+
+.navPendingDot {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--error-border);
+  padding: 0 7px;
+  background: var(--error);
+  box-shadow: 0 0 0 3px var(--error-muted);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  flex: 0 0 auto;
 }
 
 .navBtn:hover {
