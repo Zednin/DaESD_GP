@@ -222,6 +222,25 @@ class ProducerOrderViewSet(ModelViewSet):
                 reason="order_adjustment",
                 changed_by=user,
             )
+    @action(detail=True, methods=["post"], url_path="contact-customer")
+    def contact_customer(self, request, pk=None):
+        producer_order = self.get_object()
+        message = (request.data.get("message") or "").strip()
+
+        if not message:
+            return Response(
+                {"detail": "Message cannot be empty."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        Notification.objects.create(
+            account=producer_order.order.account,
+            title=f"Message from {producer_order.producer.company_name}",
+            body=message,
+            link="/my-account",
+        )
+
+        return Response({"detail": "Message sent to customer."})
 
 
 class OrderItemViewSet(ModelViewSet):
