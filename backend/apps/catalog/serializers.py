@@ -61,6 +61,8 @@ class ProductSerializer(serializers.ModelSerializer):
             "unit",
             "stock",
             "low_stock_threshold",
+            "is_low_stock",
+            "stock_alert_level",
             "availability_mode",
             "season_start_month",
             "season_end_month",
@@ -83,6 +85,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
         read_only_fields = [
             "id",
+            "producer",
             "created_at",
             "updated_at",
             "surplus_price",
@@ -91,6 +94,8 @@ class ProductSerializer(serializers.ModelSerializer):
             "producer_name",
             "category_name",
             "allergens",
+            "is_low_stock",
+            "stock_alert_level",
         ]
 
     def get_producer_profile_id(self, obj):

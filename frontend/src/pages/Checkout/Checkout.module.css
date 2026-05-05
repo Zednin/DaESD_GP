@@ -69,13 +69,74 @@
   letter-spacing: 0.02em;
 }
 
+.payBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .payBtn:hover {
   opacity: 0.9;
 }
 
-.payBtn:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
+.payBtn:hover:disabled {
+  opacity: 0.55;
+}
+
+.allergenNotice {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--warning-border, var(--border));
+  border-radius: 8px;
+  background: var(--warning-muted, var(--surface));
+}
+
+.allergenNotice h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.allergenNotice p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.allergenList {
+  display: grid;
+  gap: 0.6rem;
+  list-style: none;
+  padding: 0;
+  margin: 0.8rem 0 0;
+}
+
+.allergenList li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.allergenList span {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.acknowledgement {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-top: 1rem;
+  color: var(--text);
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.acknowledgement input {
+  width: 18px;
+  height: 18px;
+  margin-top: 0.1rem;
+  accent-color: var(--primary);
+  flex: 0 0 auto;
 }
 
 /* Summary */

@@ -17,11 +17,11 @@ class Migration(migrations.Migration):
                         ADD COLUMN IF NOT EXISTS low_stock_threshold integer;
 
                         UPDATE catalog_product
-                        SET low_stock_threshold = 5
+                        SET low_stock_threshold = 10
                         WHERE low_stock_threshold IS NULL;
 
                         ALTER TABLE catalog_product
-                        ALTER COLUMN low_stock_threshold SET DEFAULT 5;
+                        ALTER COLUMN low_stock_threshold SET DEFAULT 10;
 
                         ALTER TABLE catalog_product
                         ALTER COLUMN low_stock_threshold SET NOT NULL;
@@ -50,7 +50,7 @@ class Migration(migrations.Migration):
                     model_name="product",
                     name="low_stock_threshold",
                     field=models.PositiveIntegerField(
-                        default=5,
+                        default=10,
                         help_text="Warn producers when stock is at or below this quantity",
                         validators=[django.core.validators.MinValueValidator(0)],
                     ),

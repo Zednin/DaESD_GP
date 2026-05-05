@@ -99,9 +99,9 @@ class Product(models.Model):
     # Amount of producr in stock
     stock = models.IntegerField(default=0)
 
-    # Low stock, default to 5
+    # low stock alert threshold
     low_stock_threshold = models.PositiveIntegerField(
-        default=5,
+        default=10,
         validators=[MinValueValidator(0)],
         help_text="Warn producers when stock is at or below this quantity"
     )
@@ -142,7 +142,7 @@ class Product(models.Model):
     # Image URL
     image = models.URLField(max_length=500, blank=True, null=True)
     
-    # Surplus shite
+    # Surplus functionality
     is_surplus = models.BooleanField(default=False)
     discount_percentage = models.PositiveIntegerField(
         default=0,
@@ -188,6 +188,18 @@ class Product(models.Model):
         if self.surplus_end_date and timezone.now() > self.surplus_end_date:
             return False
         return True
+
+    @property
+    def is_low_stock(self):
+        return 0 < self.stock <= self.low_stock_threshold
+
+    @property
+    def stock_alert_level(self):
+        if self.stock <= 0:
+            return "out"
+        if self.is_low_stock:
+            return "low"
+        return "ok"
 
     def clean(self):
         # Validates data before saving

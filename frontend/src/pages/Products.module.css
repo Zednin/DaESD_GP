@@ -84,6 +84,21 @@
   transition: transform 200ms ease, box-shadow 200ms ease;
 }
 
+.recsSpinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--surface-2);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: recsSpinnerRotate 0.7s linear infinite;
+}
+
+@keyframes recsSpinnerRotate {
+  to { transform: rotate(360deg); }
+}
+
 .recCard:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow);
@@ -641,6 +656,48 @@
 /* ═══════════════════════════════════════════════════════════
    SURPLUS DEAL INDICATORS
 ═══════════════════════════════════════════════════════════ */
+
+/* ── Out of stock state ── */
+.outOfStockCard {
+  opacity: 0.72;
+  filter: grayscale(0.35);
+}
+
+.outOfStockBadge {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.78);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 7px 18px;
+  border-radius: 999px;
+  white-space: nowrap;
+  letter-spacing: 0.05em;
+}
+
+/* List view out-of-stock */
+.listImageRelative {
+  position: relative;
+}
+
+.listOutOfStockOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
 
 .surplusCard {
   border-color: var(--success);

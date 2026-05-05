@@ -30,6 +30,11 @@
   max-width: 650px;
 }
 
+.errorText {
+  color: #b42318;
+  font-weight: 700;
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 370px;
