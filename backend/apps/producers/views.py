@@ -1,4 +1,5 @@
-from django.db import models
+from django.db import IntegrityError, models
+from django.db.models import Count
 from rest_framework import permissions, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
@@ -12,7 +13,7 @@ from .models import Producer
 from .serializers import ProducerSerializer, RecipeSerializer, FarmStorySerializer
 from apps.accounts.permissions import IsProducer
 
-from apps.community.models import Recipe, FarmStory
+from apps.community.models import Recipe, FarmStory, FarmStoryLike
 from apps.api.cloudinary_utils import upload_file_to_cloudinary
 
 
@@ -155,9 +156,13 @@ class FarmStoryViewSet(ModelViewSet):
     filterset_fields = ["producer", "is_published"]
 
     def get_queryset(self):
-        queryset = FarmStory.objects.select_related(
-            "producer",
-            "producer__account"
+        queryset = (
+            FarmStory.objects
+            .select_related(
+                "producer",
+                "producer__account"
+            )
+            .annotate(like_count=Count("likes", distinct=True))
         )
 
         user = self.request.user
@@ -171,6 +176,21 @@ class FarmStoryViewSet(ModelViewSet):
             )
 
         return queryset.filter(is_published=True)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        user = self.request.user
+
+        if user.is_authenticated:
+            story_ids = list(self.get_queryset().values_list("id", flat=True))
+            context["liked_story_ids"] = set(
+                FarmStoryLike.objects.filter(
+                    customer=user,
+                    story_id__in=story_ids,
+                ).values_list("story_id", flat=True)
+            )
+
+        return context
 
     def perform_create(self, serializer):
         producer = serializer.validated_data.get("producer")
@@ -192,6 +212,36 @@ class FarmStoryViewSet(ModelViewSet):
             raise PermissionDenied("You cannot update farm stories for this producer.")
 
         serializer.save()
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated], url_path="toggle-like")
+    def toggle_like(self, request, pk=None):
+        if getattr(request.user, "account_type", None) != "customer":
+            raise PermissionDenied("Only customers can like farm stories.")
+
+        story = self.get_object()
+
+        existing_like = FarmStoryLike.objects.filter(
+            story=story,
+            customer=request.user,
+        ).first()
+
+        if existing_like:
+            existing_like.delete()
+            liked = False
+        else:
+            try:
+                FarmStoryLike.objects.create(story=story, customer=request.user)
+            except IntegrityError:
+                liked = True
+            else:
+                liked = True
+
+        like_count = FarmStoryLike.objects.filter(story=story).count()
+        return Response({
+            "id": story.id,
+            "liked_by_me": liked,
+            "like_count": like_count,
+        })
 
 
 

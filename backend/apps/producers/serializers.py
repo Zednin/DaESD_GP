@@ -53,6 +53,8 @@ class RecipeSerializer(serializers.ModelSerializer):
 class FarmStorySerializer(serializers.ModelSerializer):
     content = serializers.CharField(source="body")
     company_name = serializers.CharField(source="producer.company_name", read_only=True)
+    like_count = serializers.SerializerMethodField()
+    liked_by_me = serializers.SerializerMethodField()
 
     class Meta:
         model = FarmStory
@@ -64,7 +66,28 @@ class FarmStorySerializer(serializers.ModelSerializer):
             "content",
             "image",
             "is_published",
+            "like_count",
+            "liked_by_me",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+    def get_like_count(self, obj):
+        annotated_count = getattr(obj, "like_count", None)
+        if annotated_count is not None:
+            return annotated_count
+        return obj.likes.count()
+
+    def get_liked_by_me(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+
+        if not user or not user.is_authenticated:
+            return False
+
+        liked_story_ids = self.context.get("liked_story_ids")
+        if liked_story_ids is not None:
+            return obj.id in liked_story_ids
+
+        return obj.likes.filter(customer=user).exists()
