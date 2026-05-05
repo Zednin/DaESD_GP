@@ -287,10 +287,10 @@ export default function Navbar({ onOpenTerms }) {
                       <div className={styles.deliveryText}>
                         {freeDeliveryRemaining > 0 ? (
                           <span>
-                            £{freeDeliveryRemaining.toFixed(2)} away from suggested free delivery
+                            £{freeDeliveryRemaining.toFixed(2)} away from free delivery
                           </span>
                         ) : (
-                          <span>Suggested free delivery reached</span>
+                          <span>Free delivery reached</span>
                         )}
                       </div>
 

@@ -54,6 +54,11 @@ function isAuthed() {
   return CART_AUTHED;
 }
 
+function getStockLimit(itemOrProduct) {
+  const stock = Number(itemOrProduct?.stock);
+  return Number.isFinite(stock) ? Math.max(0, stock) : Infinity;
+}
+
 function mapServerCartToUiItems(serverCart) {
   // server item fields: { id, product_id, name, unit, quantity, price_snapshot }
   return (serverCart.items || []).map((it) => ({
@@ -61,6 +66,8 @@ function mapServerCartToUiItems(serverCart) {
     productId: it.product_id,
     name: it.name,
     unit: it.unit,
+    stock: it.stock,
+    status: it.status,
     qty: it.quantity,
     price: Number(it.price_snapshot),
   }));
@@ -84,18 +91,35 @@ export async function refreshCartFromServer() {
 // --------------------
 export async function addToCart(product, qty) {
   console.log("[cart] addToCart", { authed: isAuthed(), productId: product?.id, qty });
+  const stockLimit = getStockLimit(product);
+  const requestedQty = Math.max(1, Number(qty || 1));
+
+  if (stockLimit <= 0 || product?.status === "unavailable") {
+    throw new Error(`${product?.name || "This product"} is currently unavailable.`);
+  }
+
   if (!isAuthed()) {
     // guest (local)
     const items = readCart();
     const existing = items.find((i) => i.productId === product.id);
+    const existingQty = Number(existing?.qty || 0);
+    const nextQty = Math.min(existingQty + requestedQty, stockLimit);
 
     const next = existing
       ? items.map((i) =>
-          i.productId === product.id ? { ...i, qty: i.qty + qty } : i
+          i.productId === product.id ? { ...i, qty: nextQty } : i
         )
       : [
           ...items,
-          { productId: product.id, name: product.name, unit: product.unit, price: Number(product.price), qty },
+          {
+            productId: product.id,
+            name: product.name,
+            unit: product.unit,
+            stock: product.stock,
+            status: product.status,
+            price: Number(product.price),
+            qty: Math.min(requestedQty, stockLimit),
+          },
         ];
 
     writeCart(next);
@@ -103,18 +127,25 @@ export async function addToCart(product, qty) {
   }
 
   // signed in (server)
-  console.log("[cart] addServerItem ->", { productId: product.id, qty });
-  await addServerItem(product.id, qty);
+  console.log("[cart] addServerItem ->", { productId: product.id, qty: requestedQty });
+  await addServerItem(product.id, requestedQty);
 
   console.log("[cart] refreshCartFromServer");
   return refreshCartFromServer();
 }
 
 export async function updateCartQty(productId, qty) {
-  const nextQty = Math.max(1, Number(qty || 1));
+  const items = readCart();
+  const target = items.find((i) => i.productId === productId);
+  const stockLimit = getStockLimit(target);
+
+  if (stockLimit <= 0 || target?.status === "unavailable") {
+    throw new Error(`${target?.name || "This product"} is currently unavailable.`);
+  }
+
+  const nextQty = Math.min(Math.max(1, Number(qty || 1)), stockLimit);
 
   if (!isAuthed()) {
-    const items = readCart();
     const next = items.map((i) =>
       i.productId === productId ? { ...i, qty: nextQty } : i
     );
@@ -123,8 +154,6 @@ export async function updateCartQty(productId, qty) {
   }
 
   // signed in: update by cartItemId (found in cached items)
-  const items = readCart();
-  const target = items.find((i) => i.productId === productId);
   if (!target?.cartItemId) return refreshCartFromServer();
 
   await updateServerItem(target.cartItemId, nextQty);

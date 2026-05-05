@@ -15,6 +15,28 @@ def _get_effective_price(product):
     return product.price
 
 
+def _stock_error(product, requested_quantity):
+    if product.status != "available":
+        return f"{product.name} is currently unavailable."
+
+    if requested_quantity > product.stock:
+        return (
+            f"Only {product.stock} {product.unit or 'item'}"
+            f"{'' if product.stock == 1 else 's'} of {product.name} are in stock."
+        )
+
+    return None
+
+
+def _parse_positive_int(value, default=1):
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+
+    return max(1, parsed)
+
+
 class CartViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
     http_method_names = ["get", "post"]
@@ -35,12 +57,28 @@ class CartViewSet(ModelViewSet):
 
         for it in items:
             product_id = it.get("product_id")
-            qty = int(it.get("qty", 1))
+            qty = _parse_positive_int(it.get("qty", 1))
 
-            if not product_id or qty <= 0:
+            if not product_id:
                 continue
 
-            product = Product.objects.get(id=product_id)
+            try:
+                product = Product.objects.get(id=product_id)
+            except Product.DoesNotExist:
+                continue
+
+            existing_quantity = (
+                CartItem.objects
+                .filter(cart=cart, product=product)
+                .values_list("quantity", flat=True)
+                .first()
+            ) or 0
+
+            requested_total = existing_quantity + qty
+            error = _stock_error(product, requested_total)
+
+            if error:
+                return Response({"detail": error}, status=status.HTTP_400_BAD_REQUEST)
 
             cart_item, created = CartItem.objects.get_or_create(
                 cart=cart,
@@ -64,19 +102,38 @@ class CartItemViewSet(ModelViewSet):
 
     def create(self, request):
         cart, _ = Cart.objects.get_or_create(account=request.user)
-        product = Product.objects.get(id=request.data["product_id"])
+        try:
+            product = Product.objects.get(id=request.data["product_id"])
+        except Product.DoesNotExist:
+            return Response(
+                {"detail": "Product not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        requested_quantity = _parse_positive_int(request.data.get("quantity", 1))
+        existing_quantity = (
+            CartItem.objects
+            .filter(cart=cart, product=product)
+            .values_list("quantity", flat=True)
+            .first()
+        ) or 0
+        requested_total = existing_quantity + requested_quantity
+
+        error = _stock_error(product, requested_total)
+        if error:
+            return Response({"detail": error}, status=status.HTTP_400_BAD_REQUEST)
 
         item, created = CartItem.objects.get_or_create(
             cart=cart,
             product=product,
             defaults={
-                "quantity": request.data.get("quantity", 1),
+                "quantity": requested_quantity,
                 "price_snapshot": _get_effective_price(product),
             },
         )
 
         if not created:
-            item.quantity += int(request.data.get("quantity", 1))
+            item.quantity += requested_quantity
         item.price_snapshot = _get_effective_price(product)
         item.save()
 
@@ -85,8 +142,13 @@ class CartItemViewSet(ModelViewSet):
     def partial_update(self, request, *args, **kwargs):
         # PATCH /cart-items/<id>/ { "quantity": 3 }
         item = self.get_object()
-        qty = int(request.data.get("quantity", 1))
-        item.quantity = max(1, qty)
+        qty = _parse_positive_int(request.data.get("quantity", 1))
+
+        error = _stock_error(item.product, qty)
+        if error:
+            return Response({"detail": error}, status=status.HTTP_400_BAD_REQUEST)
+
+        item.quantity = qty
         item.save()
         return Response({"status": "ok"})
 

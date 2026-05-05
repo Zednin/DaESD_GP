@@ -6,6 +6,8 @@ class CartItemSerializer(serializers.ModelSerializer):
     product_id = serializers.IntegerField(source="product.id", read_only=True)
     name = serializers.CharField(source="product.name", read_only=True)
     unit = serializers.CharField(source="product.unit", read_only=True)
+    stock = serializers.IntegerField(source="product.stock", read_only=True)
+    status = serializers.CharField(source="product.status", read_only=True)
 
     class Meta:
         model = CartItem
@@ -14,6 +16,8 @@ class CartItemSerializer(serializers.ModelSerializer):
             "product_id",
             "name",
             "unit",
+            "stock",
+            "status",
             "quantity",
             "price_snapshot",
         ]
