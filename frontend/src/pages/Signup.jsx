@@ -38,6 +38,9 @@ export default function Signup() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
 
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const [nextRoute, setNextRoute] = useState("");
+
   const isProducer = accountType === "producer";
 
   const pageContent = useMemo(() => {
@@ -155,9 +158,8 @@ export default function Signup() {
       const user = await refresh();
       await migrateLocalCartToServerIfNeeded();
 
-      navigate(user?.account_type === "producer" ? "/producer/dashboard" : "/products", {
-        replace: true,
-      });
+      setNextRoute(user?.account_type === "producer" ? "/producer/dashboard" : "/products");
+      setConfirmationOpen(true);
     } catch (err) {
       setError(err?.message || "Something went wrong");
     } finally {
@@ -393,6 +395,24 @@ export default function Signup() {
           </form>
         </section>
       </motion.section>
+      {confirmationOpen && (
+        <div className={styles.popupOverlay}>
+          <div className={styles.popup}>
+            <h2>Account created successfully</h2>
+            <p>
+              Your {isProducer ? "producer" : "customer"} account has been created.
+            </p>
+
+            <button
+              type="button"
+              className={styles.popupButton}
+              onClick={() => navigate(nextRoute, { replace: true })}
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
       <TermsModal open={termsOpen} onClose={() => setTermsOpen(false)} />
     </main>
   );
