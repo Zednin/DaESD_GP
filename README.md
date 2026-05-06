@@ -22,6 +22,169 @@ The application simulates a sustainable regional food marketplace where producer
 
 
 # Screenshots
+<p align="center">
+  <img src="screenshots/homepage.png" width="890", height="500"/>
+</p>
+
+<details>
+<summary>Public Pages</summary>
+
+<br>
+
+<p align="center">
+  <img src="screenshots/homepage.png" height="250">
+  <img src="screenshots/homepage_darkmode.png" height="250">
+</p>
+
+<p align="center">
+  <img src="screenshots/about_us.png" height="250">
+  <img src="screenshots/content.png" height="250">
+</p>
+
+<p align="center">
+  <img src="screenshots/farmstories.png" height="250">
+  <img src="screenshots/faq.png" height="250">
+</p>
+
+</details>
+
+---
+
+<details>
+<summary>Shopping Experience</summary>
+
+<br>
+
+<p align="center">
+  <img src="screenshots/products_page.png" height="250">
+  <img src="screenshots/filter_products.png" height="250">
+</p>
+
+<p align="center">
+  <img src="screenshots/basket1.png" height="250">
+  <img src="screenshots/basket2.png" height="250">
+</p>
+
+<p align="center">
+  <img src="screenshots/order_history.png" height="250">
+  <img src="screenshots/stripe.png" height="250">
+</p>
+
+<p align="center">
+  <img src="screenshots/sale_ribs.png" height="250">
+  <img src="screenshots/bbq_rib_recipe.png" height="250">
+</p>
+
+</details>
+
+---
+
+<details>
+<summary>Producer Dashboard</summary>
+
+<br>
+
+<p align="center">
+  <img src="screenshots/producer_dashboard.png" height="250">
+  <img src="screenshots/producer_dashboard_orders.png" height="250">
+</p>
+
+<p align="center">
+  <img src="screenshots/producer_dashboard_orders_2.png" height="250">
+  <img src="screenshots/producer_dashboard_payments.png" height="250">
+</p>
+
+<p align="center">
+  <img src="screenshots/producer_dashboard_products.png" height="250">
+  <img src="screenshots/producer_dashboard_surplus.png" height="250">
+</p>
+
+<p align="center">
+  <img src="screenshots/producer_finance_report.png" height="250">
+</p>
+
+</details>
+
+---
+
+<details>
+<summary>Admin Dashboard</summary>
+
+<br>
+
+<p align="center">
+  <img src="screenshots/admin_overview.png" height="250">
+  <img src="screenshots/admin_orders.png" height="250">
+</p>
+
+<p align="center">
+  <img src="screenshots/admin_producers.png" height="250">
+  <img src="screenshots/admin_users.png" height="250">
+</p>
+
+<p align="center">
+  <img src="screenshots/admin_commission.png" height="250">
+  <img src="screenshots/admin_surplus.png" height="250">
+</p>
+
+<p align="center">
+  <img src="screenshots/admin_settings.png" height="250">
+</p>
+
+</details>
+
+---
+
+<details>
+<summary>AI & Sustainability Features</summary>
+
+<br>
+
+<p align="center">
+  <img src="screenshots/ai1.png" height="250">
+  <img src="screenshots/ai2.png" height="250">
+</p>
+
+<p align="center">
+  <img src="screenshots/food_miles.png" height="250">
+  <img src="screenshots/compare_food_miles.png" height="250">
+</p>
+
+</details>
+
+---
+
+<details>
+<summary>Reviews & Notifications</summary>
+
+<br>
+
+<p align="center">
+  <img src="screenshots/review_make.png" height="250">
+  <img src="screenshots/review_published.png" height="250">
+</p>
+
+<p align="center">
+  <img src="screenshots/notification.png" height="250">
+  <img src="screenshots/settings.png" height="250">
+</p>
+
+</details>
+
+---
+
+<details>
+<summary>Surplus Deals</summary>
+
+<br>
+
+<p align="center">
+  <img src="screenshots/surplus_deals.png" height="250">
+  <img src="screenshots/surplus_more.png" height="250">
+</p>
+
+</details>
+
 
 
 ## Tech Stack
@@ -56,7 +219,7 @@ PostgreSQL     AI Service
 
 
 # Software Features
-
+*Pending*
 
 # Authentication and Security
 
@@ -110,7 +273,7 @@ SECURE_SSL_REDIRECT=True
 
 # Payments
 
-Stripe integration is used for payment processing.
+Stripe integration is used for payment processing simulation.
 
 To enable Stripe payments, configure the required Stripe API keys inside the [.env](.env) file.
 
@@ -125,13 +288,13 @@ Configure Cloudinary credentials in the [.env](.env) file before running the pro
 
 
 
-## Requirements
+# Requirements
  - Docker
  - Docker Compose
 
 # Running the Software
 ## Environment Variables Setup
-Create a copy of [.env.example](.env.example) and frontend/[.env.local.example](.env.local.example) and fill in relevant information.
+Create a copy of [.env.example](.env.example) and frontend/[.env.local.example](.env.local.example) and fill in relevant information. Then remove the .example ending.
 ## Building the Project
 ### Build and start all services:
 ```bash
@@ -266,7 +429,7 @@ docker compose exec ai sh
 
 # Troubleshooting
 
-
+*Pending*
 
 
 
