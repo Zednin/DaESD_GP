@@ -2,7 +2,11 @@
 UFCFTR-30-3 - Distributed and enterprise software development 
 
 # Project Overview
-This project demonstrates a fictional immplimentation for Bristol Regional Food Network.
+This project demonstrates a fictional implementation for the Bristol Regional Food Network (BRFN).
+
+The platform was developed as part of the UFCFTR-30-3 Distributed and Enterprise Software Development module and showcases a distributed full-stack application built using Django REST Framework, React, PostgreSQL, Docker, and an AI microservice.
+
+The application simulates a sustainable regional food marketplace where producers, restaurants, and community organisations can interact through product listings, ordering systems, recommendations, and sustainability-focused tooling.
 
 
 
@@ -17,7 +21,7 @@ This project demonstrates a fictional immplimentation for Bristol Regional Food 
 | Sam Waxman | 23023667 | Samuel2.Waxman@live.uwe.ac.uk |
 
 
-
+# Screenshots
 
 
 ## Tech Stack
@@ -45,18 +49,85 @@ PostgreSQL     AI Service
 # Services
 |Service|Responsibility|
 |-------|-------|
-|Fronted|User interface and client-side funcitonality|
+|Frontend|User interface and client-side functionality|
 |Backend|REST API, authentication, business logic|
 |Database|Persistent PostgreSQL storage|
 |AI Service|Product analysis and recommendation processing|
 
 
+# Software Features
+
+
+# Authentication and Security
+
+The application uses Django session-based authentication with CSRF protection.
+
+Authentication is handled using secure backend-managed session cookies rather than browser-stored bearer tokens.
+
+The frontend communicates with the backend using Axios with:
+
+```js
+withCredentials: true
+```
+
+This allows authentication cookies to be automatically included with requests.
+
+For state-changing requests (`POST`, `PUT`, `PATCH`, `DELETE`), the frontend attaches the Django CSRF token through the `X-CSRFToken` header.
+
+The backend uses:
+
+- `SessionAuthentication`
+- `TokenAuthentication` (supported by DRF)
+- Django CSRF middleware
+- Secure cookie settings
+- SameSite cookie policies
+
+Protected frontend routes are implemented using:
+
+- `RequireAuth`
+- `RequireProducer`
+- `RequireAdmin`
+- `RequireGuest`
+
+Actual access control is enforced server-side through Django REST Framework permissions.
+
+### Important security settings include:
+```
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+```
+
+### In production, secure cookies can be enabled using environment variables:
+```
+SESSION_COOKIE_SECURE=True
+CSRF_COOKIE_SECURE=True
+SECURE_SSL_REDIRECT=True
+```
+
+
+
+# Payments
+
+Stripe integration is used for payment processing.
+
+To enable Stripe payments, configure the required Stripe API keys inside the [.env](.env) file.
+
+# Media Storage
+
+Cloudinary is used for media and image storage.
+
+Configure Cloudinary credentials in the [.env](.env) file before running the project.
+
+
+
+
+
+
 ## Requirements
  - Docker
  - Docker Compose
-
-
-
 
 # Running the Software
 ## Environment Variables Setup
@@ -67,7 +138,7 @@ Create a copy of [.env.example](.env.example) and frontend/[.env.local.example](
 docker compose up --build
 ```
 
-### To run in detatchd mode:
+### To run in detached mode:
 ```bash
 docker compose up -d --build
 ```
@@ -77,7 +148,7 @@ docker compose up -d --build
 docker compose down
 ```
 
-### To stop al containers and remove database volume:
+### To stop all containers and remove database volume:
 ```bash
 docker compose down -v
 ```
@@ -112,9 +183,9 @@ http://localhost:8000/admin/
 
 # Frontend Setup
 The frontend uses Vite and runs inside of the `frontend` container.
-Important frontend environment variabls are configured inside of [docker-compose.yml](docker-compose.yml)
+Important frontend environment variables are configured inside of [docker-compose.yml](docker-compose.yml)
 
-The frontend source code is mounted into the container, sochanges in `frontend/src`should update during development.
+The frontend source code is mounted into the container, so changes in `frontend/src`should update during development.
 
 # Backend Apps
 ### The Django backend includes apps for:
@@ -132,7 +203,7 @@ The frontend source code is mounted into the container, sochanges in `frontend/s
 - API
 
 # AI Service
-The AI service is located in the ai/ irectory and runs with Uvicorn on port 5000 inside the container.
+The AI service is located in the ai/ directory and runs with Uvicorn on port 5000 inside the container.
 It is exposed locally on:
 http://localhost:5001
 
@@ -142,7 +213,7 @@ http://localhost:5001
 - product_analysis.py
 - feature_extract.py
 - utils.py
-- artifcats/
+- artifacts/
 
 # Database
 PostgreSQL data is stored in a Docker Volume:
@@ -162,7 +233,7 @@ View logs:
 docker compose logs
 ```
 
-View backnd logs:
+View backend logs:
 ```bash
 docker compose logs web
 ```
@@ -193,11 +264,17 @@ docker compose exec ai sh
 
 
 
+# Troubleshooting
 
 
 
 
 
 
+
+
+# License
+
+This project was developed for educational purposes as part of the UFCFTR-30-3 module.
 
 
