@@ -51,6 +51,17 @@ class ProductViewSet(ModelViewSet):
 
         serializer.save()
         
+    def perform_destroy(self, instance):
+        user = self.request.user
+
+        if not hasattr(user, "producer_profile"):
+            raise PermissionDenied("Only producers can delete products.")
+
+        if instance.producer != user.producer_profile:
+            raise PermissionDenied("You can only delete your own products.")
+
+        instance.delete()
+        
         
     
     

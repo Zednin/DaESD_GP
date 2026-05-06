@@ -102,22 +102,6 @@ export function AuthProvider({ children }) {
     user?.organisation?.organisation_type
   );
 
-  // check user / account type
-  const customerType = user?.organisation?.organisation_type || user?.account_type;
-  const canUseRecurringOrders = customerType === "restaurant";
-
-  const canUseBulkOrders = Boolean(
-    user?.account_type === "producer" ||
-    user?.account_type === "restaurant" ||
-    user?.account_type === "community_group" ||
-    user?.organisation?.organisation_type
-  );
-
-  // check user / account type
-  const customerType = user?.organisation?.organisation_type || user?.account_type;
-  const canUseRecurringOrders = customerType === "restaurant";
-
-  
   const value = useMemo(
     () => ({
       user,

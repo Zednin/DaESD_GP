@@ -53,8 +53,9 @@ def get_order_fulfillment_summary(order):
         # gets info on each item unavailable on list
         for item in producer_order.items.all():
             product = item.product
-            item_name = product.name
+            item_name = product.name if product else item.product_name_snapshot or "Deleted product"
             item_total = money(item.line_total)
+
             row = {
                 "id": item.id,
                 "product": item.product_id,
@@ -66,14 +67,12 @@ def get_order_fulfillment_summary(order):
                 "line_total": str(item_total),
             }
 
-            # if producer cancels or rejers
             if producer_is_unfulfilled:
                 unfulfilled_items.append(row)
                 unfulfilled_names.append(item_name)
                 unfulfilled_total += item_total
 
-            # Checks products are still available
-            if product.status != "available":
+            if product and product.status != "available":
                 unavailable_items.append({
                     **row,
                     "product_status": product.status,
@@ -107,18 +106,13 @@ def get_order_fulfillment_summary(order):
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source="product.name", read_only=True)
-    product_status = serializers.CharField(source="product.status", read_only=True)
+    product_name = serializers.SerializerMethodField()
+    product_status = serializers.SerializerMethodField()
     product_available = serializers.SerializerMethodField()
-    stock = serializers.IntegerField(source="product.stock", read_only=True)
-    unit = serializers.CharField(source="product.unit", read_only=True)
-    bulk_stock_threshold = serializers.IntegerField(source="product.bulk_stock_threshold", read_only=True)
-    bulk_stock_discount = serializers.DecimalField(
-        source="product.bulk_stock_discount",
-        max_digits=5,
-        decimal_places=2,
-        read_only=True,
-    )
+    stock = serializers.SerializerMethodField()
+    unit = serializers.SerializerMethodField()
+    bulk_stock_threshold = serializers.SerializerMethodField()
+    bulk_stock_discount = serializers.SerializerMethodField()
     producer_order_status = serializers.CharField(source="producer_order.status", read_only=True)
     fulfillment_status = serializers.SerializerMethodField()
     review_status = serializers.SerializerMethodField()
@@ -148,7 +142,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     # retrieves products with available status
     def get_product_available(self, obj):
-        return obj.product.status == "available"
+        return bool(obj.product and obj.product.status == "available")
 
     # gets status, defaults to pending after order
     def get_fulfillment_status(self, obj):
@@ -162,6 +156,13 @@ class OrderItemSerializer(serializers.ModelSerializer):
     def get_review_status(self, obj):
         request = self.context.get("request")
         user = getattr(request, "user", None)
+        if not obj.product:
+            return {
+                "can_review": False,
+                "existing_review_id": None,
+                "label": "Product deleted",
+                "reason": "product_deleted",
+            }
 
         if not user or not user.is_authenticated:
             return {
@@ -198,6 +199,27 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "label": "Leave review",
             "reason": "eligible",
         }
+    
+    def get_product_name(self, obj):
+        return obj.product.name if obj.product else obj.product_name_snapshot or "Deleted product"
+
+    def get_product_status(self, obj):
+        return obj.product.status if obj.product else "deleted"
+
+    def get_stock(self, obj):
+        return obj.product.stock if obj.product else 0
+
+    def get_unit(self, obj):
+        return obj.product.unit if obj.product else ""
+
+    def get_bulk_stock_threshold(self, obj):
+        return obj.product.bulk_stock_threshold if obj.product else None
+
+    def get_bulk_stock_discount(self, obj):
+        return obj.product.bulk_stock_discount if obj.product else None
+
+    def get_product_available(self, obj):
+        return bool(obj.product and obj.product.status == "available")
         
 class CustomerProducerOrderSerializer(serializers.ModelSerializer):
     producer_name = serializers.CharField(source="producer.company_name", read_only=True)
