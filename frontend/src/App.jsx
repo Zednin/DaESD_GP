@@ -11,6 +11,7 @@ import RequireProducer from "./auth/RequireProducer";
 import RequireAdmin from "./auth/RequireAdmin";
 import AuthCallback from "./auth/AuthCallback";
 import CustomerAccountRedirect from "./pages/CustomerAccountRedirect";
+import RequireGuest from "./auth/RequireGuest";
 
 // General pages
 import Home from "./pages/Home";
@@ -78,12 +79,34 @@ export default function App() {
         <Route path="/farm-stories" element={<Navigate to="/explore" replace />} />
         <Route path="/faq" element={<FAQ />} />
 
-        <Route path="/login" element={<Login />} />
+        <Route 
+          path="/login"
+          element={
+            <RequireGuest>
+              <Login />
+            </RequireGuest>
+          } 
+        />
+
         <Route path="/cart" element={<Cart />} />
 
         {/* Signup flow */}
-        <Route path="/signup/select" element={<SignupSelect />} />
-        <Route path="/signup/:accountType" element={<Signup />} />
+        <Route 
+          path="/signup/select" 
+          element={
+            <RequireGuest>
+              <SignupSelect />
+            </RequireGuest>
+          } 
+        />
+        <Route 
+          path="/signup/:accountType" 
+          element={
+            <RequireGuest>
+              <Signup />
+            </RequireGuest>
+          } 
+        />
 
         {/* Auth */}
         <Route path="/auth/callback" element={<AuthCallback />} />
