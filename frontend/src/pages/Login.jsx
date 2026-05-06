@@ -37,8 +37,7 @@ export default function Login() {
     const next = searchParams.get("next") || "/products";
     sessionStorage.setItem("post_login_next", next);
 
-    window.location.href =
-      "http://localhost:8000/api/accounts/google/login/?process=login";
+    window.location.href = "/api/accounts/google/login/?process=login";
   }
 
   async function handleSubmit(e) {
