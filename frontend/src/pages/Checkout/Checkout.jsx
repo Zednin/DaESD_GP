@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { FiCalendar, FiEdit3, FiFileText, FiRepeat, FiTag, FiTruck, FiX } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 import {
   getBulkDiscountPercent,
   getBulkThreshold,
@@ -9,6 +10,8 @@ import {
   getCartOriginalSubtotal,
   getCartSubtotal,
   isBulkQuantity,
+  MIN_CHECKOUT_AMOUNT,
+  MIN_CHECKOUT_MESSAGE,
   readCart,
 } from "../../utils/cartStorage";
 import apiClient from "../../utils/apiClient";
@@ -27,7 +30,6 @@ const WEEKDAYS = [
   "Saturday",
   "Sunday",
 ];
-
 // formats date for date input
 function formatDateInput(date) {
   const year = date.getFullYear();
@@ -64,6 +66,7 @@ function getRecurringDeliveryDate(prefs) {
 
 export default function Checkout() {
   const { canUseRecurringOrders, canUseBulkOrders } = useAuth();
+  const navigate = useNavigate();
   const [items] = useState(() => readCart());
   const [productDetails, setProductDetails] = useState({});
   const [allergenAcknowledged, setAllergenAcknowledged] = useState(false);
@@ -134,8 +137,15 @@ export default function Checkout() {
     () => getRecurringDeliveryDate(recurringPrefs),
     [recurringPrefs]
   );
+  const belowMinimumCheckoutAmount = checkoutItems.length > 0 && subtotal < MIN_CHECKOUT_AMOUNT;
   const itemCount = items.reduce((total, item) => total + Number(item.qty || 0), 0);
   const recurringFrequency = recurringPrefs?.frequency === "fortnightly" ? "Fortnightly" : "Weekly";
+
+  useEffect(() => {
+    if (belowMinimumCheckoutAmount) {
+      navigate("/cart", { replace: true });
+    }
+  }, [belowMinimumCheckoutAmount, navigate]);
 
   useEffect(() => {
     if (bulkDeliveryDate && bulkDeliveryDate < minBulkDeliveryDate) {
@@ -205,6 +215,10 @@ export default function Checkout() {
 
       if (isBulkCheckout && !canCreateBulk) {
         throw new Error("Bulk orders are only available for organisation and producer accounts.");
+      }
+
+      if (belowMinimumCheckoutAmount) {
+        throw new Error(MIN_CHECKOUT_MESSAGE);
       }
 
       // normal bulk needs a requested delivery date
@@ -320,7 +334,6 @@ export default function Checkout() {
           {bulkOrderBlocked && (
             <p className={styles.error}>Bulk orders are only available for organisation and producer accounts.</p>
           )}
-
           {/* lets restaurants save this basket as recurring */}
           {canCreateRecurring && (
             recurringPrefs ? (
@@ -459,7 +472,12 @@ export default function Checkout() {
           <button
             onClick={handleSubmit}
             className={styles.payBtn}
-            disabled={loading || bulkOrderBlocked || (requiresAllergenAcknowledgement && !allergenAcknowledged)}
+            disabled={
+              loading ||
+              bulkOrderBlocked ||
+              belowMinimumCheckoutAmount ||
+              (requiresAllergenAcknowledgement && !allergenAcknowledged)
+            }
           >
             {loading ? "Redirecting..." : "Continue to payment"}
           </button>
