@@ -2,6 +2,9 @@
 UFCFTR-30-3 - Distributed and enterprise software development 
 
 # Project Overview
+This project demonstrates a fictional immplimentation for Bristol Regional Food Network.
+
+
 
 
 ## Group Members
@@ -17,7 +20,6 @@ UFCFTR-30-3 - Distributed and enterprise software development
 
 
 
-
 ## Tech Stack
  - Backend: Django, Django REST FRAMEWORK
  - Frontend: React, Vite
@@ -26,7 +28,30 @@ UFCFTR-30-3 - Distributed and enterprise software development
  - Containers: Docker, Docker Compose
 
 
-## Reuirements
+
+# Architecture:
+
+```text
+React Frontend (Vite)
+        │
+        ▼
+Django REST API
+        │
+ ┌──────┴──────┐
+ ▼             ▼
+PostgreSQL     AI Service
+```
+
+# Services
+|Service|Responsibility|
+|-------|-------|
+|Fronted|User interface and client-side funcitonality|
+|Backend|REST API, authentication, business logic|
+|Database|Persistent PostgreSQL storage|
+|AI Service|Product analysis and recommendation processing|
+
+
+## Requirements
  - Docker
  - Docker Compose
 
