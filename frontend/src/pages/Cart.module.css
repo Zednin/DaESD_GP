@@ -421,6 +421,14 @@
   filter: brightness(0.95);
 }
 
+.disabledCheckoutBtn,
+.disabledCheckoutBtn:hover {
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: not-allowed;
+  filter: none;
+}
+
 .secondaryBtn {
   display: block;
   margin-top: 10px;
@@ -433,6 +441,34 @@
 
 .secondaryBtn:hover {
   filter: brightness(0.98);
+}
+
+.addMorePriorityBtn {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.minimumNotice {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 12px;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid var(--warning-border, rgba(251, 146, 60, 0.34));
+  border-radius: 10px;
+  background: var(--warning-muted, rgba(251, 146, 60, 0.12));
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.minimumNotice strong {
+  font-size: 0.92rem;
+}
+
+.minimumNotice span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .empty {
