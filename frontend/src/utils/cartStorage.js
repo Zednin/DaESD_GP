@@ -1,4 +1,7 @@
 const CART_KEY = "brfn_cart_v1";
+export const MIN_CHECKOUT_AMOUNT = 0.3;
+export const MIN_CHECKOUT_MESSAGE =
+  "Card payments must be at least £0.30. Add another item to continue.";
 
 import {
   fetchServerCart,
