@@ -102,8 +102,6 @@ export function AuthProvider({ children }) {
     user?.organisation?.organisation_type
   );
 
-
-  
   const value = useMemo(
     () => ({
       user,

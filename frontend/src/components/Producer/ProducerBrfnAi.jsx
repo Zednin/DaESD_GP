@@ -29,7 +29,7 @@ const ANALYSIS_STEPS = [
   "Generating BRFN AI verdict",
 ];
 
-const API_URL = "http://localhost:5001/freshness/analyze";
+const API_URL = import.meta.env.VITE_FRESHNESS_API_URL || "http://localhost:5001/freshness/analyze";
 
 function clamp(value, min = 0, max = 100) {
   return Math.max(min, Math.min(max, value));
