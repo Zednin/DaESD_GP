@@ -1,10 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { FiCalendar, FiEdit3, FiFileText, FiRepeat, FiTag, FiTruck, FiX } from "react-icons/fi";
-import { readCart, getCartSubtotal } from "../../utils/cartStorage";
+import {
+  getBulkDiscountPercent,
+  getBulkThreshold,
+  getCartDiscountTotal,
+  getCartLinePricing,
+  getCartOriginalSubtotal,
+  getCartSubtotal,
+  isBulkQuantity,
+  readCart,
+} from "../../utils/cartStorage";
 import apiClient from "../../utils/apiClient";
 import { useAuth } from "../../auth/AuthContext";
 import RecurringOrderModal from "./RecurringOrderModal";
+import ProducerLeadTimeTags from "./ProducerLeadTimeTags";
+import { getMaxLeadTimeHours, getProducerLeadTimeGroups } from "./producerLeadTimes";
 import styles from "./Checkout.module.css";
 
 const WEEKDAYS = [
@@ -52,7 +63,7 @@ function getRecurringDeliveryDate(prefs) {
 }
 
 export default function Checkout() {
-  const { canUseRecurringOrders } = useAuth();
+  const { canUseRecurringOrders, canUseBulkOrders } = useAuth();
   const [items] = useState(() => readCart());
   const [productDetails, setProductDetails] = useState({});
   const [allergenAcknowledged, setAllergenAcknowledged] = useState(false);
@@ -65,25 +76,55 @@ export default function Checkout() {
   const [bulkDeliveryDate, setBulkDeliveryDate] = useState("");
 
   const canCreateRecurring = canUseRecurringOrders;
+  const canCreateBulk = canUseBulkOrders;
+
+  const checkoutItems = useMemo(() => {
+    return items.map((item) => {
+      const product = productDetails[item.productId] ?? {};
+      const bulkSource = {
+        bulk_stock_threshold: product.bulk_stock_threshold ?? item.bulk_stock_threshold,
+        bulk_stock_discount: product.bulk_stock_discount ?? item.bulk_stock_discount,
+      };
+
+      return {
+        ...item,
+        pre_bulk_price: item.pre_bulk_price ?? item.price,
+        producer_id: product.producer ?? product.producer_profile_id ?? item.producer_id,
+        producer_name: product.producer_name ?? item.producer_name,
+        leadTimeHours: product.lead_time_hours ?? item.leadTimeHours ?? item.lead_time_hours,
+        bulk_stock_threshold: getBulkThreshold(bulkSource),
+        bulk_stock_discount: getBulkDiscountPercent(bulkSource),
+      };
+    });
+  }, [items, productDetails]);
 
   const subtotal = useMemo(
-    () => getCartSubtotal(items),
-    [items]
+    () => getCartSubtotal(checkoutItems, { canUseBulkOrders: canCreateBulk }),
+    [canCreateBulk, checkoutItems]
+  );
+  const total = useMemo(
+    () => getCartOriginalSubtotal(checkoutItems, { canUseBulkOrders: canCreateBulk }),
+    [canCreateBulk, checkoutItems]
+  );
+  const bulkDiscount = useMemo(
+    () => getCartDiscountTotal(checkoutItems, { canUseBulkOrders: canCreateBulk }),
+    [canCreateBulk, checkoutItems]
   );
 
-  // bulk starts when any item quantity is over 20
   const isBulkCheckout = useMemo(
-    () => items.some((item) => Number(item.qty || 0) > 20),
-    [items]
+    () => checkoutItems.some((item) => isBulkQuantity(item, Number(item.qty || 0))),
+    [checkoutItems]
   );
+  const eligibleBulkCheckout = isBulkCheckout && canCreateBulk;
+  const bulkOrderBlocked = isBulkCheckout && !canCreateBulk;
 
-  // bulk uses the longest producer lead time
+  const producerLeadTimeGroups = useMemo(
+    () => getProducerLeadTimeGroups(checkoutItems),
+    [checkoutItems]
+  );
   const bulkLeadTimeHours = useMemo(
-    () => Math.max(
-      48,
-      ...items.map((item) => Number(item.leadTimeHours || item.lead_time_hours || 48))
-    ),
-    [items]
+    () => getMaxLeadTimeHours(checkoutItems),
+    [checkoutItems]
   );
   const minBulkDeliveryDate = useMemo(
     () => getMinDateFromLeadTime(bulkLeadTimeHours),
@@ -93,11 +134,14 @@ export default function Checkout() {
     () => getRecurringDeliveryDate(recurringPrefs),
     [recurringPrefs]
   );
-  const bulkDiscount = isBulkCheckout ? subtotal * 0.05 : 0;
-  const discountedSubtotal = Math.max(0, subtotal - bulkDiscount);
-  const commission = discountedSubtotal * 0.05;
   const itemCount = items.reduce((total, item) => total + Number(item.qty || 0), 0);
   const recurringFrequency = recurringPrefs?.frequency === "fortnightly" ? "Fortnightly" : "Weekly";
+
+  useEffect(() => {
+    if (bulkDeliveryDate && bulkDeliveryDate < minBulkDeliveryDate) {
+      setBulkDeliveryDate("");
+    }
+  }, [bulkDeliveryDate, minBulkDeliveryDate]);
 
   const productIdsKey = useMemo(() => {
     return [...new Set(items.map((item) => item.productId).filter(Boolean))]
@@ -159,13 +203,17 @@ export default function Checkout() {
         throw new Error("Recurring orders are only available for restaurant customers.");
       }
 
+      if (isBulkCheckout && !canCreateBulk) {
+        throw new Error("Bulk orders are only available for organisation and producer accounts.");
+      }
+
       // normal bulk needs a requested delivery date
-      if (isBulkCheckout && !recurringPrefs && !bulkDeliveryDate) {
+      if (eligibleBulkCheckout && !recurringPrefs && !bulkDeliveryDate) {
         throw new Error("Choose a delivery date for this bulk order.");
       }
 
       // stop normal bulk dates before the lead time
-      if (isBulkCheckout && !recurringPrefs && bulkDeliveryDate < minBulkDeliveryDate) {
+      if (eligibleBulkCheckout && !recurringPrefs && bulkDeliveryDate < minBulkDeliveryDate) {
         throw new Error("Choose a delivery date that respects producer lead time.");
       }
 
@@ -177,7 +225,7 @@ export default function Checkout() {
       if (recurringPrefs) {
         payload.recurring = recurringPrefs;
       }
-      if (isBulkCheckout) {
+      if (eligibleBulkCheckout) {
         // send bulk notes, and date only for normal bulk
         if (!recurringPrefs) {
           payload.requested_delivery_date = bulkDeliveryDate;
@@ -220,7 +268,11 @@ export default function Checkout() {
 
   return (
     <main className={`container ${styles.page}`}>
-      <h1>Checkout</h1>
+      <header className={styles.header}>
+        <span className={styles.eyebrow}>Checkout</span>
+        <h1>Checkout</h1>
+        <p>Confirm your delivery details and review your order before payment.</p>
+      </header>
 
       <div className={styles.layout}>
         <section className={styles.formCard}>
@@ -265,6 +317,9 @@ export default function Checkout() {
           </div>
 
           {error && <p className={styles.error}>{error}</p>}
+          {bulkOrderBlocked && (
+            <p className={styles.error}>Bulk orders are only available for organisation and producer accounts.</p>
+          )}
 
           {/* lets restaurants save this basket as recurring */}
           {canCreateRecurring && (
@@ -345,7 +400,7 @@ export default function Checkout() {
           )}
 
           {/* recurring bulk uses the recurring delivery date */}
-          {isBulkCheckout && (
+          {eligibleBulkCheckout && (
             <section className={styles.bulkSnapshot} aria-label="Bulk order details">
               <div className={styles.bulkHeader}>
                 <span className={styles.bulkIcon} aria-hidden="true">
@@ -353,7 +408,7 @@ export default function Checkout() {
                 </span>
                 <div>
                   <span className={styles.bulkEyebrow}>Bulk order</span>
-                  <h3>5% discount applied</h3>
+                  <h3>Bulk pricing applied</h3>
                 </div>
               </div>
 
@@ -364,18 +419,27 @@ export default function Checkout() {
                     <strong>{new Date(`${recurringBulkDeliveryDate}T00:00:00`).toLocaleDateString("en-GB")}</strong>
                   </div>
                 ) : (
-                  <label className={styles.bulkField}>
-                    <span><FiTruck aria-hidden="true" /> Delivery date</span>
+                  <div className={styles.bulkField}>
+                    <label className={styles.bulkDateLabel} htmlFor="bulk-delivery-date">
+                      <span><FiTruck aria-hidden="true" /> Delivery date</span>
+                    </label>
                     <input
+                      id="bulk-delivery-date"
                       type="date"
                       min={minBulkDeliveryDate}
                       value={bulkDeliveryDate}
                       onChange={(event) => setBulkDeliveryDate(event.target.value)}
                       required
                     />
-                    <small>Earliest date: {new Date(`${minBulkDeliveryDate}T00:00:00`).toLocaleDateString("en-GB")}</small>
-                  </label>
+                    <ProducerLeadTimeTags groups={producerLeadTimeGroups} />
+                    <small>
+                      Earliest date: {new Date(`${minBulkDeliveryDate}T00:00:00`).toLocaleDateString("en-GB")}
+                      {` based on the longest producer lead time of ${bulkLeadTimeHours} hours`}
+                    </small>
+                  </div>
                 )}
+
+                {recurringPrefs && <ProducerLeadTimeTags groups={producerLeadTimeGroups} />}
 
                 <label className={styles.bulkField}>
                   <span><FiFileText aria-hidden="true" /> Additional notes</span>
@@ -395,7 +459,7 @@ export default function Checkout() {
           <button
             onClick={handleSubmit}
             className={styles.payBtn}
-            disabled={loading || (requiresAllergenAcknowledgement && !allergenAcknowledged)}
+            disabled={loading || bulkOrderBlocked || (requiresAllergenAcknowledgement && !allergenAcknowledged)}
           >
             {loading ? "Redirecting..." : "Continue to payment"}
           </button>
@@ -405,44 +469,38 @@ export default function Checkout() {
           <h2>Order summary</h2>
 
           <ul className={styles.summaryList}>
-            {items.map((item) => (
-              <li key={item.productId} className={styles.summaryRow}>
-                <span>
-                  {item.name} × {item.qty}
-                  {Number(item.qty || 0) > 20 && (
-                    <span className={styles.bulkItemTag}>Bulk</span>
-                  )}
-                </span>
-                <span>
-                  {formatCurrency(item.qty * Number(item.price))}
-                </span>
-              </li>
-            ))}
+            {checkoutItems.map((item) => {
+              const pricing = getCartLinePricing(item, { canUseBulkOrders: canCreateBulk });
+
+              return (
+                <li key={item.productId} className={styles.summaryRow}>
+                  <span>
+                    {item.name} × {item.qty}
+                    {pricing.discountAmount > 0 && (
+                      <span className={styles.bulkItemTag}>Bulk</span>
+                    )}
+                  </span>
+                  <span>
+                    {formatCurrency(pricing.lineTotal)}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
 
           <div className={styles.totalRow}>
-            <span>Subtotal</span>
-            <strong>{formatCurrency(subtotal)}</strong>
+            <span>Total</span>
+            <strong>{formatCurrency(total)}</strong>
           </div>
 
-          {/* show discount before payment redirect */}
-          {isBulkCheckout && (
-            <>
-              <div className={`${styles.totalRow} ${styles.discountRow}`}>
-                <span>Bulk discount (5%)</span>
-                <span>-{formatCurrency(bulkDiscount)}</span>
-              </div>
+          <div className={`${styles.totalRow} ${bulkDiscount > 0 ? styles.discountRow : ""}`}>
+            <span>Discount</span>
+            <span>{bulkDiscount > 0 ? `-${formatCurrency(bulkDiscount)}` : formatCurrency(0)}</span>
+          </div>
 
-              <div className={styles.totalRow}>
-                <span>Discounted subtotal</span>
-                <strong>{formatCurrency(discountedSubtotal)}</strong>
-              </div>
-            </>
-          )}
-
-          <div className={styles.totalRow}>
-            <span>Platform fee (5%)</span>
-            <span>{formatCurrency(commission)}</span>
+          <div className={`${styles.totalRow} ${styles.summaryTotal}`}>
+            <span>Subtotal</span>
+            <strong>{formatCurrency(subtotal)}</strong>
           </div>
         </aside>
       </div>
@@ -450,7 +508,7 @@ export default function Checkout() {
       <AnimatePresence>
         {showRecurring && (
           <RecurringOrderModal
-            items={items}
+            items={checkoutItems}
             initialValue={recurringPrefs}
             onClose={() => setShowRecurring(false)}
             onConfirm={(prefs) => {

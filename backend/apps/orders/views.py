@@ -1,12 +1,10 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework import status
-from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db import transaction
-from apps.catalog.models import Product, InventoryAdjustment
 from .models import Order, ProducerOrder, OrderItem, RecurringOrder
 from .serializers import (
     OrderSerializer,
@@ -16,7 +14,15 @@ from .serializers import (
     RecurringOrderSerializer,
 )
 from .recurring_services import get_payable_event, skip_next_event
+from .stock_services import deduct_stock_for_producer_order
 from apps.payments.views import create_recurring_checkout_session
+
+import logging
+
+from apps.communications.models import Notification
+from apps.communications.email_service import send_customer_order_status_update
+
+logger = logging.getLogger(__name__)
 
 # Checks to see if logged customer is a restaurant
 def is_restaurant_customer(user):
@@ -153,43 +159,85 @@ class ProducerOrderViewSet(ModelViewSet):
         return ProducerOrder.objects.none()
 
     def partial_update(self, request, *args, **kwargs):
+        status_changed = False
+
         with transaction.atomic():
             instance = self.get_object()
             previous_status = instance.status
+
             serializer = self.get_serializer(instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             new_status = serializer.validated_data.get("status", previous_status)
 
-            if previous_status == "accepted" and new_status == "preparing":
-                self.apply_order_inventory_adjustments(instance, request.user)
+            # stock is deducted once when the producer accepts the order.
+            if previous_status != "accepted" and new_status == "accepted":
+                deduct_stock_for_producer_order(instance, request.user)
 
             self.perform_update(serializer)
+
+            status_changed = previous_status != new_status
+
+            if status_changed:
+                Notification.objects.create(
+                    account=instance.order.account,
+                    title=f"Order #{instance.order.id} update",
+                    body=f"{instance.producer.company_name} changed your order status from {previous_status} to {new_status}.",
+                    link=f"/account/orders/{instance.order.id}",
+                )
+
             sync_order_status_from_producer_orders(instance.order)
+
+        if status_changed:
+            try:
+                send_customer_order_status_update(
+                    order=instance.order,
+                    producer_order=instance,
+                    previous_status=previous_status,
+                    new_status=new_status,
+                )
+            except Exception:
+                logger.exception("Failed to send customer order status update email")
 
         return Response(serializer.data)
 
-    def apply_order_inventory_adjustments(self, producer_order, user):
-        for item in producer_order.items.select_related("product"):
-            adjustment_exists = InventoryAdjustment.objects.filter(
-                order_item=item,
-                reason="order_adjustment",
-            ).exists()
-            if adjustment_exists:
-                continue
+    @action(detail=True, methods=["post"], url_path="contact-customer")
+    def contact_customer(self, request, pk=None):
+        producer_order = self.get_object()
+        message = (request.data.get("message") or "").strip()
 
-            product = Product.objects.select_for_update().get(pk=item.product_id)
-            if product.stock < item.quantity:
-                raise ValidationError(
-                    {"detail": f"Not enough stock for {product.name}."}
-                )
-
-            InventoryAdjustment.objects.create(
-                product=product,
-                order_item=item,
-                delta_quantity=-item.quantity,
-                reason="order_adjustment",
-                changed_by=user,
+        if not message:
+            return Response(
+                {"detail": "Message cannot be empty."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
+    @action(detail=True, methods=["post"], url_path="contact-customer")
+    def contact_customer(self, request, pk=None):
+        producer_order = self.get_object()
+        message = (request.data.get("message") or "").strip()
+
+        if not message:
+            return Response(
+                {"detail": "Message cannot be empty."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        Notification.objects.create(
+            account=producer_order.order.account,
+            title=f"Message from {producer_order.producer.company_name}",
+            body=message,
+            link="/my-account",
+        )
+
+        return Response({"detail": "Message sent to customer."})
+
+        Notification.objects.create(
+            account=producer_order.order.account,
+            title=f"Message from {producer_order.producer.company_name}",
+            body=message,
+            link="/my-account",
+        )
+
+        return Response({"detail": "Message sent to customer."})
 
 
 class OrderItemViewSet(ModelViewSet):

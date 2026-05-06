@@ -22,6 +22,7 @@ import {
   getReview,
 } from "../../utils/reviewsApi";
 import { addToCart } from "../../utils/cartStorage";
+import { useAuth } from "../../auth/AuthContext";
 import styles from "./OrderHistory.module.css";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -823,6 +824,7 @@ function OrderCard({ order, onOpenReview, onReorder, reorderState }) {
 }
 
 export default function OrderHistory() {
+  const { canUseBulkOrders } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -997,11 +999,16 @@ async function handleReorder(order) {
           name: getOrderItemName(item),
           unit: getOrderItemUnit(item),
           price: getOrderItemPrice(item),
+          stock: item.stock ?? item.product?.stock,
+          status: item.product_status ?? item.product?.status,
           image: item.image || item.product?.image || null,
           producer_id: item.producer_id || item.product?.producer_id || null,
           producer_name: item.producer_name || item.product?.producer_name || null,
+          bulk_stock_threshold: item.bulk_stock_threshold ?? item.product?.bulk_stock_threshold,
+          bulk_stock_discount: item.bulk_stock_discount ?? item.product?.bulk_stock_discount,
         },
-        Number(getOrderItemQuantity(item))
+        Number(getOrderItemQuantity(item)),
+        { canUseBulkOrders }
       );
 
       addedCount += Number(getOrderItemQuantity(item));

@@ -18,3 +18,22 @@ class Announcement(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Notification(models.Model):
+    account = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+    )
+    title = models.CharField(max_length=200)
+    body = models.TextField(blank=True, default="")
+    link = models.CharField(max_length=255, blank=True, default="")
+    read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.account} - {self.title}"
