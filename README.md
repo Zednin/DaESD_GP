@@ -22,21 +22,9 @@ The application simulates a sustainable regional food marketplace where producer
 
 
 # Screenshots
-
-## Screenshots
-
-## App Screenshots
-
-
-## Site Summary Screenshots
-<div style="display:flex; overflow-x:auto; gap:10px;">
-  <img src="screenshots/homepage.png" width="445", height="250"/>
-  <img src="screenshots/about_us.png" width="445", height="250"/>
-  <img src="screenshots/bbq_rib_recipe.png" width="445", height="250"/>
-  <img src="screenshots/producer_dashboard.png" width="445", height="250"/>
-  <img src="screenshots/ai1.png" width="445", height="250"/>
-  <img src="screenshots/surplus_deals.png" width="445", height="250"/>
-</div>
+<p align="center">
+  <img src="screenshots/homepage.png" width="890", height="500"/>
+</p>
 
 # More Screenshots
 # Screenshots
