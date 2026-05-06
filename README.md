@@ -20,6 +20,35 @@ The application simulates a sustainable regional food marketplace where producer
 | Josh Okanlawon | 23039392 | Joshua2.Okanlawon@live.uwe.ac.uk |
 | Sam Waxman | 23023667 | Samuel2.Waxman@live.uwe.ac.uk |
 
+# Table of Contents
+
+- [Project Overview](#project-overview)
+- [Group Members](#group-members)
+- [Screenshots](#screenshots)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Services](#services)
+- [Software Features](#software-features)
+- [Authentication and Security](#authentication-and-security)
+- [Payments](#payments)
+- [Media Storage](#media-storage)
+- [Requirements](#requirements)
+- [Running the Software](#running-the-software)
+  - [Environment Variables Setup](#environment-variables-setup)
+  - [Node Files](#node-files)
+  - [Stripe Listener](#stripe-listener-api-key-is-required-for-functionality)
+  - [Seed Dataset](#seed-dataset)
+  - [Building the Project](#building-the-project)
+- [Application URLs](#application-urls-by-default)
+- [Backend Setup](#backend-setup)
+- [Frontend Setup](#frontend-setup)
+- [Backend Apps](#backend-apps)
+- [AI Service](#ai-service)
+- [Database](#database)
+- [Useful Docker Commands](#useful-docker-commands)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
 
 # Screenshots
 <p align="center">
