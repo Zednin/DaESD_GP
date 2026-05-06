@@ -6,7 +6,16 @@ import styles from "./Navbar.module.css";
 import AccountMenu from "./AccountMenu/AccountMenu";
 import NotificationMenu from "./NotificationMenu/NotificationMenu";
 import { Link } from "react-router-dom";
-import {readCart, getCartCount, getCartLinePricing, getCartSubtotal, getQuantityLimit, updateCartQty,removeFromCart} from "../utils/cartStorage";
+import {
+  readCart,
+  getCartCount,
+  getCartLinePricing,
+  getCartSubtotal,
+  getQuantityLimit,
+  updateCartQty,
+  removeFromCart,
+  MIN_CHECKOUT_AMOUNT,
+} from "../utils/cartStorage";
 import { useAuth } from "../auth/AuthContext";
 import apiClient from "../utils/apiClient";
 
@@ -111,6 +120,8 @@ export default function Navbar({ onOpenTerms }) {
 
   const itemCount = getCartCount(cartItems);
   const subtotal = getCartSubtotal(cartItems, { canUseBulkOrders });
+  const belowMinimumCheckoutAmount = itemCount > 0 && subtotal < MIN_CHECKOUT_AMOUNT;
+  const minimumRemaining = Math.max(0, MIN_CHECKOUT_AMOUNT - subtotal);
 
   const navigate = useNavigate();
   const isProducer = user?.account_type === "producer";
@@ -188,6 +199,11 @@ export default function Navbar({ onOpenTerms }) {
   }
 
   function handleCheckoutClick(e) {
+    if (belowMinimumCheckoutAmount) {
+      e.preventDefault();
+      return;
+    }
+
     if (!user) {
       e.preventDefault(); // stop Link navigating
       setCartOpen(false);
@@ -472,6 +488,12 @@ export default function Navbar({ onOpenTerms }) {
                         </strong>
                       </div>
 
+                      {belowMinimumCheckoutAmount && (
+                        <p className={styles.minimumCartNote}>
+                          £{minimumRemaining.toFixed(2)} more to checkout.
+                        </p>
+                      )}
+
                       <div className={styles.cartActions}>
                         <Link
                           to="/cart"
@@ -482,11 +504,12 @@ export default function Navbar({ onOpenTerms }) {
                         </Link>
 
                         <Link
-                          to="/checkout"
-                          className={styles.checkoutBtn}
+                          to={belowMinimumCheckoutAmount ? "/cart" : "/checkout"}
+                          className={`${styles.checkoutBtn} ${belowMinimumCheckoutAmount ? styles.checkoutBtnDisabled : ""}`}
+                          aria-disabled={belowMinimumCheckoutAmount}
                           onClick={handleCheckoutClick}
                         >
-                          Checkout
+                          {belowMinimumCheckoutAmount ? "Checkout" : "Checkout"}
                         </Link>
                       </div>
                     </div>
