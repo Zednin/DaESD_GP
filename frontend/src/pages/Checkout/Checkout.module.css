@@ -1,13 +1,42 @@
 .page {
-  padding: 2rem 0;
+  padding-top: 36px;
+  padding-bottom: 64px;
+}
+
+.header {
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  display: inline-block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.header h1 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: clamp(34px, 5vw, 48px);
+  color: var(--text);
+}
+
+.header p {
+  margin-top: 10px;
+  color: var(--muted);
+  max-width: 650px;
 }
 
 /* Layout */
 .layout {
   display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 2rem;
-  margin-top: 2rem;
+  grid-template-columns: minmax(0, 1fr) 370px;
+  gap: 20px;
+  align-items: start;
+  margin-top: 0;
 }
 
 /* Cards */
@@ -15,16 +44,28 @@
 .summaryCard {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1.75rem;
-  backdrop-filter: blur(8px);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.formCard {
+  padding: 18px;
+}
+
+.summaryCard {
+  position: sticky;
+  top: 18px;
+  padding: 18px;
 }
 
 /* Headings */
 .formCard h2,
 .summaryCard h2 {
-  margin-bottom: 1.25rem;
-  font-size: 1.1rem;
+  margin: 0 0 12px;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 900;
 }
 
 .note {
@@ -59,14 +100,14 @@
 
 /* Button */
 .payBtn {
-  margin-top: 1.2rem;
-  padding: 0.75rem;
+  margin-top: 16px;
+  padding: 13px 18px;
   background: var(--primary);
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 9999px;
   font-size: 1rem;
-  letter-spacing: 0.02em;
+  font-weight: 900;
 }
 
 .payBtn:disabled {
@@ -86,7 +127,7 @@
   margin-top: 1.25rem;
   padding: 1rem;
   border: 1px solid var(--warning-border, var(--border));
-  border-radius: 8px;
+  border-radius: 16px;
   background: var(--warning-muted, var(--surface));
 }
 
@@ -142,37 +183,54 @@
 /* Summary */
 .summaryList {
   list-style: none;
-  padding: 0;
-  margin: 0 0 1.25rem 0;
+  display: grid;
+  gap: 10px;
+  padding: 0 0 14px;
+  margin: 0 0 14px;
+  border-bottom: 1px solid var(--border-2);
 }
 
 .summaryRow {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.95rem;
-  margin-bottom: 0.6rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  font-size: 13px;
   color: var(--muted);
+}
+
+.summaryRow span:first-child {
+  min-width: 0;
 }
 
 .summaryRow span:last-child {
   color: var(--text);
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 /* Totals */
 .totalRow {
   display: flex;
   justify-content: space-between;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--border);
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-top: 1px solid var(--border-2);
+  color: color-mix(in srgb, var(--text) 82%, transparent);
   font-size: 1rem;
 }
 
+.totalRow strong {
+  color: var(--text);
+}
+
 .summaryTotal {
-  font-size: 1.08rem;
+  margin-top: 4px;
+  font-size: 18px;
 }
 
 .summaryTotal strong {
-  font-size: 1.25rem;
+  font-size: 22px;
 }
 
 .error {
@@ -190,7 +248,7 @@
 .bulkSnapshot {
   margin-top: 1rem;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 16px;
   background: color-mix(in srgb, var(--surface) 88%, var(--primary-muted));
 }
 
@@ -239,7 +297,7 @@
   width: 38px;
   height: 38px;
   border: 1px solid var(--primary-border);
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--primary-muted);
   color: var(--primary);
 }
@@ -375,7 +433,7 @@
   width: 38px;
   height: 38px;
   border: 1px solid rgba(251, 146, 60, 0.34);
-  border-radius: 8px;
+  border-radius: 12px;
   background: rgba(251, 146, 60, 0.12);
   color: var(--secondary);
 }
@@ -453,7 +511,7 @@
 .bulkField textarea {
   width: 100%;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--surface);
   color: var(--text);
   font: inherit;
@@ -500,6 +558,10 @@
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;
+  }
+
+  .summaryCard {
+    position: static;
   }
 }
 

@@ -268,7 +268,11 @@ export default function Checkout() {
 
   return (
     <main className={`container ${styles.page}`}>
-      <h1>Checkout</h1>
+      <header className={styles.header}>
+        <span className={styles.eyebrow}>Checkout</span>
+        <h1>Checkout</h1>
+        <p>Confirm your delivery details and review your order before payment.</p>
+      </header>
 
       <div className={styles.layout}>
         <section className={styles.formCard}>
