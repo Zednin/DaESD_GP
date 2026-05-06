@@ -51,6 +51,7 @@ from apps.communications.email_service import (
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 COMMISSION_RATE = Decimal("0.05")
+MIN_STRIPE_PAYMENT_AMOUNT = Decimal("0.30")
 
 # special instruction text limit
 metadata_text_limit = 450
@@ -73,6 +74,51 @@ def clean_requested_delivery_date(data):
     if requested_date is None:
         raise ValidationError({"detail": "Choose a valid delivery date."})
     return requested_date
+
+
+def validate_stripe_minimum_amount(total_amount):
+    if money(total_amount) < MIN_STRIPE_PAYMENT_AMOUNT:
+        raise ValidationError({
+            "detail": "Card payments must be at least £0.30. Add another item to continue."
+        })
+
+
+def get_row_total(unit_price, quantity):
+    return money(Decimal(unit_price) * int(quantity or 0))
+
+
+def get_checkout_total_from_rows(rows):
+    return money(sum((get_row_total(row["unit_price"], row["quantity"]) for row in rows), Decimal("0.00")))
+
+
+def get_cart_checkout_rows(cart_items):
+    return [
+        {
+            "item": item,
+            "unit_price": get_checkout_unit_price(
+                item.price_snapshot,
+                product=item.product,
+                quantity=item.quantity,
+            ),
+            "quantity": item.quantity,
+        }
+        for item in cart_items
+    ]
+
+
+def get_recurring_checkout_rows(item_rows):
+    return [
+        {
+            "row": row,
+            "unit_price": get_checkout_unit_price(
+                row["product"].price,
+                product=row["product"],
+                quantity=row["quantity"],
+            ),
+            "quantity": row["quantity"],
+        }
+        for row in item_rows
+    ]
 
 # producer lead times set the earliest allowed delivery window.
 def get_cart_lead_time_hours(cart_items):
@@ -262,23 +308,22 @@ def create_recurring_checkout_session(user, event, item_payloads=None):
     ]
 
     # gets all the items
+    checkout_rows = get_recurring_checkout_rows(item_rows)
+    validate_stripe_minimum_amount(get_checkout_total_from_rows(checkout_rows))
+
     line_items = []
-    for row in item_rows:
+    for checkout_row in checkout_rows:
+        row = checkout_row["row"]
         product = row["product"]
-        unit_price = get_checkout_unit_price(
-            product.price,
-            product=product,
-            quantity=row["quantity"],
-        )
         line_items.append({
             "price_data": {
                 "currency": "gbp",
                 "product_data": {
                     "name": product.name,
                 },
-                "unit_amount": int(unit_price * 100),
+                "unit_amount": int(checkout_row["unit_price"] * 100),
             },
-            "quantity": row["quantity"],
+            "quantity": checkout_row["quantity"],
         })
 
     # directs to frontend container
@@ -376,22 +421,21 @@ class CreateCheckoutSessionView(APIView):
         if bulk_order and not recurring_delivery_date:
             validate_bulk_delivery_date(cart_items, requested_delivery_date)
 
+        checkout_rows = get_cart_checkout_rows(cart_items)
+        validate_stripe_minimum_amount(get_checkout_total_from_rows(checkout_rows))
+
         line_items = []
-        for item in cart_items:
-            unit_price = get_checkout_unit_price(
-                item.price_snapshot,
-                product=item.product,
-                quantity=item.quantity,
-            )
+        for checkout_row in checkout_rows:
+            item = checkout_row["item"]
             line_items.append({
                 "price_data": {
                     "currency": "gbp",
                     "product_data": {
                         "name": item.product.name,
                     },
-                    "unit_amount": int(unit_price * 100),
+                    "unit_amount": int(checkout_row["unit_price"] * 100),
                 },
-                "quantity": item.quantity,
+                "quantity": checkout_row["quantity"],
             })
 
         frontend_url = settings.FRONTEND_URL
