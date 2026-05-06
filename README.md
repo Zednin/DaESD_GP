@@ -295,6 +295,15 @@ Configure Cloudinary credentials in the [.env](.env) file before running the pro
 # Running the Software
 ## Environment Variables Setup
 Create a copy of [.env.example](.env.example) and frontend/[.env.local.example](.env.local.example) and fill in relevant information. Then remove the .example ending.
+
+## Node Files
+To create node modules from package.json run the following commands:
+```bash
+npm install
+cd frontend
+npm install
+```
+
 ## Building the Project
 ### Build and start all services:
 ```bash
