@@ -6,6 +6,7 @@ import { FiUpload } from 'react-icons/fi';
 import DatePicker, { getCurrentLocalDateTimeInputValue } from '../DatePicker/DatePicker';
 import apiClient from "../../utils/apiClient";
 import { uploadProductImage } from "../../utils/productUploads";
+import { defaultBulkDiscountPercent, individualQuantityLimit } from "../../utils/cartStorage";
 
 const EMPTY_FORM = {
   name: '',
@@ -14,6 +15,8 @@ const EMPTY_FORM = {
   unit: 'unit',
   stock: '',
   low_stock_threshold: '10',
+  bulk_stock_threshold: String(individualQuantityLimit),
+  bulk_stock_discount: String(defaultBulkDiscountPercent),
   availability_mode: 'year_round',
   season_start_month: '',
   season_end_month: '',
@@ -44,6 +47,10 @@ function getStockAlertLabel(alertLevel) {
   if (alertLevel === 'out') return 'Out of stock';
   if (alertLevel === 'low') return 'Low stock';
   return null;
+}
+
+function isLowStockProduct(product) {
+  return getStockAlertLevel(product) === 'low';
 }
 
 const MONTH_OPTIONS = [
@@ -84,6 +91,8 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
           unit: product.unit,
           stock: product.stock,
           low_stock_threshold: product.low_stock_threshold ?? 10,
+          bulk_stock_threshold: product.bulk_stock_threshold ?? individualQuantityLimit,
+          bulk_stock_discount: product.bulk_stock_discount ?? defaultBulkDiscountPercent,
           availability_mode: product.availability_mode ?? 'year_round',
           season_start_month: product.season_start_month ?? '',
           season_end_month: product.season_end_month ?? '',
@@ -173,15 +182,17 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
         return;
       }
 
-      const { allergens: _allergens, ...rest } = form;
+      const { allergens: selectedAllergens, ...rest } = form;
       const payload = {
         ...rest,
         producer: producerId,
         price: parseFloat(form.price),
         stock: parseInt(form.stock, 10),
         low_stock_threshold: parseInt(form.low_stock_threshold, 10),
+        bulk_stock_threshold: parseInt(form.bulk_stock_threshold, 10),
+        bulk_stock_discount: parseFloat(form.bulk_stock_discount),
         category: form.category ? parseInt(form.category, 10) : null,
-        allergen_ids: form.allergens,
+        allergen_ids: selectedAllergens,
         image: form.image || null,
         season_start_month:
           form.availability_mode === 'seasonal' && form.season_start_month
@@ -292,9 +303,20 @@ function ProductModal({ product, producerId, onClose, onSaved }) {
               <label>Stock *</label>
               <input name="stock" type="number" min="0" value={form.stock} onChange={handleChange} required />
             </div>
+          </div>
+
+          <div className={styles.formRow}>
             <div className={styles.field}>
               <label>Low Stock Alert *</label>
               <input name="low_stock_threshold" type="number" min="1" value={form.low_stock_threshold} onChange={handleChange} required />
+            </div>
+            <div className={styles.field}>
+              <label>Bulk Threshold *</label>
+              <input name="bulk_stock_threshold" type="number" min="1" value={form.bulk_stock_threshold} onChange={handleChange} required />
+            </div>
+            <div className={styles.field}>
+              <label>Bulk Discount (%) *</label>
+              <input name="bulk_stock_discount" type="number" min="0" max="100" step="0.01" value={form.bulk_stock_discount} onChange={handleChange} required />
             </div>
           </div>
 
@@ -449,8 +471,8 @@ function DeleteModal({ product, onClose, onDeleted }) {
 }
 
 /* Main component  */
-const STOCK_FILTERS = ['all', 'inStock', 'outOfStock'];
-const STOCK_FILTER_LABELS = { all: 'All', inStock: 'In Stock', outOfStock: 'Out of Stock' };
+const STOCK_FILTERS = ['all', 'inStock', 'lowStock', 'outOfStock'];
+const STOCK_FILTER_LABELS = { all: 'All', inStock: 'In Stock', lowStock: 'Low Stock', outOfStock: 'Out of Stock' };
 
 export default function ProducerProducts({ producerId, producerName }) {
   const [products, setProducts] = useState([]);
@@ -505,11 +527,13 @@ export default function ProducerProducts({ producerId, producerName }) {
   const stockCounts = useMemo(() => ({
     all: products.length,
     inStock: products.filter((p) => p.stock > 0 && p.status !== 'unavailable').length,
+    lowStock: products.filter(isLowStockProduct).length,
     outOfStock: products.filter((p) => p.stock === 0 || p.status === 'unavailable').length,
   }), [products]);
 
   const filteredProducts = useMemo(() => {
     if (stockFilter === 'inStock') return products.filter((p) => p.stock > 0 && p.status !== 'unavailable');
+    if (stockFilter === 'lowStock') return products.filter(isLowStockProduct);
     if (stockFilter === 'outOfStock') return products.filter((p) => p.stock === 0 || p.status === 'unavailable');
     return products;
   }, [products, stockFilter]);
@@ -581,7 +605,7 @@ export default function ProducerProducts({ producerId, producerName }) {
         </div>
       ) : filteredProducts.length === 0 ? (
         <div className={styles.empty}>
-          <p>No {stockFilter === 'outOfStock' ? 'out-of-stock' : 'in-stock'} products.</p>
+          <p>No {STOCK_FILTER_LABELS[stockFilter].toLowerCase()} products.</p>
         </div>
       ) : (
         <div className={styles.tableWrapper}>
@@ -593,6 +617,7 @@ export default function ProducerProducts({ producerId, producerName }) {
                 <th>Price</th>
                 <th>Unit</th>
                 <th>Stock</th>
+                <th>Bulk Threshold</th>
                 <th>Status</th>
                 <th>Organic</th>
                 <th>Available</th>
@@ -636,6 +661,14 @@ export default function ProducerProducts({ producerId, producerName }) {
                           Threshold: {p.low_stock_threshold}
                         </span>
                       )}
+                    </div>
+                  </td>
+                  <td>
+                    <div className={styles.stockCell}>
+                      <span>{p.bulk_stock_threshold ?? individualQuantityLimit}</span>
+                      <span className={styles.stockAlertMeta}>
+                        {Number(p.bulk_stock_discount ?? defaultBulkDiscountPercent).toFixed(2)}% discount
+                      </span>
                     </div>
                   </td>
                   <td>

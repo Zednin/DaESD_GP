@@ -14,7 +14,16 @@ import {
 } from "react-icons/lu";
 import { motion } from "framer-motion";
 import { getAllergenInfo, formatAllergenList } from "../../utils/allergenIcons";
-import { getCartQtyForProduct, readCart } from "../../utils/cartStorage";
+import {
+  getAvailableQuantity,
+  getBulkDiscountPercent,
+  getBulkThreshold,
+  getCartLinePricing,
+  getCartQtyForProduct,
+  getQuantityLimit,
+  getStockLimit,
+  readCart,
+} from "../../utils/cartStorage";
 import styles from "./ProductHero.module.css";
 
 function formatAvailability(product) {
@@ -78,6 +87,12 @@ function formatFoodMilesDetail(foodMiles) {
     : `outside BRFN ${foodMiles.local_radius_miles}-mile target`;
 }
 
+function formatPercent(value) {
+  return new Intl.NumberFormat("en-GB", {
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 function RatingStars({ rating = 0, size = 16 }) {
   return (
     <div className={styles.ratingStars} aria-label={`${rating} out of 5 stars`}>
@@ -98,6 +113,7 @@ export default function ProductHero({
   reviewCount = 3,
   foodMiles = null,
   onAddToBasket,
+  canUseBulkOrders = false,
 }) {
   const location = useLocation();
   const [qty, setQty] = useState(1);
@@ -116,27 +132,47 @@ export default function ProductHero({
     return Number(product.price);
   }, [product]);
 
-  const stockLimit = useMemo(() => {
-    const stock = Number(product?.stock);
-    return Number.isFinite(stock) ? Math.max(0, stock) : Infinity;
-  }, [product]);
+  const stockLimit = useMemo(() => getStockLimit(product), [product]);
+  const bulkThreshold = useMemo(() => getBulkThreshold(product), [product]);
+  const bulkDiscountPercent = useMemo(() => getBulkDiscountPercent(product), [product]);
+  const quantityLimit = useMemo(
+    () => getQuantityLimit(product, { canUseBulkOrders }),
+    [canUseBulkOrders, product]
+  );
 
   const isUnavailable = product?.status === "unavailable" || stockLimit <= 0;
-  const availableToAdd = Number.isFinite(stockLimit)
-    ? Math.max(0, stockLimit - cartQty)
+  const maxSelectableQty = Number.isFinite(quantityLimit)
+    ? Math.max(1, quantityLimit - cartQty)
     : Infinity;
+  const availableToAdd = getAvailableQuantity(product, cartQty, { canUseBulkOrders });
   const addBlockedByStock = !isUnavailable && qty > availableToAdd;
   const cannotAddMore = !isUnavailable && availableToAdd <= 0;
   const addDisabled = isUnavailable || (addStatus === "idle" && (addBlockedByStock || cannotAddMore));
+  const showBulkOffer = canUseBulkOrders && bulkDiscountPercent > 0;
+  const individualLimitApplies = !canUseBulkOrders && quantityLimit < stockLimit;
   const stockMessage = useMemo(() => {
     if (addError) return addError;
-    if (isUnavailable || addStatus !== "idle" || !Number.isFinite(stockLimit)) return "";
+    if (isUnavailable || addStatus !== "idle" || !Number.isFinite(quantityLimit)) return "";
+    if (cannotAddMore && individualLimitApplies) return `Individual customers can add up to ${quantityLimit} of this item.`;
     if (cannotAddMore) return "Stock limit reached.";
     if (addBlockedByStock) return `${availableToAdd} more available.`;
     return "";
-  }, [addBlockedByStock, addError, addStatus, availableToAdd, cannotAddMore, cartQty, isUnavailable, stockLimit]);
+  }, [addBlockedByStock, addError, addStatus, availableToAdd, cannotAddMore, individualLimitApplies, isUnavailable, quantityLimit]);
 
-  const total = useMemo(() => (currentPrice * qty).toFixed(2), [currentPrice, qty]);
+  const addPricing = useMemo(
+    () => getCartLinePricing(
+      {
+        ...product,
+        price: currentPrice,
+        pre_bulk_price: currentPrice,
+        qty,
+      },
+      { canUseBulkOrders }
+    ),
+    [canUseBulkOrders, currentPrice, product, qty]
+  );
+  const total = addPricing.lineTotal.toFixed(2);
+  const savedAmount = addPricing.discountAmount.toFixed(2);
   const producerPath = `/producers/${product.producer_id || product.producer_profile_id || product.producer}`;
   const producerLinkState = {
     from: {
@@ -154,15 +190,20 @@ export default function ProductHero({
     }
 
     setAddError("");
-    setQty(Math.min(Math.max(1, next), stockLimit));
+    setQty(Math.min(Math.max(1, next), maxSelectableQty));
   }
 
   useEffect(() => {
     if (resetTimerRef.current) {
       clearTimeout(resetTimerRef.current);
     }
-    setAddStatus("idle");
-    setAddError("");
+
+    const resetTimer = setTimeout(() => {
+      setAddStatus("idle");
+      setAddError("");
+    }, 0);
+
+    return () => clearTimeout(resetTimer);
   }, [product]);
 
   useEffect(() => {
@@ -354,6 +395,15 @@ export default function ProductHero({
             )}
           </div>
 
+          {showBulkOffer && (
+            <div className={styles.bulkOfferTag} aria-label="Bulk order discount">
+              <span>Order Bulk</span>
+              <strong>
+                {formatPercent(bulkDiscountPercent)}% discount on {bulkThreshold}+ units ordered
+              </strong>
+            </div>
+          )}
+
           <div className={styles.buyPanel}>
             {isUnavailable && (
               <div className={styles.outOfStockBanner}>
@@ -361,38 +411,39 @@ export default function ProductHero({
               </div>
             )}
             <div className={styles.qtyArea}>
-              <label className={styles.qtyLabel}>
-                Quantity
+              <label className={styles.qtyLabel}>Quantity</label>
+
+              <div className={styles.qtyPurchaseRow}>
                 {Number.isFinite(stockLimit) && stockLimit > 0 && (
-                  <span> · {stockLimit} in stock</span>
+                  <span className={styles.stockTag}>In Stock: {stockLimit} available</span>
                 )}
-              </label>
 
-              <div className={styles.qtyControl}>
-                <button
-                  type="button"
-                  onClick={() => handleQtyChange(qty - 1)}
-                  disabled={isUnavailable || qty <= 1}
-                >
-                  <LuMinus size={15} />
-                </button>
+                <div className={styles.qtyControl}>
+                  <button
+                    type="button"
+                    onClick={() => handleQtyChange(qty - 1)}
+                    disabled={isUnavailable || qty <= 1}
+                  >
+                    <LuMinus size={15} />
+                  </button>
 
-                <input
-                  type="number"
-                  min={1}
-                  max={Number.isFinite(stockLimit) ? stockLimit : undefined}
-                  disabled={isUnavailable}
-                  value={qty}
-                  onChange={(e) => handleQtyChange(Number(e.target.value) || 1)}
-                />
+                  <input
+                    type="number"
+                    min={1}
+                    max={Number.isFinite(maxSelectableQty) ? maxSelectableQty : undefined}
+                    disabled={isUnavailable}
+                    value={qty}
+                    onChange={(e) => handleQtyChange(Number(e.target.value) || 1)}
+                  />
 
-                <button
-                  type="button"
-                  onClick={() => handleQtyChange(qty + 1)}
-                  disabled={isUnavailable || qty >= stockLimit}
-                >
-                  <LuPlus size={15} />
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => handleQtyChange(qty + 1)}
+                    disabled={isUnavailable || qty >= maxSelectableQty}
+                  >
+                    <LuPlus size={15} />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -404,7 +455,11 @@ export default function ProductHero({
             >
               {isUnavailable && "Out of stock"}
               {!isUnavailable && addStatus === "added" && "Added ✓"}
-              {!isUnavailable && addStatus === "idle" && `Add to basket — £${total}`}
+              {!isUnavailable && addStatus === "idle" && (
+                addPricing.discountAmount > 0
+                  ? `Add to basket — £${total} / £${savedAmount} saved`
+                  : `Add to basket — £${total}`
+              )}
             </button>
             {stockMessage && <p className={styles.stockMessage}>{stockMessage}</p>}
           </div>

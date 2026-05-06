@@ -9,6 +9,7 @@ import QuickAddModal from "../QuickAddModal/QuickAddModal";
 import { fadeUp } from "../../animations/heroAnimations";
 import { addToCart, getCartSubtotal, readCart } from "../../utils/cartStorage";
 import { getAllergenInfo } from "../../utils/allergenIcons";
+import { useAuth } from "../../auth/AuthContext";
 
 import productStyles from "../../pages/Products.module.css";
 
@@ -46,20 +47,21 @@ export default function ProducerProductsDetail({ producerId }) {
   const [loading, setLoading] = useState(true);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const { canUseBulkOrders } = useAuth();
   const [cartSubtotal, setCartSubtotal] = useState(() =>
-    getCartSubtotal(readCart())
+    getCartSubtotal(readCart(), { canUseBulkOrders })
   );
 
   const navigate = useNavigate();
 
   useEffect(() => {
     function syncSubtotal() {
-      setCartSubtotal(getCartSubtotal(readCart()));
+      setCartSubtotal(getCartSubtotal(readCart(), { canUseBulkOrders }));
     }
 
     window.addEventListener("cart:updated", syncSubtotal);
     return () => window.removeEventListener("cart:updated", syncSubtotal);
-  }, []);
+  }, [canUseBulkOrders]);
 
   useEffect(() => {
     async function loadProducts() {
@@ -108,7 +110,7 @@ export default function ProducerProductsDetail({ producerId }) {
   }
 
   async function handleAddToBasket(product, qty) {
-    await addToCart(product, qty);
+    await addToCart(product, qty, { canUseBulkOrders });
   }
 
   if (loading) {
@@ -330,6 +332,7 @@ export default function ProducerProductsDetail({ producerId }) {
             onAdd={handleAddToBasket}
             cartSubtotal={cartSubtotal}
             freeShippingThreshold={40}
+            canUseBulkOrders={canUseBulkOrders}
           />
         )}
       </AnimatePresence>
