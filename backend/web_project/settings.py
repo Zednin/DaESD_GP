@@ -35,6 +35,7 @@ SECRET_KEY = env(
 DEBUG = env("DEBUG")
 
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:5173")
+BACKEND_URL = env("BACKEND_URL", default="http://localhost:8000")
 
 ALLOWED_HOSTS = env.list(
     "ALLOWED_HOSTS",
@@ -146,8 +147,14 @@ CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = env.list(
     "CSRF_TRUSTED_ORIGINS",
-    default=["http://localhost:5173"],
+    default=[
+        "http://localhost:5173",
+        "http://localhost:8000",
+    ],
 )
+
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
 
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = False
