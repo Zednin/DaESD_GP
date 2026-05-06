@@ -314,6 +314,25 @@
   margin-top: 4px;
 }
 
+.cartPriceCompare {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.cartOriginalPrice {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.cartSaving {
+  display: block;
+  margin-top: 2px;
+  color: #59b36a;
+  font-weight: 900;
+}
+
 .cartItemControls {
   margin-top: 9px;
   display: flex;

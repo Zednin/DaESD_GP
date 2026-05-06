@@ -35,7 +35,7 @@ from apps.orders.recurring_services import (
 
 # bulk payment functions
 from apps.orders.bulk_services import (
-    bulk_discount_rate,
+    can_use_bulk_orders,
     get_checkout_unit_price,
     has_bulk_item_rows,
     has_bulk_items,
@@ -74,20 +74,29 @@ def clean_requested_delivery_date(data):
         raise ValidationError({"detail": "Choose a valid delivery date."})
     return requested_date
 
-# bulk lead time hours
-def get_bulk_min_delivery_date(cart_items):
-    lead_time_hours = max(
-        int(getattr(item.product.producer, "lead_time_hours", 48) or 48)
-        for item in cart_items
+# producer lead times set the earliest allowed delivery window.
+def get_cart_lead_time_hours(cart_items):
+    return max(
+        48,
+        *(int(getattr(item.product.producer, "lead_time_hours", 48) or 48) for item in cart_items),
     )
+
+
+def get_item_rows_lead_time_hours(item_rows):
+    return max(
+        48,
+        *(int(getattr(row["product"].producer, "lead_time_hours", 48) or 48) for row in item_rows),
+    )
+
+
+def get_bulk_min_delivery_date(cart_items):
+    lead_time_hours = get_cart_lead_time_hours(cart_items)
     return (timezone.now() + timedelta(hours=lead_time_hours)).date()
 
-# gets delivery date for bulked order
 def validate_bulk_delivery_date(cart_items, requested_delivery_date):
     if requested_delivery_date is None:
         raise ValidationError({"detail": "Choose a delivery date for this bulk order."})
 
-    # allow man 48 hours atleast
     min_delivery_date = get_bulk_min_delivery_date(cart_items)
     if requested_delivery_date < min_delivery_date:
         formatted_date = min_delivery_date.strftime("%d %b %Y")
@@ -132,6 +141,31 @@ def clean_recurring_payload(data):
         "order_day": order_day,
         "delivery_day": delivery_day,
     }
+
+
+def get_recurring_delivery_lead_hours(order_day, delivery_day):
+    days_between = (int(delivery_day) - int(order_day)) % 7
+    if days_between == 0:
+        days_between = 7
+    return days_between * 24
+
+
+def validate_recurring_delivery_lead_time(cart_items, recurring_payload):
+    lead_time_hours = get_cart_lead_time_hours(cart_items)
+    validate_recurring_delivery_lead_hours(lead_time_hours, recurring_payload)
+
+
+# recurring schedules must still respect producer lead times at checkout time.
+def validate_recurring_delivery_lead_hours(lead_time_hours, recurring_payload):
+    delivery_lead_hours = get_recurring_delivery_lead_hours(
+        recurring_payload["order_day"],
+        recurring_payload["delivery_day"],
+    )
+
+    if delivery_lead_hours < lead_time_hours:
+        raise ValidationError({
+            "detail": f"Recurring delivery day must be at least {lead_time_hours} hours after the order day."
+        })
 
 
 def get_next_run_at(order_day):
@@ -207,10 +241,21 @@ def validate_cart_items_for_checkout(cart_items):
         raise ValidationError({"detail": "; ".join(messages)})
 
 
-# Builds stripe checkout for recurring events
+# builds stripe checkout for recurring events.
 def create_recurring_checkout_session(user, event, item_payloads=None):
     item_rows = get_item_rows(event.recurring_order, item_payloads)
     bulk_order = has_bulk_item_rows(item_rows)
+    if bulk_order and not can_use_bulk_orders(user):
+        raise ValidationError({"detail": "Bulk orders are only available for organisation and producer accounts."})
+
+    validate_recurring_delivery_lead_hours(
+        get_item_rows_lead_time_hours(item_rows),
+        {
+            "order_day": event.recurring_order.order_day,
+            "delivery_day": event.recurring_order.delivery_day,
+        },
+    )
+
     recurring_items = [
         {"product": row["product"].id, "quantity": row["quantity"]}
         for row in item_rows
@@ -220,7 +265,11 @@ def create_recurring_checkout_session(user, event, item_payloads=None):
     line_items = []
     for row in item_rows:
         product = row["product"]
-        unit_price = get_checkout_unit_price(product.price, bulk_order)
+        unit_price = get_checkout_unit_price(
+            product.price,
+            product=product,
+            quantity=row["quantity"],
+        )
         line_items.append({
             "price_data": {
                 "currency": "gbp",
@@ -235,7 +284,7 @@ def create_recurring_checkout_session(user, event, item_payloads=None):
     # directs to frontend container
     frontend_url = settings.FRONTEND_URL
     metadata = {
-        # The webhook uses this split to create the linked recurring order once.
+        # the webhook uses this split to create the linked recurring order once.
         "checkout_kind": "recurring_confirmation",
         "user_id": str(user.id),
         "recurring_order_id": str(event.recurring_order_id),
@@ -244,7 +293,6 @@ def create_recurring_checkout_session(user, event, item_payloads=None):
     }
     if bulk_order:
         metadata["bulk_order"] = "true"
-        metadata["bulk_discount_rate"] = str(bulk_discount_rate)
 
     session = stripe.checkout.Session.create(
         mode="payment",
@@ -293,6 +341,9 @@ class CreateCheckoutSessionView(APIView):
         cart_items = list(items)
         validate_cart_items_for_checkout(cart_items)
 
+        if recurring_payload:
+            validate_recurring_delivery_lead_time(cart_items, recurring_payload)
+
         has_allergen_products = any(item.product.allergens.exists() for item in cart_items)
         if has_allergen_products and not request.data.get("allergen_acknowledged"):
             return Response(
@@ -304,6 +355,12 @@ class CreateCheckoutSessionView(APIView):
 
         # checks if any items are bulked
         bulk_order = has_bulk_items(cart_items)
+        if bulk_order and not can_use_bulk_orders(request.user):
+            return Response(
+                {"detail": "Bulk orders are only available for organisation and producer accounts."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         recurring_delivery_date = None
         if recurring_payload:
             recurring_delivery_date = get_recurring_payload_schedule(recurring_payload)[1]
@@ -321,7 +378,11 @@ class CreateCheckoutSessionView(APIView):
 
         line_items = []
         for item in cart_items:
-            unit_price = get_checkout_unit_price(item.price_snapshot, bulk_order)
+            unit_price = get_checkout_unit_price(
+                item.price_snapshot,
+                product=item.product,
+                quantity=item.quantity,
+            )
             line_items.append({
                 "price_data": {
                     "currency": "gbp",
@@ -342,7 +403,6 @@ class CreateCheckoutSessionView(APIView):
 
         if bulk_order:
             metadata["bulk_order"] = "true"
-            metadata["bulk_discount_rate"] = str(bulk_discount_rate)
             metadata["requested_delivery_date"] = requested_delivery_date.isoformat()
             if special_instructions:
                 metadata["special_instructions"] = special_instructions
@@ -440,7 +500,11 @@ def handle_checkout_session_completed(session):
 
     # saves discounted total for bulk, normal price for standard
     total_amount = money(sum(
-        get_checkout_unit_price(item.price_snapshot, bulk_order) * item.quantity
+        get_checkout_unit_price(
+            item.price_snapshot,
+            product=item.product,
+            quantity=item.quantity,
+        ) * item.quantity
         for item in cart_items
     ))
 
@@ -516,7 +580,11 @@ def handle_checkout_session_completed(session):
 
         for producer_id, producer_items in items_by_producer.items():
             subtotal = money(sum(
-                get_checkout_unit_price(item.price_snapshot, bulk_order) * item.quantity
+                get_checkout_unit_price(
+                    item.price_snapshot,
+                    product=item.product,
+                    quantity=item.quantity,
+                ) * item.quantity
                 for item in producer_items
             ))
 
@@ -542,7 +610,11 @@ def handle_checkout_session_completed(session):
             )
 
             for cart_item in producer_items:
-                price_snapshot = get_checkout_unit_price(cart_item.price_snapshot, bulk_order)
+                price_snapshot = get_checkout_unit_price(
+                    cart_item.price_snapshot,
+                    product=cart_item.product,
+                    quantity=cart_item.quantity,
+                )
                 line_total = money(price_snapshot * cart_item.quantity)
 
                 OrderItem.objects.create(
@@ -552,14 +624,6 @@ def handle_checkout_session_completed(session):
                     price_snapshot=price_snapshot,
                     line_total=line_total,
                 )
-
-                cart_item.product.stock -= cart_item.quantity
-                if cart_item.product.stock <= 0:
-                    cart_item.product.stock = 0
-                    cart_item.product.status = "unavailable"
-                    cart_item.product.save(update_fields=["stock", "status", "updated_at"])
-                else:
-                    cart_item.product.save(update_fields=["stock", "updated_at"])
 
             CommissionLedger.objects.create(
                 producer_order=producer_order,
@@ -664,7 +728,11 @@ def handle_recurring_checkout_session_completed(session):
     bulk_order = has_bulk_item_rows(event_items)
     total_amount = money(sum(
         (
-            get_checkout_unit_price(row["product"].price, bulk_order) * row["quantity"]
+            get_checkout_unit_price(
+                row["product"].price,
+                product=row["product"],
+                quantity=row["quantity"],
+            ) * row["quantity"]
             for row in event_items
         ),
         Decimal("0.00"),
@@ -699,7 +767,11 @@ def handle_recurring_checkout_session_completed(session):
         for producer_id, producer_items in items_by_producer.items():
             subtotal = money(sum(
                 (
-                    get_checkout_unit_price(item["product"].price, bulk_order) * item["quantity"]
+                    get_checkout_unit_price(
+                        item["product"].price,
+                        product=item["product"],
+                        quantity=item["quantity"],
+                    ) * item["quantity"]
                     for item in producer_items
                 ),
                 Decimal("0.00"),
@@ -719,7 +791,11 @@ def handle_recurring_checkout_session_completed(session):
             for item in producer_items:
                 product = item["product"]
                 quantity = item["quantity"]
-                price_snapshot = get_checkout_unit_price(product.price, bulk_order)
+                price_snapshot = get_checkout_unit_price(
+                    product.price,
+                    product=product,
+                    quantity=quantity,
+                )
                 OrderItem.objects.create(
                     producer_order=producer_order,
                     product=product,

@@ -10,6 +10,7 @@ import { addToCart, getCartSubtotal, readCart } from "../utils/cartStorage";
 import { getAllergenInfo } from "../utils/allergenIcons";
 import apiClient from "../utils/apiClient";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 
 export default function Products() {
   const [rawProducts, setRawProducts] = useState([]);
@@ -25,6 +26,7 @@ export default function Products() {
   const [reorderAdding, setReorderAdding] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
   const navigate = useNavigate();
+  const { canUseBulkOrders } = useAuth();
 
   // --- Filter / sort state ---
   const [searchInput, setSearchInput] = useState("");
@@ -35,15 +37,17 @@ export default function Products() {
   const [organicOnly, setOrganicOnly] = useState(false);
   const [sortBy, setSortBy] = useState("name");
 
-  const [cartSubtotal, setCartSubtotal] = useState(() => getCartSubtotal(readCart()));
+  const [cartSubtotal, setCartSubtotal] = useState(() =>
+    getCartSubtotal(readCart(), { canUseBulkOrders })
+  );
 
   useEffect(() => {
     function syncSubtotal() {
-      setCartSubtotal(getCartSubtotal(readCart()));
+      setCartSubtotal(getCartSubtotal(readCart(), { canUseBulkOrders }));
     }
     window.addEventListener("cart:updated", syncSubtotal);
     return () => window.removeEventListener("cart:updated", syncSubtotal);
-  }, []);
+  }, [canUseBulkOrders]);
 
   // Debounce search input doesnt request on every keystroke
   useEffect(() => {
@@ -66,7 +70,6 @@ export default function Products() {
 
   // Personalised recommendations for logged-in users.
   useEffect(() => {
-    setLoadingRecs(true);
     apiClient
       .get("/products/recommendations/", { params: { limit: 5 } })
       .then(({ data }) => setRecommendations(Array.isArray(data) ? data : []))
@@ -142,7 +145,7 @@ export default function Products() {
   }
 
   async function handleAddToBasket(product, qty) {
-    await addToCart(product, qty);
+    await addToCart(product, qty, { canUseBulkOrders });
     // Log the cart-add only when it was a recommendation card
     if (product._rec_score !== undefined) {
       logRecommendationInteraction(product, "added_to_cart");
@@ -176,6 +179,7 @@ export default function Products() {
             image: item.image,
           },
           item.quantity,
+          { canUseBulkOrders },
         );
       }
     }
@@ -587,6 +591,7 @@ export default function Products() {
             onAdd={handleAddToBasket}
             cartSubtotal={cartSubtotal}
             freeShippingThreshold={40}
+            canUseBulkOrders={canUseBulkOrders}
           />
         )}
       </AnimatePresence>

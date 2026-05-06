@@ -1,0 +1,46 @@
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 100%;
+  min-height: 34px;
+  border: 1px solid rgba(251, 146, 60, 0.34);
+  border-radius: 999px;
+  background: rgba(251, 146, 60, 0.1);
+  color: var(--text);
+  padding: 0.35rem 0.7rem;
+}
+
+.tag strong,
+.tag span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+.tag strong {
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.tag span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+@media (max-width: 520px) {
+  .tag {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.2rem;
+    border-radius: 8px;
+  }
+}

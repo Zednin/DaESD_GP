@@ -110,7 +110,15 @@ class OrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
     product_status = serializers.CharField(source="product.status", read_only=True)
     product_available = serializers.SerializerMethodField()
+    stock = serializers.IntegerField(source="product.stock", read_only=True)
     unit = serializers.CharField(source="product.unit", read_only=True)
+    bulk_stock_threshold = serializers.IntegerField(source="product.bulk_stock_threshold", read_only=True)
+    bulk_stock_discount = serializers.DecimalField(
+        source="product.bulk_stock_discount",
+        max_digits=5,
+        decimal_places=2,
+        read_only=True,
+    )
     producer_order_status = serializers.CharField(source="producer_order.status", read_only=True)
     fulfillment_status = serializers.SerializerMethodField()
     review_status = serializers.SerializerMethodField()
@@ -124,7 +132,10 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "product_name",
             "product_status",
             "product_available",
+            "stock",
             "unit",
+            "bulk_stock_threshold",
+            "bulk_stock_discount",
             "producer_order_status",
             "fulfillment_status",
             "quantity",
