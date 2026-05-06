@@ -8,6 +8,7 @@ import { LuLeaf } from 'react-icons/lu';
 import { addToCart, getCartSubtotal, readCart } from '../../utils/cartStorage';
 import { getAllergenInfo } from '../../utils/allergenIcons';
 import apiClient from '../../utils/apiClient';
+import { useAuth } from '../../auth/AuthContext';
 
 function formatTimeRemaining(endDate) {
   if (!endDate) return null;
@@ -84,15 +85,18 @@ export default function SurplusDeals() {
   const [loading, setLoading] = useState(true);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [cartSubtotal, setCartSubtotal] = useState(() => getCartSubtotal(readCart()));
+  const { canUseBulkOrders } = useAuth();
+  const [cartSubtotal, setCartSubtotal] = useState(() =>
+    getCartSubtotal(readCart(), { canUseBulkOrders })
+  );
 
   useEffect(() => {
     function syncSubtotal() {
-      setCartSubtotal(getCartSubtotal(readCart()));
+      setCartSubtotal(getCartSubtotal(readCart(), { canUseBulkOrders }));
     }
     window.addEventListener('cart:updated', syncSubtotal);
     return () => window.removeEventListener('cart:updated', syncSubtotal);
-  }, []);
+  }, [canUseBulkOrders]);
 
   useEffect(() => {
     apiClient.get('/products/surplus-deals/')
@@ -123,7 +127,7 @@ export default function SurplusDeals() {
   }
 
   async function handleAddToBasket(product, qty) {
-    await addToCart(product, qty);
+    await addToCart(product, qty, { canUseBulkOrders });
   }
 
   const totalImpact = products.reduce(
@@ -359,6 +363,7 @@ export default function SurplusDeals() {
             onAdd={handleAddToBasket}
             cartSubtotal={cartSubtotal}
             freeShippingThreshold={40}
+            canUseBulkOrders={canUseBulkOrders}
           />
         )}
       </AnimatePresence>

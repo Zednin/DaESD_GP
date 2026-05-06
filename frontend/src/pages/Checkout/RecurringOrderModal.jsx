@@ -1,5 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import ProducerLeadTimeTags from "./ProducerLeadTimeTags";
+import {
+  getMaxLeadTimeHours,
+  getMinimumLeadDays,
+  getProducerLeadTimeGroups,
+  hasRecurringLeadTime,
+} from "./producerLeadTimes";
 import styles from "./RecurringOrderModal.module.css";
 
 const WEEKDAYS = [
@@ -12,20 +19,21 @@ const WEEKDAYS = [
   "Sunday",
 ];
 
-const MIN_DELIVERY_LEAD_DAYS = 2;
-const LEAD_TIME_MESSAGE = "minimum 48 hour difference between order and delivery.";
-
-function hasMinimumDeliveryLeadTime(orderDay, deliveryDay) {
-  const daysBetween = (Number(deliveryDay) - Number(orderDay) + 7) % 7;
-  return daysBetween >= MIN_DELIVERY_LEAD_DAYS;
-}
-
 export default function RecurringOrderModal({ items, initialValue, onClose, onConfirm }) {
+  const producerLeadTimeGroups = useMemo(() => getProducerLeadTimeGroups(items), [items]);
+  const maxLeadTimeHours = useMemo(() => getMaxLeadTimeHours(items), [items]);
+  const minimumLeadDays = getMinimumLeadDays(maxLeadTimeHours);
+  const initialOrderDay = initialValue?.order_day ?? 0;
+
   const [name, setName] = useState(initialValue?.name || "");
   const [frequency, setFrequency] = useState(initialValue?.frequency || "weekly");
-  const [orderDay, setOrderDay] = useState(initialValue?.order_day ?? 0);
-  const [deliveryDay, setDeliveryDay] = useState(initialValue?.delivery_day ?? 2);
-  const hasDeliveryLeadTime = hasMinimumDeliveryLeadTime(orderDay, deliveryDay);
+  const [orderDay, setOrderDay] = useState(initialOrderDay);
+  const [deliveryDay, setDeliveryDay] = useState(
+    initialValue?.delivery_day ?? ((Number(initialOrderDay) + minimumLeadDays) % 7)
+  );
+  const hasDeliveryLeadTime = hasRecurringLeadTime(orderDay, deliveryDay, maxLeadTimeHours);
+  const leadTimeMessage = `Delivery day must be at least ${maxLeadTimeHours} hours after the order day.`;
+  const deliveryDayPrefix = Number(deliveryDay) === Number(orderDay) ? "the following " : "";
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -87,6 +95,8 @@ export default function RecurringOrderModal({ items, initialValue, onClose, onCo
             />
           </label>
 
+          <ProducerLeadTimeTags groups={producerLeadTimeGroups} />
+
           <div className={styles.grid}>
             <label className={styles.field}>
               <span>Frequency</span>
@@ -116,7 +126,7 @@ export default function RecurringOrderModal({ items, initialValue, onClose, onCo
           </div>
 
           {!hasDeliveryLeadTime && (
-            <div className={styles.leadTimeNotice}>{LEAD_TIME_MESSAGE}</div>
+            <div className={styles.leadTimeNotice}>{leadTimeMessage}</div>
           )}
 
           <div className={styles.itemsBox}>
@@ -134,7 +144,7 @@ export default function RecurringOrderModal({ items, initialValue, onClose, onCo
           <p className={styles.preview}>
             Orders will be placed every <strong>{WEEKDAYS[orderDay]}</strong>
             {frequency === "fortnightly" ? " every two weeks" : ""} and delivered on{" "}
-            <strong>{WEEKDAYS[deliveryDay]}</strong>.
+            <strong>{deliveryDayPrefix}{WEEKDAYS[deliveryDay]}</strong>.
           </p>
 
           <div className={styles.actions}>

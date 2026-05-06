@@ -314,6 +314,25 @@
   margin-top: 4px;
 }
 
+.cartPriceCompare {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.cartOriginalPrice {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.cartSaving {
+  display: block;
+  margin-top: 2px;
+  color: #59b36a;
+  font-weight: 900;
+}
+
 .cartItemControls {
   margin-top: 9px;
   display: flex;
@@ -428,6 +447,27 @@
 .checkoutBtn:hover {
   filter: brightness(0.96);
   transform: translateY(-1px);
+}
+
+.checkoutBtnDisabled,
+.checkoutBtnDisabled:hover {
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: not-allowed;
+  filter: none;
+  transform: none;
+}
+
+.minimumCartNote {
+  margin: -2px 0 12px;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--warning-border, rgba(251, 146, 60, 0.34));
+  border-radius: 8px;
+  background: var(--warning-muted, rgba(251, 146, 60, 0.12));
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
 }
 
 .authLink {

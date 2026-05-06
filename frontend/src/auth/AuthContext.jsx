@@ -95,6 +95,28 @@ export function AuthProvider({ children }) {
   const customerType = user?.organisation?.organisation_type || user?.account_type;
   const canUseRecurringOrders = customerType === "restaurant";
 
+  const canUseBulkOrders = Boolean(
+    user?.account_type === "producer" ||
+    user?.account_type === "restaurant" ||
+    user?.account_type === "community_group" ||
+    user?.organisation?.organisation_type
+  );
+
+  // check user / account type
+  const customerType = user?.organisation?.organisation_type || user?.account_type;
+  const canUseRecurringOrders = customerType === "restaurant";
+
+  const canUseBulkOrders = Boolean(
+    user?.account_type === "producer" ||
+    user?.account_type === "restaurant" ||
+    user?.account_type === "community_group" ||
+    user?.organisation?.organisation_type
+  );
+
+  // check user / account type
+  const customerType = user?.organisation?.organisation_type || user?.account_type;
+  const canUseRecurringOrders = customerType === "restaurant";
+
   
   const value = useMemo(
     () => ({
@@ -102,14 +124,16 @@ export function AuthProvider({ children }) {
       loading,
       refresh,
       logout,
-      canUseRecurringOrders, //Allow only for restaurant users
+      canUseRecurringOrders,
+      canUseBulkOrders,
     }),
-    [user, loading, refresh, logout, canUseRecurringOrders]
+    [user, loading, refresh, logout, canUseRecurringOrders, canUseBulkOrders]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext);
 

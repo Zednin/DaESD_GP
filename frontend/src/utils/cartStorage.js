@@ -1,4 +1,7 @@
 const CART_KEY = "brfn_cart_v1";
+export const MIN_CHECKOUT_AMOUNT = 0.3;
+export const MIN_CHECKOUT_MESSAGE =
+  "Card payments must be at least £0.30. Add another item to continue.";
 
 import {
   fetchServerCart,
@@ -8,6 +11,30 @@ import {
   removeServerItem,
   clearServerCart,
 } from "./cartApi";
+
+import {
+  defaultBulkDiscountPercent,
+  getCartLinePricing,
+  getQuantityLimit,
+  getStockLimit,
+  individualQuantityLimit,
+} from "./bulkPricing";
+
+export {
+  defaultBulkDiscountPercent,
+  getAvailableQuantity,
+  getBulkDiscountedUnitPrice,
+  getBulkDiscountPercent,
+  getBulkThreshold,
+  getCartLinePricing,
+  getIndividualQuantityLimit,
+  getPreBulkUnitPrice,
+  getQuantity,
+  getQuantityLimit,
+  getStockLimit,
+  individualQuantityLimit,
+  isBulkQuantity,
+} from "./bulkPricing";
 
 // --------------------
 // Local helpers (guest + cache)
@@ -31,10 +58,18 @@ export function clearCartLocal() {
 }
 
 // --------------------
-// Shared helpers
+// shared pricing helpers keep cart totals aligned with checkout.
 // --------------------
-export function getCartSubtotal(items) {
-  return items.reduce((sum, i) => sum + Number(i.price) * i.qty, 0);
+export function getCartSubtotal(items, options = {}) {
+  return items.reduce((sum, item) => sum + getCartLinePricing(item, options).lineTotal, 0);
+}
+
+export function getCartOriginalSubtotal(items, options = {}) {
+  return items.reduce((sum, item) => sum + getCartLinePricing(item, options).originalLineTotal, 0);
+}
+
+export function getCartDiscountTotal(items, options = {}) {
+  return items.reduce((sum, item) => sum + getCartLinePricing(item, options).discountAmount, 0);
 }
 
 export function getCartCount(items) {
@@ -59,9 +94,16 @@ function isAuthed() {
   return CART_AUTHED;
 }
 
-function getStockLimit(itemOrProduct) {
-  const stock = Number(itemOrProduct?.stock);
-  return Number.isFinite(stock) ? Math.max(0, stock) : Infinity;
+function getQuantityLimitMessage(product, remainingQty, stockLimit, quantityLimit) {
+  if (quantityLimit < stockLimit) {
+    return remainingQty > 0
+      ? `${remainingQty} more ${product?.name || "item"} available for individual customers.`
+      : `Individual customers can add up to ${quantityLimit} of each item.`;
+  }
+
+  return remainingQty > 0
+    ? `${remainingQty} more ${product?.name || "item"} available.`
+    : `${product?.name || "This product"} is already at the available stock limit in your basket.`;
 }
 
 function mapServerCartToUiItems(serverCart) {
@@ -74,11 +116,29 @@ function mapServerCartToUiItems(serverCart) {
     status: it.status,
     qty: it.quantity,
     price: Number(it.price_snapshot),
-    // producer metadata and lead time
+    pre_bulk_price: Number(it.pre_bulk_price ?? it.price_snapshot),
+    // producer metadata and bulk settings keep cached carts current.
     producer_id: it.producer_id,
     producer_name: it.producer_name,
     leadTimeHours: it.lead_time_hours,
+    bulk_stock_threshold: Number(it.bulk_stock_threshold ?? individualQuantityLimit),
+    bulk_stock_discount: Number(it.bulk_stock_discount ?? defaultBulkDiscountPercent),
   }));
+}
+
+function getProductCartFields(product) {
+  // normalize product fields before writing them into local cart state.
+  return {
+    stock: product.stock,
+    status: product.status,
+    price: Number(product.price),
+    pre_bulk_price: Number(product.pre_bulk_price ?? product.price),
+    producer_id: product.producer_id || product.producer_profile_id || product.producer,
+    producer_name: product.producer_name,
+    leadTimeHours: product.lead_time_hours,
+    bulk_stock_threshold: Number(product.bulk_stock_threshold ?? individualQuantityLimit),
+    bulk_stock_discount: Number(product.bulk_stock_discount ?? defaultBulkDiscountPercent),
+  };
 }
 
 // Pull server cart into local cache + notify UI
@@ -97,9 +157,10 @@ export async function refreshCartFromServer() {
 // --------------------
 // Public API used by UI
 // --------------------
-export async function addToCart(product, qty) {
+export async function addToCart(product, qty, options = {}) {
   console.log("[cart] addToCart", { authed: isAuthed(), productId: product?.id, qty });
   const stockLimit = getStockLimit(product);
+  const quantityLimit = getQuantityLimit(product, options);
   const requestedQty = Math.max(1, Number(qty || 1));
 
   if (stockLimit <= 0 || product?.status === "unavailable") {
@@ -111,21 +172,19 @@ export async function addToCart(product, qty) {
     const items = readCart();
     const existing = items.find((i) => i.productId === product.id);
     const existingQty = Number(existing?.qty || 0);
-    const remainingQty = stockLimit - existingQty;
+    const remainingQty = quantityLimit - existingQty;
 
     if (requestedQty > remainingQty) {
-      throw new Error(
-        remainingQty > 0
-          ? `${remainingQty} more ${product?.name || "item"} available.`
-          : `${product?.name || "This product"} is already at the available stock limit in your basket.`
-      );
+      throw new Error(getQuantityLimitMessage(product, remainingQty, stockLimit, quantityLimit));
     }
 
     const nextQty = existingQty + requestedQty;
 
     const next = existing
       ? items.map((i) =>
-          i.productId === product.id ? { ...i, qty: nextQty } : i
+          i.productId === product.id
+            ? { ...i, ...getProductCartFields(product), qty: nextQty }
+            : i
         )
       : [
           ...items,
@@ -133,13 +192,8 @@ export async function addToCart(product, qty) {
             productId: product.id,
             name: product.name,
             unit: product.unit,
-            stock: product.stock,
-            status: product.status,
-            price: Number(product.price),
             qty: requestedQty,
-            producer_id: product.producer_id || product.producer_profile_id || product.producer,
-            producer_name: product.producer_name,
-            leadTimeHours: product.lead_time_hours,
+            ...getProductCartFields(product),
           },
         ];
 
@@ -150,14 +204,10 @@ export async function addToCart(product, qty) {
   // signed in (server)
   const cachedItems = readCart();
   const cachedQty = getCartQtyForProduct(product.id, cachedItems);
-  const remainingQty = stockLimit - cachedQty;
+  const remainingQty = quantityLimit - cachedQty;
 
   if (requestedQty > remainingQty) {
-    throw new Error(
-      remainingQty > 0
-        ? `${remainingQty} more ${product?.name || "item"} available.`
-        : `${product?.name || "This product"} is already at the available stock limit in your basket.`
-    );
+    throw new Error(getQuantityLimitMessage(product, remainingQty, stockLimit, quantityLimit));
   }
 
   console.log("[cart] addServerItem ->", { productId: product.id, qty: requestedQty });
@@ -167,16 +217,17 @@ export async function addToCart(product, qty) {
   return refreshCartFromServer();
 }
 
-export async function updateCartQty(productId, qty) {
+export async function updateCartQty(productId, qty, options = {}) {
   const items = readCart();
   const target = items.find((i) => i.productId === productId);
   const stockLimit = getStockLimit(target);
+  const quantityLimit = getQuantityLimit(target, options);
 
   if (stockLimit <= 0 || target?.status === "unavailable") {
     throw new Error(`${target?.name || "This product"} is currently unavailable.`);
   }
 
-  const nextQty = Math.min(Math.max(1, Number(qty || 1)), stockLimit);
+  const nextQty = Math.min(Math.max(1, Number(qty || 1)), quantityLimit);
 
   if (!isAuthed()) {
     const next = items.map((i) =>

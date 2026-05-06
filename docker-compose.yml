@@ -67,6 +67,10 @@ services:
           target: /app/src
         - action: rebuild
           path: ./frontend/package.json
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_FRESHNESS_API_URL=http://localhost:5001
+      - VITE_PROXY_TARGET=http://web:8000
 
 volumes:
   postgres_data:

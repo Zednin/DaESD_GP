@@ -3,9 +3,7 @@ import { motion } from "framer-motion";
 import { FiArrowRight } from "react-icons/fi";
 import styles from "./FeaturedProducts.module.css";
 
-//const API_URL = "http://localhost:8000/api/products/";
-const API_URL =
-  "http://localhost:8000/api/products/?status=available&ordering=-created_at";
+const API_URL = `${import.meta.env.VITE_API_URL}/api/products/?status=available&ordering=-created_at`;
 
 const containerVariants = {
   hidden: {},

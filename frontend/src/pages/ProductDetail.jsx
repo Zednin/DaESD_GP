@@ -7,18 +7,19 @@ import ProductHero from "../components/ProductDetail/ProductHero";
 import ProductFoodMiles from "../components/ProductDetail/ProductFoodMiles";
 import ProductRecipes from "../components/ProductDetail/ProductRecipes";
 import ProductReviews from "../components/ProductDetail/ProductReviews";
+import { useAuth } from "../auth/AuthContext";
 
 export default function ProductDetail() {
   const { productId } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [qty, setQty] = useState(1);
   const [error, setError] = useState("");
   const [foodMilesData, setFoodMilesData] = useState(null);
   const [reviewSummary, setReviewSummary] = useState({
     average: 0,
     count: 0,
   });
+  const { canUseBulkOrders } = useAuth();
 
   useEffect(() => {
     async function loadProduct() {
@@ -27,7 +28,7 @@ export default function ProductDetail() {
         setError("");
         const { data } = await apiClient.get(`/products/${productId}/`);
         setProduct(data);
-      } catch (err) {
+      } catch {
         setError("Failed to load product.");
       } finally {
         setLoading(false);
@@ -44,7 +45,7 @@ export default function ProductDetail() {
       try {
         const { data } = await apiClient.get(`/food-miles/products/${productId}/`);
         setFoodMilesData(data);
-      } catch (err) {
+      } catch {
         setFoodMilesData(null);
       }
     }
@@ -67,6 +68,7 @@ export default function ProductDetail() {
         reviewAverage={reviewSummary.average}
         reviewCount={reviewSummary.count}
         foodMiles={foodMilesData}
+        canUseBulkOrders={canUseBulkOrders}
         onAddToBasket={async (product, qty) => {
           const cartProduct = product.surplus_active
             ? {
@@ -76,7 +78,7 @@ export default function ProductDetail() {
               }
             : product;
 
-          await addToCart(cartProduct, qty);
+          await addToCart(cartProduct, qty, { canUseBulkOrders });
         }}
       />
 
