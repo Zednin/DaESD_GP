@@ -2,7 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import styles from "./QuickAddModal.module.css";
 import { getAllergenInfo, formatAllergenList } from "../../utils/allergenIcons";
-import { getCartQtyForProduct, readCart } from "../../utils/cartStorage";
+import {
+  getAvailableQuantity,
+  getCartLinePricing,
+  getCartQtyForProduct,
+  getQuantityLimit,
+  getStockLimit,
+  readCart,
+} from "../../utils/cartStorage";
 
 export default function QuickAddModal({
   product,
@@ -10,6 +17,7 @@ export default function QuickAddModal({
   onAdd,
   cartSubtotal,
   freeShippingThreshold = 40,
+  canUseBulkOrders = false,
 }) {
   const [qty, setQty] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
@@ -24,24 +32,42 @@ export default function QuickAddModal({
 
   const progress = Math.min(cartSubtotal / freeShippingThreshold, 1);
   const remaining = Math.max(freeShippingThreshold - cartSubtotal, 0);
-  const stockLimit = useMemo(() => {
-    const stock = Number(product?.stock);
-    return Number.isFinite(stock) ? Math.max(0, stock) : Infinity;
-  }, [product]);
-  const isUnavailable = product?.status === "unavailable" || stockLimit <= 0;
-  const availableToAdd = Number.isFinite(stockLimit)
-    ? Math.max(0, stockLimit - cartQty)
+  const stockLimit = useMemo(() => getStockLimit(product), [product]);
+  const quantityLimit = useMemo(
+    () => getQuantityLimit(product, { canUseBulkOrders }),
+    [canUseBulkOrders, product]
+  );
+
+  const maxSelectableQty = Number.isFinite(quantityLimit)
+    ? Math.max(1, quantityLimit - cartQty)
     : Infinity;
+  const isUnavailable = product?.status === "unavailable" || stockLimit <= 0;
+
+  const availableToAdd = getAvailableQuantity(product, cartQty, { canUseBulkOrders });
   const addBlockedByStock = !isUnavailable && qty > availableToAdd;
   const cannotAddMore = !isUnavailable && availableToAdd <= 0;
   const addDisabled = isUnavailable || (addStatus === "idle" && (addBlockedByStock || cannotAddMore));
+  const addPricing = useMemo(
+    () => getCartLinePricing(
+      {
+        ...product,
+        price: Number(product.price),
+        pre_bulk_price: Number(product.price),
+        qty,
+      },
+      { canUseBulkOrders }
+    ),
+    [canUseBulkOrders, product, qty]
+  );
+  const individualLimitApplies = !canUseBulkOrders && quantityLimit < stockLimit;
   const stockMessage = useMemo(() => {
     if (addError) return addError;
-    if (isUnavailable || addStatus !== "idle" || !Number.isFinite(stockLimit)) return "";
+    if (isUnavailable || addStatus !== "idle" || !Number.isFinite(quantityLimit)) return "";
+    if (cannotAddMore && individualLimitApplies) return `Individual customers can add up to ${quantityLimit} of this item.`;
     if (cannotAddMore) return "Stock limit reached.";
     if (addBlockedByStock) return `${availableToAdd} more available.`;
     return "";
-  }, [addBlockedByStock, addError, addStatus, availableToAdd, cannotAddMore, cartQty, isUnavailable, stockLimit]);
+  }, [addBlockedByStock, addError, addStatus, availableToAdd, cannotAddMore, individualLimitApplies, isUnavailable, quantityLimit]);
 
   function updateQty(next) {
     if (isUnavailable) {
@@ -50,7 +76,7 @@ export default function QuickAddModal({
     }
 
     setAddError("");
-    setQty(Math.min(Math.max(1, next), stockLimit));
+    setQty(Math.min(Math.max(1, next), maxSelectableQty));
   }
 
   useEffect(() => {
@@ -75,10 +101,15 @@ export default function QuickAddModal({
     if (closeTimerRef.current) {
       clearTimeout(closeTimerRef.current);
     }
-    setQty(1);
-    setActiveImage(0);
-    setAddStatus("idle");
-    setAddError("");
+
+    const resetTimer = setTimeout(() => {
+      setQty(1);
+      setActiveImage(0);
+      setAddStatus("idle");
+      setAddError("");
+    }, 0);
+
+    return () => clearTimeout(resetTimer);
   }, [product]);
 
   useEffect(() => {
@@ -238,7 +269,7 @@ export default function QuickAddModal({
                 <input
                   type="number"
                   min={1}
-                  max={Number.isFinite(stockLimit) ? stockLimit : undefined}
+                  max={Number.isFinite(maxSelectableQty) ? maxSelectableQty : undefined}
                   disabled={isUnavailable}
                   className={styles.qtyInput}
                   value={qty}
@@ -251,7 +282,7 @@ export default function QuickAddModal({
                 <button
                   type="button"
                   className={styles.qtyBtn}
-                  disabled={isUnavailable || qty >= stockLimit}
+                  disabled={isUnavailable || qty >= maxSelectableQty}
                   onClick={() => updateQty(qty + 1)}
                 >
                   +
@@ -266,8 +297,11 @@ export default function QuickAddModal({
               >
                 {isUnavailable && "Out of stock"}
                 {!isUnavailable && addStatus === "added" && "Added ✓"}
-                {!isUnavailable && addStatus === "idle" &&
-                  `Add to basket — £${(Number(product.price) * qty).toFixed(2)}`}
+                {!isUnavailable && addStatus === "idle" && (
+                  addPricing.discountAmount > 0
+                    ? `Add to basket — £${addPricing.lineTotal.toFixed(2)} / £${addPricing.discountAmount.toFixed(2)} saved`
+                    : `Add to basket — £${addPricing.lineTotal.toFixed(2)}`
+                )}
                 {!isUnavailable && addStatus === "idle" && product.original_price && (
                   <span className={styles.btnSaving}>
                     {" "}

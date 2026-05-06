@@ -289,6 +289,9 @@ export default function ProducerOrders({ producerId, producerName, onPendingCoun
   const [statusChoice, setStatusChoice]     = useState('');      // selected new status
   const [statusClosing, setStatusClosing]   = useState(false);
   const [cancelReason, setCancelReason]     = useState('');
+  const [contactOrder, setContactOrder] = useState(null);
+  const [contactMessage, setContactMessage] = useState('');
+  const [contactSending, setContactSending] = useState(false);
   const [updating, setUpdating] = useState(null); // id of order being updated
   const [sortKey, setSortKey]   = useState('created_at');
   const [sortDir, setSortDir]   = useState('desc');
@@ -616,6 +619,27 @@ export default function ProducerOrders({ producerId, producerName, onPendingCoun
       alert(`Failed to update order: ${err.message}`);
     } finally {
       setUpdating(null);
+    }
+  }
+
+  async function handleContactCustomer() {
+    if (!contactOrder || !contactMessage.trim()) return;
+
+    setContactSending(true);
+
+    try {
+      await apiClient.post(
+        `/producer-orders/${contactOrder.id}/contact-customer/`,
+        { message: contactMessage.trim() }
+      );
+
+      setContactOrder(null);
+      setContactMessage('');
+      alert('Message sent to customer.');
+    } catch (err) {
+      alert(`Failed to send message: ${err.message}`);
+    } finally {
+      setContactSending(false);
     }
   }
 
@@ -1418,10 +1442,14 @@ export default function ProducerOrders({ producerId, producerName, onPendingCoun
 
                   <button
                     className={styles.notifyEmailBtn}
-                    title="Send email notification to customer"
+                    title="Contact customer"
+                    onClick={() => {
+                      setContactOrder(statusOrder);
+                      setContactMessage('');
+                    }}
                   >
                     <FiMail size={15} />
-                    Notify Customer
+                    Contact Customer
                   </button>
                 </div>
               </div>
@@ -1429,7 +1457,64 @@ export default function ProducerOrders({ producerId, producerName, onPendingCoun
           </div>
         );
       })()}
+      {contactOrder && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setContactOrder(null)}
+        >
+          <div
+            className={styles.statusModalContent}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <div>
+                <h3 className={styles.modalTitle}>Contact Customer</h3>
+                <p className={styles.statusModalSub}>
+                  Order #{contactOrder.order} &middot; {contactOrder.customer_name}
+                </p>
+              </div>
 
+              <button
+                className={styles.modalClose}
+                onClick={() => setContactOrder(null)}
+              >
+                <FiX size={20} />
+              </button>
+            </div>
+
+            <div className={styles.statusModalBody}>
+              <label className={styles.statusSelectLabel}>
+                Message
+                <textarea
+                  className={styles.cancelReasonInput}
+                  rows={5}
+                  placeholder="Type your message to the customer..."
+                  value={contactMessage}
+                  onChange={e => setContactMessage(e.target.value)}
+                />
+              </label>
+
+              <div className={styles.statusModalActions}>
+                <button
+                  className={styles.statusSaveBtn}
+                  disabled={!contactMessage.trim() || contactSending}
+                  onClick={handleContactCustomer}
+                >
+                  <FiMail size={15} />
+                  {contactSending ? 'Sending…' : 'Send Message'}
+                </button>
+
+                <button
+                  className={styles.notifyEmailBtn}
+                  onClick={() => setContactOrder(null)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

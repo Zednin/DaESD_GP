@@ -88,3 +88,18 @@ def send_announcement_to_producers(announcement):
         except Exception as exc:
             results.append((producer.account.email, {"error": str(exc)}))
     return results
+
+def send_customer_order_status_update(order, producer_order, previous_status, new_status):
+    return send_template_email(
+        # to_email=order.account.email,
+        to_email="bristolregionalfoodnetwork@gmail.com",
+        subject=f"BRFN order #{order.id} update",
+        template_name="emails/order_status_update.html",
+        context={
+            "order": order,
+            "producer_order": producer_order,
+            "previous_status": previous_status,
+            "new_status": new_status,
+            "frontend_url": settings.FRONTEND_URL,
+        },
+    )
