@@ -167,6 +167,14 @@
   font-size: 1rem;
 }
 
+.summaryTotal {
+  font-size: 1.08rem;
+}
+
+.summaryTotal strong {
+  font-size: 1.25rem;
+}
+
 .error {
   padding: 0.75rem 0.9rem;
   background: var(--error-muted);
@@ -426,13 +434,19 @@
   font-size: 0.92rem;
 }
 
-.bulkField > span {
+.bulkField > span,
+.bulkDateLabel > span {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   color: var(--text);
   font-size: 0.88rem;
   font-weight: 800;
+}
+
+.bulkDateLabel {
+  display: grid;
+  gap: 0.45rem;
 }
 
 .bulkField input,

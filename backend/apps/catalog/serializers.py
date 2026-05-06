@@ -23,6 +23,7 @@ class ProductSerializer(serializers.ModelSerializer):
     )
 
     producer_profile_id = serializers.SerializerMethodField()
+    lead_time_hours = serializers.IntegerField(source="producer.lead_time_hours", read_only=True)
 
     category_name = serializers.CharField(
         source="category.name",
@@ -53,6 +54,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "producer",
             "producer_profile_id",
             "producer_name",
+            "lead_time_hours",
             "category",
             "category_name",
             "name",
@@ -61,6 +63,8 @@ class ProductSerializer(serializers.ModelSerializer):
             "unit",
             "stock",
             "low_stock_threshold",
+            "bulk_stock_threshold",
+            "bulk_stock_discount",
             "is_low_stock",
             "stock_alert_level",
             "availability_mode",
@@ -92,6 +96,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "surplus_active",
             "producer_profile_id",
             "producer_name",
+            "lead_time_hours",
             "category_name",
             "allergens",
             "is_low_stock",
