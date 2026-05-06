@@ -26,9 +26,6 @@ The application simulates a sustainable regional food marketplace where producer
   <img src="screenshots/homepage.png" width="890", height="500"/>
 </p>
 
-# More Screenshots
-# Screenshots
-
 <details>
 <summary>Public Pages</summary>
 
