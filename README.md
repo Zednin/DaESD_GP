@@ -219,7 +219,7 @@ PostgreSQL     AI Service
 
 
 # Software Features
-
+*Pending*
 
 # Authentication and Security
 
@@ -273,7 +273,7 @@ SECURE_SSL_REDIRECT=True
 
 # Payments
 
-Stripe integration is used for payment processing.
+Stripe integration is used for payment processing simulation.
 
 To enable Stripe payments, configure the required Stripe API keys inside the [.env](.env) file.
 
@@ -288,13 +288,13 @@ Configure Cloudinary credentials in the [.env](.env) file before running the pro
 
 
 
-## Requirements
+# Requirements
  - Docker
  - Docker Compose
 
 # Running the Software
 ## Environment Variables Setup
-Create a copy of [.env.example](.env.example) and frontend/[.env.local.example](.env.local.example) and fill in relevant information.
+Create a copy of [.env.example](.env.example) and frontend/[.env.local.example](.env.local.example) and fill in relevant information. Then remove the .example ending.
 ## Building the Project
 ### Build and start all services:
 ```bash
@@ -429,7 +429,7 @@ docker compose exec ai sh
 
 # Troubleshooting
 
-
+*Pending*
 
 
 
