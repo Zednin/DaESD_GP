@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import styles from "./Cart.module.css";
 import { Link } from "react-router-dom";
@@ -6,9 +6,14 @@ import {
   readCart,
   updateCartQty,
   removeFromCart,
+  getCartDiscountTotal,
+  getCartLinePricing,
+  getCartOriginalSubtotal,
   getCartSubtotal,
+  getQuantityLimit,
 } from "../utils/cartStorage";
 import apiClient from "../utils/apiClient";
+import { useAuth } from "../auth/AuthContext";
 
 function money(value) {
   return `£${Number(value || 0).toFixed(2)}`;
@@ -65,12 +70,10 @@ function QuantityStepper({ value, max, onDecrease, onIncrease }) {
 }
 
 export default function Cart() {
+  const { canUseBulkOrders } = useAuth();
   const [items, setItems] = useState(() => readCart());
   const [productDetails, setProductDetails] = useState({});
   const [cartError, setCartError] = useState("");
-
-  const itemOrderRef = useRef(new Map());
-  const nextOrderRef = useRef(0);
 
   useEffect(() => {
     function sync() {
@@ -80,26 +83,6 @@ export default function Cart() {
     window.addEventListener("cart:updated", sync);
     return () => window.removeEventListener("cart:updated", sync);
   }, []);
-
-  useEffect(() => {
-    const currentProductIds = new Set();
-
-    items.forEach((item) => {
-      const key = String(item.productId);
-      currentProductIds.add(key);
-
-      if (!itemOrderRef.current.has(key)) {
-        itemOrderRef.current.set(key, nextOrderRef.current);
-        nextOrderRef.current += 1;
-      }
-    });
-
-    for (const key of itemOrderRef.current.keys()) {
-      if (!currentProductIds.has(key)) {
-        itemOrderRef.current.delete(key);
-      }
-    }
-  }, [items]);
 
   const productIdsKey = useMemo(() => {
     return [...new Set(items.map((item) => item.productId).filter(Boolean))]
@@ -111,9 +94,11 @@ export default function Cart() {
     const productIds = productIdsKey ? productIdsKey.split(",") : [];
 
     if (productIds.length === 0) {
-      setProductDetails({});
-      return;
+      const timer = window.setTimeout(() => setProductDetails({}), 0);
+      return () => window.clearTimeout(timer);
     }
+
+    let cancelled = false;
 
     Promise.all(
       productIds.map((id) =>
@@ -123,17 +108,22 @@ export default function Cart() {
           .catch(() => [id, null])
       )
     ).then((entries) => {
-      setProductDetails(
-        Object.fromEntries(entries.filter(([, product]) => product))
-      );
+      if (!cancelled) {
+        setProductDetails(
+          Object.fromEntries(entries.filter(([, product]) => product))
+        );
+      }
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, [productIdsKey]);
 
   const enrichedItems = useMemo(() => {
     return items
-      .map((item) => {
+      .map((item, index) => {
         const product = productDetails[item.productId] || {};
-        const orderKey = String(item.productId);
 
         return {
           ...item,
@@ -153,16 +143,26 @@ export default function Cart() {
           categoryName: product.category_name || item.categoryName,
           stock: Number.isFinite(Number(product.stock)) ? Number(product.stock) : item.stock,
           status: product.status || item.status,
-          displayOrder: itemOrderRef.current.get(orderKey) ?? 999999,
+          bulk_stock_threshold: product.bulk_stock_threshold ?? item.bulk_stock_threshold,
+          bulk_stock_discount: product.bulk_stock_discount ?? item.bulk_stock_discount,
+          pre_bulk_price: item.pre_bulk_price ?? item.price,
+          displayOrder: index,
         };
       })
       .sort((a, b) => a.displayOrder - b.displayOrder);
   }, [items, productDetails]);
 
+  const pricedItems = useMemo(() => {
+    return enrichedItems.map((item) => ({
+      ...item,
+      pricing: getCartLinePricing(item, { canUseBulkOrders }),
+    }));
+  }, [canUseBulkOrders, enrichedItems]);
+
   const producerGroups = useMemo(() => {
     const groups = new Map();
 
-    enrichedItems.forEach((item) => {
+    pricedItems.forEach((item) => {
       const producerId = getProducerId(item);
       const producerName = getProducerName(item);
 
@@ -172,28 +172,40 @@ export default function Cart() {
           producerName,
           items: [],
           subtotal: 0,
+          discount: 0,
           firstDisplayOrder: item.displayOrder,
         });
       }
 
-      const lineTotal = Number(item.qty || 0) * Number(item.price || 0);
       const group = groups.get(producerId);
 
       group.items.push(item);
-      group.subtotal += lineTotal;
+      group.subtotal += item.pricing.lineTotal;
+      group.discount += item.pricing.discountAmount;
       group.firstDisplayOrder = Math.min(group.firstDisplayOrder, item.displayOrder);
     });
 
     return Array.from(groups.values()).sort(
       (a, b) => a.firstDisplayOrder - b.firstDisplayOrder
     );
-  }, [enrichedItems]);
+  }, [pricedItems]);
 
-  const subtotal = useMemo(() => getCartSubtotal(items), [items]);
+  const originalSubtotal = useMemo(
+    () => getCartOriginalSubtotal(pricedItems, { canUseBulkOrders }),
+    [canUseBulkOrders, pricedItems]
+  );
+  const bulkDiscount = useMemo(
+    () => getCartDiscountTotal(pricedItems, { canUseBulkOrders }),
+    [canUseBulkOrders, pricedItems]
+  );
+  const subtotal = useMemo(
+    () => getCartSubtotal(pricedItems, { canUseBulkOrders }),
+    [canUseBulkOrders, pricedItems]
+  );
 
   const totalItems = useMemo(
-    () => items.reduce((sum, item) => sum + Number(item.qty || 0), 0),
-    [items]
+    () => pricedItems.reduce((sum, item) => sum + Number(item.qty || 0), 0),
+    [pricedItems]
   );
 
   async function updateQty(productId, nextQty) {
@@ -201,7 +213,7 @@ export default function Cart() {
     setCartError("");
 
     try {
-      await updateCartQty(productId, qty);
+      await updateCartQty(productId, qty, { canUseBulkOrders });
     } catch (error) {
       setCartError(error.message || "Could not update quantity.");
     }
@@ -252,14 +264,10 @@ export default function Cart() {
 
                 <ul className={styles.list}>
                   {group.items.map((item) => {
-                    const lineTotal =
-                      Number(item.qty || 0) * Number(item.price || 0);
+                    const pricing = item.pricing;
+                    const lineTotal = pricing.lineTotal;
                     const imageUrl = getImageUrl(item);
-                    const stock = Number(item.stock);
-                    const hasStock = Number.isFinite(stock);
-                    const stockLabel = hasStock
-                      ? `${stock} ${item.unit || "item"}${stock === 1 ? "" : "s"} in stock`
-                      : null;
+                    const maxQuantity = getQuantityLimit(item, { canUseBulkOrders });
 
                     return (
                       <li key={item.productId} className={styles.row}>
@@ -277,14 +285,18 @@ export default function Cart() {
                         </div>
 
                         <div className={styles.info}>
-                          <div className={styles.name}>{item.name}</div>
+                          <div className={styles.nameRow}>
+                            <div className={styles.name}>{item.name}</div>
+                            {pricing.discountAmount > 0 && (
+                              <span className={styles.bulkTag}>Bulk order</span>
+                            )}
+                          </div>
 
                           <div className={styles.meta}>
                             {item.categoryName && (
                               <span>{item.categoryName} · </span>
                             )}
-                            {money(item.price)} / {item.unit || "item"}
-                            {stockLabel && <span> · {stockLabel}</span>}
+                            <span>{money(pricing.unitPrice)} / {item.unit || "item"}</span>
                           </div>
 
                           <div className={styles.controls}>
@@ -292,7 +304,7 @@ export default function Cart() {
                               <span className={styles.qtyLabel}>Qty</span>
                               <QuantityStepper
                                 value={item.qty}
-                                max={hasStock ? stock : Infinity}
+                                max={maxQuantity}
                                 onDecrease={() =>
                                   updateQty(item.productId, Number(item.qty) - 1)
                                 }
@@ -314,7 +326,15 @@ export default function Cart() {
 
                         <div className={styles.totalBlock}>
                           <span>Line total</span>
-                          <strong>{money(lineTotal)}</strong>
+                          {pricing.discountAmount > 0 ? (
+                            <strong className={styles.linePriceCompare}>
+                              <span>{money(pricing.originalLineTotal)}</span>
+                              <i aria-hidden="true">|</i>
+                              <b>{money(lineTotal)}</b>
+                            </strong>
+                          ) : (
+                            <strong>{money(lineTotal)}</strong>
+                          )}
                         </div>
                       </li>
                     );
@@ -333,14 +353,23 @@ export default function Cart() {
           <aside className={styles.summaryCard}>
             <h2 className={styles.summaryTitle}>Order summary</h2>
 
-            <div className={styles.summaryRow}>
-              <span>Total items</span>
-              <strong>{totalItems}</strong>
-            </div>
+            <ul className={styles.summaryList}>
+              {pricedItems.map((item) => (
+                <li key={item.productId} className={styles.summaryItemRow}>
+                  <span>{item.name} × {item.qty}</span>
+                  <strong>{money(item.pricing.originalLineTotal)}</strong>
+                </li>
+              ))}
+            </ul>
 
             <div className={styles.summaryRow}>
-              <span>Producers</span>
-              <strong>{producerGroups.length}</strong>
+              <span>Total</span>
+              <strong>{money(originalSubtotal)}</strong>
+            </div>
+
+            <div className={`${styles.summaryRow} ${bulkDiscount > 0 ? styles.discountRow : ""}`}>
+              <span>Discount</span>
+              <strong>{bulkDiscount > 0 ? `-${money(bulkDiscount)}` : money(0)}</strong>
             </div>
 
             <div className={`${styles.summaryRow} ${styles.summaryTotal}`}>
@@ -348,19 +377,8 @@ export default function Cart() {
               <strong>{money(subtotal)}</strong>
             </div>
 
-            <div className={styles.producerBreakdown}>
-              <span className={styles.breakdownTitle}>By producer</span>
-
-              {producerGroups.map((group) => (
-                <div key={group.producerId} className={styles.breakdownRow}>
-                  <span>{group.producerName}</span>
-                  <strong>{money(group.subtotal)}</strong>
-                </div>
-              ))}
-            </div>
-
             <p className={styles.summaryHint}>
-              Delivery and any discounts will be calculated at checkout.
+              {totalItems} item{totalItems === 1 ? "" : "s"} from {producerGroups.length} producer{producerGroups.length === 1 ? "" : "s"}.
             </p>
 
             <Link className={styles.checkoutBtn} to="/checkout">

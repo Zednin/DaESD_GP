@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {MdOutlineShoppingCart} from "react-icons/md";
 import { AnimatePresence, motion } from "framer-motion";
@@ -6,10 +6,9 @@ import styles from "./Navbar.module.css";
 import AccountMenu from "./AccountMenu/AccountMenu";
 import NotificationMenu from "./NotificationMenu/NotificationMenu";
 import { Link } from "react-router-dom";
-import {readCart, getCartCount, getCartSubtotal, updateCartQty,removeFromCart} from "../utils/cartStorage";
+import {readCart, getCartCount, getCartLinePricing, getCartSubtotal, getQuantityLimit, updateCartQty,removeFromCart} from "../utils/cartStorage";
 import { useAuth } from "../auth/AuthContext";
 import apiClient from "../utils/apiClient";
-
 
 const NavbarMenu = [
     {
@@ -103,7 +102,7 @@ function AnimatedValue({ value, className, prefix = "", suffix = "" }) {
 }
 
 export default function Navbar({ onOpenTerms }) {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, canUseBulkOrders } = useAuth();
   const [cartOpen, setCartOpen] = useState(false);
   const cartWrapRef = useRef(null);
 
@@ -111,7 +110,7 @@ export default function Navbar({ onOpenTerms }) {
   const [notifications, setNotifications] = useState([]);
 
   const itemCount = getCartCount(cartItems);
-  const subtotal = getCartSubtotal(cartItems);
+  const subtotal = getCartSubtotal(cartItems, { canUseBulkOrders });
 
   const navigate = useNavigate();
   const isProducer = user?.account_type === "producer";
@@ -124,19 +123,19 @@ export default function Navbar({ onOpenTerms }) {
   const freeDeliveryProgress = Math.min(100, (subtotal / freeDeliveryTarget) * 100);
 
   async function increaseQty(item) {
-    await updateCartQty(item.productId, Number(item.qty || 1) + 1);
+    await updateCartQty(item.productId, Number(item.qty || 1) + 1, { canUseBulkOrders });
   }
 
   async function decreaseQty(item) {
     if (Number(item.qty) <= 1) return;
-    await updateCartQty(item.productId, Number(item.qty || 1) - 1);
+    await updateCartQty(item.productId, Number(item.qty || 1) - 1, { canUseBulkOrders });
   }
 
   async function removeItem(item) {
     await removeFromCart(item.productId);
   }
 
-  async function loadNotifications() {
+  const loadNotifications = useCallback(async () => {
     if (!user) {
       setNotifications([]);
       return;
@@ -148,7 +147,7 @@ export default function Navbar({ onOpenTerms }) {
     } catch (err) {
       console.error("Failed to load notifications", err);
     }
-  }
+  }, [user]);
 
   async function handleNotificationClick(notification) {
     setNotifications((prev) =>
@@ -227,12 +226,16 @@ export default function Navbar({ onOpenTerms }) {
   }, []);
 
   useEffect(() => {
-    if (!loading && user) {
-      loadNotifications();
-    } else {
-      setNotifications([]);
-    }
-  }, [loading, user]);
+    const timer = window.setTimeout(() => {
+      if (!loading && user) {
+        loadNotifications();
+      } else {
+        setNotifications([]);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [loadNotifications, loading, user]);
 
   return (
     <nav className={styles.nav}>
@@ -376,7 +379,8 @@ export default function Navbar({ onOpenTerms }) {
                     <motion.ul className={styles.cartList}>
                       <AnimatePresence initial={false}>
                         {previewItems.map((item) => {
-                          const lineTotal = Number(item.qty || 0) * Number(item.price || 0);
+                          const pricing = getCartLinePricing(item, { canUseBulkOrders });
+                          const lineTotal = pricing.lineTotal;
 
                           return (
                             <motion.li
@@ -392,9 +396,19 @@ export default function Navbar({ onOpenTerms }) {
                               <div className={styles.cartItemMain}>
                                 <div className={styles.cartItemName}>{item.name}</div>
 
-                                <div className={styles.cartItemSub}>
-                                  £{Number(item.price).toFixed(2)} / {item.unit || "item"}
-                                </div>
+                                {pricing.discountAmount > 0 ? (
+                                  <div className={styles.cartItemSub}>
+                                    <span className={styles.cartPriceCompare}>
+                                      <span className={styles.cartOriginalPrice}>£{pricing.baseUnitPrice.toFixed(2)}</span>
+                                      <span>£{pricing.unitPrice.toFixed(2)} / {item.unit || "item"}</span>
+                                    </span>
+                                    <span className={styles.cartSaving}>£{pricing.discountAmount.toFixed(2)} saved</span>
+                                  </div>
+                                ) : (
+                                  <div className={styles.cartItemSub}>
+                                    £{pricing.unitPrice.toFixed(2)} / {item.unit || "item"}
+                                  </div>
+                                )}
 
                                 <div className={styles.cartItemControls}>
                                   <button
@@ -415,6 +429,7 @@ export default function Navbar({ onOpenTerms }) {
                                     type="button"
                                     className={styles.qtyMiniBtn}
                                     onClick={() => increaseQty(item)}
+                                    disabled={Number(item.qty || 0) >= getQuantityLimit(item, { canUseBulkOrders })}
                                     aria-label={`Increase ${item.name}`}
                                   >
                                     +

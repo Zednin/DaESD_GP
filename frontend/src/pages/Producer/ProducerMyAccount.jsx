@@ -11,7 +11,7 @@ import ProducerOnboarding from "../../components/Producer/ProducerOnboarding";
 const MotionDiv = motion.div;
 
 export default function ProducerMyAccount() {
-  const [activeSection, setActiveSection] = useState("settings");
+  const [activeSection, setActiveSection] = useState("orderHistory");
 
   function renderSection() {
     switch (activeSection) {

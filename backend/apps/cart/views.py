@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from .models import CartItem, Cart
 from .serializers import CartSerializer
 from apps.catalog.models import Product
+from apps.orders.bulk_services import can_use_bulk_orders, get_individual_quantity_limit
 
 
 def _get_effective_price(product):
@@ -14,10 +15,13 @@ def _get_effective_price(product):
         return product.surplus_price
     return product.price
 
-
-def _stock_error(product, requested_quantity):
+def _stock_error(product, requested_quantity, user=None):
     if product.status != "available":
         return f"{product.name} is currently unavailable."
+
+    individual_limit = get_individual_quantity_limit(product)
+    if user is not None and requested_quantity > individual_limit and not can_use_bulk_orders(user):
+        return f"Individual customers can add up to {individual_limit} of each item."
 
     if requested_quantity > product.stock:
         return (
@@ -75,7 +79,7 @@ class CartViewSet(ModelViewSet):
             ) or 0
 
             requested_total = existing_quantity + qty
-            error = _stock_error(product, requested_total)
+            error = _stock_error(product, requested_total, request.user)
 
             if error:
                 return Response({"detail": error}, status=status.HTTP_400_BAD_REQUEST)
@@ -120,7 +124,7 @@ class CartItemViewSet(ModelViewSet):
         ) or 0
         requested_total = existing_quantity + requested_quantity
 
-        error = _stock_error(product, requested_total)
+        error = _stock_error(product, requested_total, request.user)
         if error:
             return Response({"detail": error}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -145,7 +149,7 @@ class CartItemViewSet(ModelViewSet):
         item = self.get_object()
         qty = _parse_positive_int(request.data.get("quantity", 1))
 
-        error = _stock_error(item.product, qty)
+        error = _stock_error(item.product, qty, request.user)
         if error:
             return Response({"detail": error}, status=status.HTTP_400_BAD_REQUEST)
 
