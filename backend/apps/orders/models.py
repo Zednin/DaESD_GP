@@ -100,8 +100,21 @@ class ProducerOrder(models.Model):
 
 
 class OrderItem(models.Model):
-    producer_order = models.ForeignKey(ProducerOrder, on_delete=models.CASCADE, related_name="items")
-    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="order_items")
+    producer_order = models.ForeignKey(
+        ProducerOrder,
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="order_items",
+    )
+
+    product_name_snapshot = models.CharField(max_length=255, blank=True)
 
     quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
     price_snapshot = models.DecimalField(max_digits=10, decimal_places=2)
@@ -109,20 +122,9 @@ class OrderItem(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["producer_order", "product"],
-                name="uniq_producerorder_product",
-            ),
-            models.CheckConstraint(
-                condition=models.Q(quantity__gt=0),
-                name="orderitem_quantity_gt_0",
-            ),
-        ]
-
     def __str__(self):
-        return f"{self.quantity} x {self.product.name}"
+        product_name = self.product.name if self.product else self.product_name_snapshot
+        return f"{self.quantity} x {product_name}"
     
     
     
@@ -189,7 +191,7 @@ class RecurringOrderItem(models.Model):
         RecurringOrder, on_delete=models.CASCADE, related_name="items"
     )
     product = models.ForeignKey(
-        Product, on_delete=models.PROTECT, related_name="recurring_order_items"
+        Product, on_delete=models.CASCADE, related_name="recurring_order_items"
     )
     quantity = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
     
@@ -205,8 +207,8 @@ class RecurringOrderItem(models.Model):
             ),
         ]
         
-    def __str__(self) -> str:
-        return f"{self.quantity} x {self.product.name} for {self.recurring_order.name}"
+    def __str__(self):
+        return f"{self.quantity} x {self.product.name}"
     
     
 class RecurringOrderEvent(models.Model):

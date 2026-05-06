@@ -109,13 +109,13 @@ class OrderViewSet(ModelViewSet):
             for item in producer_order.items.all():
                 product = item.product
                 items.append({
-                    "product_id": product.id,
-                    "name": product.name,
-                    "unit": product.unit,
-                    "price": str(product.price),
-                    "image": product.image or None,
+                    "product_id": product.id if product else None,
+                    "name": product.name if product else item.product_name_snapshot,
+                    "unit": product.unit if product else "",
+                    "price": str(product.price if product else item.price_snapshot),
+                    "image": product.image if product and product.image else None,
                     "quantity": item.quantity,
-                    "available": product.status == "available",
+                    "available": bool(product and product.status == "available"),
                 })
 
         return Response({
