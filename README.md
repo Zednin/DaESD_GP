@@ -304,6 +304,23 @@ cd frontend
 npm install
 ```
 
+## Stripe Listener (API key is required for functionality)
+Run the following command to begin the stripe payment listener:
+```bash
+stripe listen --forward-to localhost:8000/api/stripe/webhook/
+```
+
+## Seed dataset
+Run the following command to seed the dataset:
+```bash
+docker compose exec web python manage.py seed
+```
+
+To flush the dataset run the following command:
+```bash
+docker compose exec web python manage.py seed --flush
+```
+
 ## Building the Project
 ### Build and start all services:
 ```bash
