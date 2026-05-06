@@ -1,0 +1,19 @@
+<h2>Your BRFN order has been updated</h2>
+
+<p>Hello {{ order.account.first_name|default:order.account.username }},</p>
+
+<p>
+  One part of your order #{{ order.id }} has changed from
+  <strong>{{ previous_status }}</strong> to
+  <strong>{{ new_status }}</strong>.
+</p>
+
+<p>
+  Producer: <strong>{{ producer_order.producer.company_name }}</strong>
+</p>
+
+<p>
+  <a href="{{ frontend_url }}/account/orders">
+    View your order
+  </a>
+</p>

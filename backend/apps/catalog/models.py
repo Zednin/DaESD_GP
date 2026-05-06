@@ -106,6 +106,22 @@ class Product(models.Model):
         help_text="Warn producers when stock is at or below this quantity"
     )
 
+    # bulk order threshold
+    bulk_stock_threshold = models.PositiveIntegerField(
+        default=20,
+        validators=[MinValueValidator(1)],
+        help_text="quantity needed before bulk pricing applies"
+    )
+
+    # bulk order discount percentage
+    bulk_stock_discount = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=5,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="percentage discount for quantities above the bulk threshold"
+    )
+
     # Seasonal availability
     availability_mode = models.CharField(
         max_length=20,
