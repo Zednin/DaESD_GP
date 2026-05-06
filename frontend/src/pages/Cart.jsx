@@ -11,6 +11,7 @@ import {
   getCartOriginalSubtotal,
   getCartSubtotal,
   getQuantityLimit,
+  MIN_CHECKOUT_AMOUNT,
 } from "../utils/cartStorage";
 import apiClient from "../utils/apiClient";
 import { useAuth } from "../auth/AuthContext";
@@ -207,6 +208,8 @@ export default function Cart() {
     () => pricedItems.reduce((sum, item) => sum + Number(item.qty || 0), 0),
     [pricedItems]
   );
+  const belowMinimumCheckoutAmount = pricedItems.length > 0 && subtotal < MIN_CHECKOUT_AMOUNT;
+  const minimumRemaining = Math.max(0, MIN_CHECKOUT_AMOUNT - subtotal);
 
   async function updateQty(productId, nextQty) {
     const qty = Math.max(1, Number(nextQty || 1));
@@ -377,15 +380,34 @@ export default function Cart() {
               <strong>{money(subtotal)}</strong>
             </div>
 
+            {belowMinimumCheckoutAmount && (
+              <div className={styles.minimumNotice}>
+                <strong>{money(minimumRemaining)} more to checkout</strong>
+                <span>Card payments need to be at least {money(MIN_CHECKOUT_AMOUNT)}.</span>
+              </div>
+            )}
+
             <p className={styles.summaryHint}>
               {totalItems} item{totalItems === 1 ? "" : "s"} from {producerGroups.length} producer{producerGroups.length === 1 ? "" : "s"}.
             </p>
 
-            <Link className={styles.checkoutBtn} to="/checkout">
-              Go to checkout
+            <Link
+              className={`${styles.checkoutBtn} ${belowMinimumCheckoutAmount ? styles.disabledCheckoutBtn : ""}`}
+              to={belowMinimumCheckoutAmount ? "/cart" : "/checkout"}
+              aria-disabled={belowMinimumCheckoutAmount}
+              onClick={(event) => {
+                if (belowMinimumCheckoutAmount) {
+                  event.preventDefault();
+                }
+              }}
+            >
+              {belowMinimumCheckoutAmount ? "Go to checkout" : "Go to checkout"}
             </Link>
 
-            <Link className={styles.secondaryBtn} to="/products">
+            <Link
+              className={`${styles.secondaryBtn} ${belowMinimumCheckoutAmount ? styles.addMorePriorityBtn : ""}`}
+              to="/products"
+            >
               Add more items
             </Link>
           </aside>
