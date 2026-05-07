@@ -83,6 +83,7 @@ export default function Checkout() {
   const [bulkDeliveryDate, setBulkDeliveryDate] = useState("");
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [fulfilmentMethod, setFulfilmentMethod] = useState("delivery");
+  const [requestedDeliveryDates, setRequestedDeliveryDates] = useState({});
 
   const canCreateRecurring = canUseRecurringOrders;
   const canCreateBulk = canUseBulkOrders;
@@ -145,6 +146,48 @@ export default function Checkout() {
     () => getProducerLeadTimeGroups(checkoutItems),
     [checkoutItems]
   );
+
+  const producerDateRows = useMemo(() => {
+  const rows = {};
+
+  for (const item of checkoutItems) {
+    const producerId = String(item.producer_id || "");
+    if (!producerId) continue;
+
+    const leadTimeHours = Number(item.leadTimeHours || 48);
+
+    if (!rows[producerId]) {
+      rows[producerId] = {
+        producerId,
+        producerName: item.producer_name || "Producer",
+        leadTimeHours,
+        itemCount: 0,
+      };
+    }
+
+    rows[producerId].itemCount += Number(item.qty || 0);
+    rows[producerId].leadTimeHours = Math.max(
+      rows[producerId].leadTimeHours,
+      leadTimeHours
+    );
+  }
+
+  return Object.values(rows).map((row) => ({
+    ...row,
+    minDate: getMinDateFromLeadTime(row.leadTimeHours),
+  }));
+}, [checkoutItems]);
+
+  const checkoutLeadTimeHours = useMemo(
+    () => getMaxLeadTimeHours(checkoutItems),
+    [checkoutItems]
+  );
+
+  const minRequestedDeliveryDate = useMemo(
+    () => getMinDateFromLeadTime(checkoutLeadTimeHours),
+    [checkoutLeadTimeHours]
+  );
+
   const bulkLeadTimeHours = useMemo(
     () => getMaxLeadTimeHours(checkoutItems),
     [checkoutItems]
@@ -160,6 +203,24 @@ export default function Checkout() {
   const belowMinimumCheckoutAmount = checkoutItems.length > 0 && subtotal < MIN_CHECKOUT_AMOUNT;
   const itemCount = items.reduce((total, item) => total + Number(item.qty || 0), 0);
   const recurringFrequency = recurringPrefs?.frequency === "fortnightly" ? "Fortnightly" : "Weekly";
+
+  useEffect(() => {
+    setRequestedDeliveryDates((current) => {
+      const next = { ...current };
+      let changed = false;
+
+      for (const producer of producerDateRows) {
+        const selectedDate = next[producer.producerId];
+
+        if (selectedDate && selectedDate < producer.minDate) {
+          delete next[producer.producerId];
+          changed = true;
+        }
+      }
+
+      return changed ? next : current;
+    });
+  }, [producerDateRows]);
 
   useEffect(() => {
     if (belowMinimumCheckoutAmount) {
@@ -251,11 +312,24 @@ export default function Checkout() {
         throw new Error("Choose a delivery date that respects producer lead time.");
       }
 
+      for (const producer of producerDateRows) {
+        const selectedDate = requestedDeliveryDates[producer.producerId];
+
+        if (!selectedDate) {
+          throw new Error(`Choose a ${fulfilmentMethod === "pickup" ? "pickup" : "delivery"} date for ${producer.producerName}.`);
+        }
+
+        if (selectedDate < producer.minDate) {
+          throw new Error(`${producer.producerName} must be on or after ${new Date(`${producer.minDate}T00:00:00`).toLocaleDateString("en-GB")}.`);
+        }
+      }
+
       const payload = {
         allergen_acknowledged: requiresAllergenAcknowledgement
           ? allergenAcknowledged
           : true,
         fulfilment_method: fulfilmentMethod,
+        requested_delivery_dates: requestedDeliveryDates,
         special_instructions: specialInstructions.trim(),
       };
       if (recurringPrefs) {
@@ -524,6 +598,34 @@ export default function Checkout() {
                   <small>Collect directly from each producer.</small>
                 </span>
               </label>
+            </div>
+
+            <div className={styles.instructionsField}>
+              <span>
+                {fulfilmentMethod === "pickup" ? "Pickup dates" : "Delivery dates"}
+              </span>
+
+              {producerDateRows.map((producer) => (
+                <label key={producer.producerId} className={styles.producerDateRow}>
+                  <span>{producer.producerName}</span>
+                  <input
+                    type="date"
+                    min={producer.minDate}
+                    value={requestedDeliveryDates[producer.producerId] || ""}
+                    onChange={(event) =>
+                      setRequestedDeliveryDates((current) => ({
+                        ...current,
+                        [producer.producerId]: event.target.value,
+                      }))
+                    }
+                    required
+                  />
+                  <small>
+                    Earliest: {new Date(`${producer.minDate}T00:00:00`).toLocaleDateString("en-GB")}
+                    {` based on ${producer.leadTimeHours} hours lead time`}
+                  </small>
+                </label>
+              ))}
             </div>
 
             <label className={styles.instructionsField}>
