@@ -5,9 +5,17 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.exceptions import ValidationError, PermissionDenied
 
-from .models import Announcement, Notification
-from .serializers import AnnouncementSerializer, NotificationSerializer
+from .models import Announcement, Notification, ProductRecall
+from .serializers import (
+    AnnouncementSerializer,
+    NotificationSerializer,
+    ProductRecallSerializer,
+)
+
+from apps.orders.models import OrderItem
 from .email_service import send_announcement_to_producers
 
 logger = logging.getLogger(__name__)
@@ -84,3 +92,70 @@ def preview_order_email(request):
     order = FakeOrder()
 
     return render(request, "emails/order_confirmation.html", {"order": order})
+
+
+class ProductRecallViewSet(ModelViewSet):
+    serializer_class = ProductRecallSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return ProductRecall.objects.filter(created_by=self.request.user)
+
+    def perform_create(self, serializer):
+        product = serializer.validated_data["product"]
+        order_start = serializer.validated_data["order_start"]
+        order_end = serializer.validated_data["order_end"]
+        description = serializer.validated_data["description"]
+
+        if order_start > order_end:
+            raise ValidationError("Start date must be before end date.")
+
+        # Optional safety check: make sure producer owns this product.
+        # Adjust based on your Product model.
+        if hasattr(product, "producer") and product.producer.account != self.request.user:
+            raise PermissionDenied("You can only recall your own products.")
+
+        recall = serializer.save(created_by=self.request.user)
+        producer_account = product.producer.account
+        producer_email = producer_account.email
+        producer_phone = ""
+
+        producer_customer_profile = getattr(producer_account, "customer_profile", None)
+        if producer_customer_profile:
+            producer_phone = producer_customer_profile.phone_number or ""
+
+        affected_accounts = (
+            OrderItem.objects
+            .filter(
+                product=product,
+                producer_order__order__created_at__gte=order_start,
+                producer_order__order__created_at__lte=order_end,
+            )
+            .values_list("producer_order__order__account", flat=True)
+            .distinct()
+        )
+
+        contact_lines = [
+            "",
+            "Producer contact information:",
+            f"Email: {producer_email}",
+        ]
+
+        if producer_phone:
+            contact_lines.append(f"Phone: {producer_phone}")
+
+        notification_body = description + "\n\n" + "\n".join(contact_lines)
+
+        notifications = [
+            Notification(
+                account_id=account_id,
+                title=f"Product recall: {product.name}",
+                body=notification_body,
+                link="/dashboard/notifications",
+            )
+            for account_id in affected_accounts
+        ]
+
+        Notification.objects.bulk_create(notifications)
+
+        return recall

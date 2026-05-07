@@ -153,7 +153,7 @@ export default function NotificationMenu({
 
                                 {n.body && (
                                   <span className={localStyles.notificationBody}>
-                                    {n.body}
+                                    {String(n.body).split("---PRODUCER_CONTACT---")[0].trim()}
                                   </span>
                                 )}
 
@@ -263,9 +263,7 @@ export default function NotificationMenu({
                 </p>
               )}
 
-              <p className={localStyles.modalBody}>
-                {selectedNotification.body || "No extra details provided."}
-              </p>
+              <NotificationBody body={selectedNotification.body} />
 
               <div className={localStyles.modalActions}>
                 {selectedNotification.link && (
@@ -295,5 +293,56 @@ export default function NotificationMenu({
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function NotificationBody({ body }) {
+  const [mainText, contactText] = String(body || "").split("---PRODUCER_CONTACT---");
+
+  const contactLines = (contactText || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const contact = contactLines.reduce((acc, line) => {
+    const [key, ...rest] = line.split(":");
+    if (!key || rest.length === 0) return acc;
+    acc[key.trim().toLowerCase()] = rest.join(":").trim();
+    return acc;
+  }, {});
+
+  return (
+    <>
+      <p className={localStyles.modalBody}>
+        {mainText.trim() || "No extra details provided."}
+      </p>
+
+      {contactLines.length > 0 && (
+        <div className={localStyles.producerContactBox}>
+          <p className={localStyles.producerContactTitle}>Producer Contact</p>
+
+          {contact.producer && (
+            <div className={localStyles.producerContactRow}>
+              <span>Producer</span>
+              <strong>{contact.producer}</strong>
+            </div>
+          )}
+
+          {contact.email && (
+            <div className={localStyles.producerContactRow}>
+              <span>Email</span>
+              <a href={`mailto:${contact.email}`}>{contact.email}</a>
+            </div>
+          )}
+
+          {contact.phone && (
+            <div className={localStyles.producerContactRow}>
+              <span>Phone</span>
+              <a href={`tel:${contact.phone}`}>{contact.phone}</a>
+            </div>
+          )}
+        </div>
+      )}
+    </>
   );
 }

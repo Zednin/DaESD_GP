@@ -30,6 +30,10 @@ const WEEKDAYS = [
   "Saturday",
   "Sunday",
 ];
+
+const DELIVERY_FEE_PER_PRODUCER = 3.99;
+const FREE_DELIVERY_THRESHOLD = 40;
+
 // formats date for date input
 function formatDateInput(date) {
   const year = date.getFullYear();
@@ -77,6 +81,9 @@ export default function Checkout() {
   const [recurringPrefs, setRecurringPrefs] = useState(null);
   const [bulkInstructions, setBulkInstructions] = useState("");
   const [bulkDeliveryDate, setBulkDeliveryDate] = useState("");
+  const [specialInstructions, setSpecialInstructions] = useState("");
+  const [fulfilmentMethod, setFulfilmentMethod] = useState("delivery");
+  const [requestedDeliveryDates, setRequestedDeliveryDates] = useState({});
 
   const canCreateRecurring = canUseRecurringOrders;
   const canCreateBulk = canUseBulkOrders;
@@ -121,10 +128,66 @@ export default function Checkout() {
   const eligibleBulkCheckout = isBulkCheckout && canCreateBulk;
   const bulkOrderBlocked = isBulkCheckout && !canCreateBulk;
 
+  const producerCount = useMemo(() => {
+    return new Set(
+      checkoutItems.map((item) => item.producer_id).filter(Boolean)
+    ).size;
+  }, [checkoutItems]);
+
+  const deliveryFee = useMemo(() => {
+    if (fulfilmentMethod !== "delivery") return 0;
+    if (subtotal >= FREE_DELIVERY_THRESHOLD) return 0;
+    return producerCount * DELIVERY_FEE_PER_PRODUCER;
+  }, [fulfilmentMethod, producerCount, subtotal]);
+
+  const checkoutTotal = subtotal + deliveryFee;
+
   const producerLeadTimeGroups = useMemo(
     () => getProducerLeadTimeGroups(checkoutItems),
     [checkoutItems]
   );
+
+  const producerDateRows = useMemo(() => {
+  const rows = {};
+
+  for (const item of checkoutItems) {
+    const producerId = String(item.producer_id || "");
+    if (!producerId) continue;
+
+    const leadTimeHours = Number(item.leadTimeHours || 48);
+
+    if (!rows[producerId]) {
+      rows[producerId] = {
+        producerId,
+        producerName: item.producer_name || "Producer",
+        leadTimeHours,
+        itemCount: 0,
+      };
+    }
+
+    rows[producerId].itemCount += Number(item.qty || 0);
+    rows[producerId].leadTimeHours = Math.max(
+      rows[producerId].leadTimeHours,
+      leadTimeHours
+    );
+  }
+
+  return Object.values(rows).map((row) => ({
+    ...row,
+    minDate: getMinDateFromLeadTime(row.leadTimeHours),
+  }));
+}, [checkoutItems]);
+
+  const checkoutLeadTimeHours = useMemo(
+    () => getMaxLeadTimeHours(checkoutItems),
+    [checkoutItems]
+  );
+
+  const minRequestedDeliveryDate = useMemo(
+    () => getMinDateFromLeadTime(checkoutLeadTimeHours),
+    [checkoutLeadTimeHours]
+  );
+
   const bulkLeadTimeHours = useMemo(
     () => getMaxLeadTimeHours(checkoutItems),
     [checkoutItems]
@@ -140,6 +203,24 @@ export default function Checkout() {
   const belowMinimumCheckoutAmount = checkoutItems.length > 0 && subtotal < MIN_CHECKOUT_AMOUNT;
   const itemCount = items.reduce((total, item) => total + Number(item.qty || 0), 0);
   const recurringFrequency = recurringPrefs?.frequency === "fortnightly" ? "Fortnightly" : "Weekly";
+
+  useEffect(() => {
+    setRequestedDeliveryDates((current) => {
+      const next = { ...current };
+      let changed = false;
+
+      for (const producer of producerDateRows) {
+        const selectedDate = next[producer.producerId];
+
+        if (selectedDate && selectedDate < producer.minDate) {
+          delete next[producer.producerId];
+          changed = true;
+        }
+      }
+
+      return changed ? next : current;
+    });
+  }, [producerDateRows]);
 
   useEffect(() => {
     if (belowMinimumCheckoutAmount) {
@@ -231,10 +312,25 @@ export default function Checkout() {
         throw new Error("Choose a delivery date that respects producer lead time.");
       }
 
+      for (const producer of producerDateRows) {
+        const selectedDate = requestedDeliveryDates[producer.producerId];
+
+        if (!selectedDate) {
+          throw new Error(`Choose a ${fulfilmentMethod === "pickup" ? "pickup" : "delivery"} date for ${producer.producerName}.`);
+        }
+
+        if (selectedDate < producer.minDate) {
+          throw new Error(`${producer.producerName} must be on or after ${new Date(`${producer.minDate}T00:00:00`).toLocaleDateString("en-GB")}.`);
+        }
+      }
+
       const payload = {
         allergen_acknowledged: requiresAllergenAcknowledgement
           ? allergenAcknowledged
           : true,
+        fulfilment_method: fulfilmentMethod,
+        requested_delivery_dates: requestedDeliveryDates,
+        special_instructions: specialInstructions.trim(),
       };
       if (recurringPrefs) {
         payload.recurring = recurringPrefs;
@@ -469,6 +565,82 @@ export default function Checkout() {
             </section>
           )}
 
+          <section className={styles.checkoutOptions}>
+            <h3>Fulfilment</h3>
+
+            <div className={styles.fulfilmentChoices}>
+              <label className={styles.fulfilmentChoice}>
+                <input
+                  type="radio"
+                  name="fulfilment"
+                  value="delivery"
+                  checked={fulfilmentMethod === "delivery"}
+                  onChange={() => setFulfilmentMethod("delivery")}
+                />
+                <span>
+                  <strong>Delivery</strong>
+                  <small>
+                    Free over £40, otherwise £3.99 per producer.
+                  </small>
+                </span>
+              </label>
+
+              <label className={styles.fulfilmentChoice}>
+                <input
+                  type="radio"
+                  name="fulfilment"
+                  value="pickup"
+                  checked={fulfilmentMethod === "pickup"}
+                  onChange={() => setFulfilmentMethod("pickup")}
+                />
+                <span>
+                  <strong>Pickup</strong>
+                  <small>Collect directly from each producer.</small>
+                </span>
+              </label>
+            </div>
+
+            <div className={styles.instructionsField}>
+              <span>
+                {fulfilmentMethod === "pickup" ? "Pickup dates" : "Delivery dates"}
+              </span>
+
+              {producerDateRows.map((producer) => (
+                <label key={producer.producerId} className={styles.producerDateRow}>
+                  <span>{producer.producerName}</span>
+                  <input
+                    type="date"
+                    min={producer.minDate}
+                    value={requestedDeliveryDates[producer.producerId] || ""}
+                    onChange={(event) =>
+                      setRequestedDeliveryDates((current) => ({
+                        ...current,
+                        [producer.producerId]: event.target.value,
+                      }))
+                    }
+                    required
+                  />
+                  <small>
+                    Earliest: {new Date(`${producer.minDate}T00:00:00`).toLocaleDateString("en-GB")}
+                    {` based on ${producer.leadTimeHours} hours lead time`}
+                  </small>
+                </label>
+              ))}
+            </div>
+
+            <label className={styles.instructionsField}>
+              <span>Special instructions</span>
+              <textarea
+                rows={4}
+                maxLength={450}
+                placeholder="Delivery notes, pickup notes, allergies, access details, preferred timing..."
+                value={specialInstructions}
+                onChange={(event) => setSpecialInstructions(event.target.value)}
+              />
+              <small>{specialInstructions.length}/450</small>
+            </label>
+          </section>
+
           <button
             onClick={handleSubmit}
             className={styles.payBtn}
@@ -516,9 +688,14 @@ export default function Checkout() {
             <span>{bulkDiscount > 0 ? `-${formatCurrency(bulkDiscount)}` : formatCurrency(0)}</span>
           </div>
 
+          <div className={styles.totalRow}>
+            <span>Delivery</span>
+            <span>{deliveryFee > 0 ? formatCurrency(deliveryFee) : "Free"}</span>
+          </div>
+
           <div className={`${styles.totalRow} ${styles.summaryTotal}`}>
             <span>Subtotal</span>
-            <strong>{formatCurrency(subtotal)}</strong>
+            <strong>{formatCurrency(checkoutTotal)}</strong>
           </div>
         </aside>
       </div>

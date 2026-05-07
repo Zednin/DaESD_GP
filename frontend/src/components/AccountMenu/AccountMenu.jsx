@@ -12,10 +12,15 @@ import {
   FiFileText,
   FiMessageCircle,
   FiAlertCircle,
+  FiEye,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import styles from "./AccountMenu.module.css";
 import { useTheme } from "../../theme/ThemeProvider"; // adjust path if needed
+import {
+  applyColourblindMode,
+  loadColourblindMode,
+} from "../../utils/accessibilityPreferences";
 
 const panels = {
   root: {
@@ -167,6 +172,12 @@ const panels = {
         subtitle:
           "Adjust the appearance of BRFN to reduce glare and give your eyes a break.",
       },
+      {
+        type: "colourblind",
+        title: "Colourblind mode",
+        subtitle:
+          "Use safer status colours and stronger non-colour cues for clearer UI feedback.",
+      },
     ],
   },
 };
@@ -184,6 +195,7 @@ export default function AccountMenu({ user, onLogout, onOpenTerms }) {
   const navigate = useNavigate();
 
   const { theme, setTheme } = useTheme();
+  const [colourblindMode, setColourblindMode] = useState(() => loadColourblindMode());
 
   const activeKey = stack[stack.length - 1];
   const activePanel = panels[activeKey];
@@ -209,6 +221,22 @@ export default function AccountMenu({ user, onLogout, onOpenTerms }) {
       document.removeEventListener("keydown", onKeyDown);
     };
   }, []);
+
+  useEffect(() => {
+    function onStorage(e) {
+      if (e.key !== "colourblindMode") return;
+      setColourblindMode(loadColourblindMode());
+    }
+
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  function handleColourblindToggle() {
+    const nextValue = !colourblindMode;
+    setColourblindMode(nextValue);
+    applyColourblindMode(nextValue);
+  }
 
   
 
@@ -436,6 +464,37 @@ export default function AccountMenu({ user, onLogout, onOpenTerms }) {
                             ))}
                           </div>
                         </div>
+                      );
+                    }
+
+                    if (item.type === "colourblind") {
+                      return (
+                        <button
+                          key={`cb-${idx}`}
+                          type="button"
+                          className={`${styles.row} ${styles.colourblindRow}`}
+                          onClick={handleColourblindToggle}
+                          role="switch"
+                          aria-checked={colourblindMode}
+                        >
+                          <span className={styles.iconCircle}>
+                            <FiEye />
+                          </span>
+
+                          <span className={styles.rowText}>
+                            <span className={styles.rowTitle}>{item.title}</span>
+                            <span className={styles.rowSub}>{item.subtitle}</span>
+                          </span>
+
+                          <span
+                            className={`${styles.colourblindToggle} ${
+                              colourblindMode ? styles.colourblindToggleOn : ""
+                            }`}
+                            aria-hidden="true"
+                          >
+                            <span className={styles.colourblindToggleThumb} />
+                          </span>
+                        </button>
                       );
                     }
 

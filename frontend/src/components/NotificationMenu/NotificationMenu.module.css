@@ -356,3 +356,51 @@
   transform: scale(1.05);
   box-shadow: var(--focus);
 }
+
+.producerContactBox {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at top left, var(--primary-muted), transparent 42%),
+    var(--surface-2);
+}
+
+.producerContactTitle {
+  margin-bottom: 0.7rem;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.producerContactRow {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.producerContactRow:first-of-type {
+  border-top: 0;
+}
+
+.producerContactRow span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.producerContactRow strong,
+.producerContactRow a {
+  color: var(--text);
+  font-weight: 800;
+  word-break: break-word;
+}
+
+.producerContactRow a:hover {
+  color: var(--primary);
+}

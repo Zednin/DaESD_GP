@@ -32,7 +32,9 @@
   --border: rgba(17, 24, 39, 0.10);
   --border-strong: rgba(17, 24, 39, 0.18);
 
+    /* Shadow */
   --shadow: 0 18px 60px rgba(0,0,0,0.12);
+  --button-shadow: 0 10px 18px -8px rgba(110, 35, 50, 0.42);
 
   /* Controls */
   --control-bg: rgba(17, 24, 39, 0.04);
@@ -68,7 +70,7 @@
 
 /* Dark Mode */
 :root[data-theme="dark"] {
-  --primary: #e08194;
+  --primary: #944c5a;
 
   --bg: #18191a;
   --surface: #242526;
@@ -81,7 +83,9 @@
   --border: rgba(255,255,255,0.10);
   --border-strong: rgba(255,255,255,0.16);
 
+    /* Shadow */
   --shadow: 0 18px 60px rgba(0,0,0,0.45);
+  --button-shadow: 0 10px 22px -8px rgba(224, 129, 148, 0.35);
 
   --control-bg: rgba(255,255,255,0.08);
   --control-bg-hover: rgba(255,255,255,0.12);
@@ -136,6 +140,11 @@
     0 20px 70px rgba(0, 0, 0, 0.72),
     0 0 40px rgba(255, 43, 214, 0.18);
 
+  --button-shadow:
+    0 0 0 3px var(--cp-black) inset,
+    0 10px 0 var(--cp-shadow),
+    0 18px 30px rgba(0, 0, 0, 0.35);
+
   --control-bg: rgba(0, 212, 255, 0.08);
   --control-bg-hover: rgba(252, 238, 9, 0.16);
 
@@ -151,6 +160,60 @@
   --error: #ff2bd6;
   --error-muted: rgba(255, 43, 214, 0.16);
   --error-border: rgba(255, 43, 214, 0.45);
+}
+
+:root[data-colourblind="true"] {
+  --primary: #005fcc;
+  --secondary: #f59e0b;
+
+  --focus: 0 0 0 4px rgba(0, 95, 204, 0.28);
+
+  --error: #7c3aed;
+  --error-muted: rgba(124, 58, 237, 0.16);
+  --error-border: rgba(124, 58, 237, 0.45);
+
+  --success: #005fcc;
+  --success-muted: rgba(0, 95, 204, 0.14);
+
+  --warning: #b45309;
+  --warning-muted: rgba(180, 83, 9, 0.14);
+  --warning-border: rgba(180, 83, 9, 0.42);
+
+  --neutral-badge: #64748b;
+  --neutral-badge-bg: rgba(100, 116, 139, 0.16);
+
+  --primary-muted: rgba(0, 95, 204, 0.15);
+  --primary-muted-hover: rgba(0, 95, 204, 0.24);
+  --primary-border: rgba(0, 95, 204, 0.55);
+}
+
+:root[data-colourblind="true"] [class*="badge"],
+:root[data-colourblind="true"] [class*="Badge"],
+:root[data-colourblind="true"] [class*="Status"],
+:root[data-colourblind="true"] [class*="status"] {
+  border-width: 2px !important;
+  font-weight: 800;
+}
+
+:root[data-colourblind="true"] [class*="badge"]::before,
+:root[data-colourblind="true"] [class*="Badge"]::before {
+  content: "";
+  display: inline-block;
+  width: 0.45em;
+  height: 0.45em;
+  margin-right: 0.45em;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+:root[data-colourblind="true"] button:focus-visible,
+:root[data-colourblind="true"] a:focus-visible,
+:root[data-colourblind="true"] input:focus-visible,
+:root[data-colourblind="true"] textarea:focus-visible,
+:root[data-colourblind="true"] select:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+  box-shadow: var(--focus);
 }
 
 :root[data-theme="cyberpunk"] body {

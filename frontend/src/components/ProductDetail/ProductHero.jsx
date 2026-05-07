@@ -12,6 +12,7 @@ import {
   LuBadgeCheck,
   LuTruck,
 } from "react-icons/lu";
+import { FaStar } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { getAllergenInfo, formatAllergenList } from "../../utils/allergenIcons";
 import {
@@ -93,14 +94,14 @@ function formatPercent(value) {
   }).format(value);
 }
 
-function RatingStars({ rating = 0, size = 16 }) {
+function RatingStars({ rating, size = 16 }) {
   return (
-    <div className={styles.ratingStars} aria-label={`${rating} out of 5 stars`}>
+    <div className={styles.ratingStars} aria-label={`${rating} out of 5`}>
       {[1, 2, 3, 4, 5].map((n) => (
-        <LuStar
+        <FaStar
           key={n}
           size={size}
-          className={n <= Math.round(rating) ? styles.starFilled : styles.starEmpty}
+          className={n <= rating ? styles.starFilled : styles.starEmpty}
         />
       ))}
     </div>

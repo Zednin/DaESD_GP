@@ -5,7 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db import transaction
-from .models import Order, ProducerOrder, OrderItem, RecurringOrder
+from .models import Order, ProducerOrder, ProducerOrderStatusEvent, OrderItem, RecurringOrder
 from .serializers import (
     OrderSerializer,
     ProducerOrderSerializer,
@@ -39,13 +39,16 @@ def get_order_status_from_producer_statuses(statuses):
         return "pending"
 
     # status that determin if order has ended
-    final_statuses = {"delivered", "cancelled", "rejected"}
+    final_statuses = {"delivered", "collected", "cancelled", "rejected"}
 
     if all(status == "delivered" for status in statuses):
         return "completed"
 
     if all(status in ["cancelled", "rejected"] for status in statuses):
         return "cancelled"
+    
+    if all(status in ["delivered", "collected"] for status in statuses):
+        return "completed"
 
     # if at least one producer delivered and all other producer orders are final, mark as completed
     if any(status == "delivered" for status in statuses) and all(
@@ -53,7 +56,7 @@ def get_order_status_from_producer_statuses(statuses):
     ):
         return "completed"
 
-    if any(status in ["accepted", "preparing", "ready", "delivered"] for status in statuses):
+    if any(status in ["accepted", "preparing", "ready", "ready for pickup", "delivered", "collected"] for status in statuses):
         return "confirmed"
 
     return "pending"
@@ -66,6 +69,15 @@ def sync_order_status_from_producer_orders(order):
     if order.status != next_status:
         Order.objects.filter(pk=order.pk).update(status=next_status)
         order.status = next_status
+
+def get_producer_contact_text(producer):
+    email = producer.account.email or "Not provided"
+
+    return (
+        "\n\n---PRODUCER_CONTACT---"
+        f"\nProducer: {producer.company_name}"
+        f"\nEmail: {email}"
+    )
 
 
 class OrderViewSet(ModelViewSet):
@@ -139,9 +151,9 @@ class ProducerOrderViewSet(ModelViewSet):
                 "order__account__customer_profile",
                 "order__delivery_address",
                 "order__recurring_order_event__recurring_order",
-                "producer",
+                "producer__account",
             )
-            .prefetch_related("items__product")
+            .prefetch_related("items__product", "status_events__changed_by")
             .order_by("delivery_date", "-created_at")
         )
 
@@ -172,16 +184,46 @@ class ProducerOrderViewSet(ModelViewSet):
             # stock is deducted once when the producer accepts the order.
             if previous_status != "accepted" and new_status == "accepted":
                 deduct_stock_for_producer_order(instance, request.user)
+                
+                for item in instance.items.select_related("product"):
+                    product = item.product
+                    if not product:
+                        continue
+
+                    if product.stock_alert_level in ["low", "out"]:
+                        Notification.objects.create(
+                            account=instance.producer.account,
+                            title=f"Stock alert: {product.name}",
+                            body=(
+                                f"{product.name} is now "
+                                f"{'out of stock' if product.stock_alert_level == 'out' else 'low in stock'}.\n\n"
+                                f"Current stock: {product.stock}\n"
+                                f"Low stock threshold: {product.low_stock_threshold}"
+                            ),
+                            link="/producer/dashboard",
+                        )
 
             self.perform_update(serializer)
 
             status_changed = previous_status != new_status
+            
+            if status_changed:
+                ProducerOrderStatusEvent.objects.create(
+                    producer_order=instance,
+                    previous_status=previous_status,
+                    new_status=new_status,
+                    changed_by=request.user,
+                )
 
             if status_changed:
                 Notification.objects.create(
                     account=instance.order.account,
                     title=f"Order #{instance.order.id} update",
-                    body=f"{instance.producer.company_name} changed your order status from {previous_status} to {new_status}.",
+                    body=(
+                        f"{instance.producer.company_name} changed your order status "
+                        f"from {previous_status} to {new_status}."
+                        f"{get_producer_contact_text(instance.producer)}"
+                    ),
                     link=f"/account/orders/{instance.order.id}",
                 )
 
@@ -210,34 +252,16 @@ class ProducerOrderViewSet(ModelViewSet):
                 {"detail": "Message cannot be empty."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-    @action(detail=True, methods=["post"], url_path="contact-customer")
-    def contact_customer(self, request, pk=None):
-        producer_order = self.get_object()
-        message = (request.data.get("message") or "").strip()
-
-        if not message:
-            return Response(
-                {"detail": "Message cannot be empty."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         Notification.objects.create(
             account=producer_order.order.account,
             title=f"Message from {producer_order.producer.company_name}",
-            body=message,
+            body=f"{message}{get_producer_contact_text(producer_order.producer)}",
             link="/my-account",
         )
 
         return Response({"detail": "Message sent to customer."})
 
-        Notification.objects.create(
-            account=producer_order.order.account,
-            title=f"Message from {producer_order.producer.company_name}",
-            body=message,
-            link="/my-account",
-        )
-
-        return Response({"detail": "Message sent to customer."})
 
 
 class OrderItemViewSet(ModelViewSet):

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { motion } from "framer-motion";
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import shared from '../../pages/Producer/ProducerShared.module.css';
@@ -9,17 +10,19 @@ import DatePicker from '../DatePicker/DatePicker';
 import apiClient from '../../utils/apiClient';
 
 const ORDER_STATUS_CLASS = {
-  pending:   styles.badgeWarning,
-  accepted:  styles.badgeBlue,
+  pending: styles.badgeWarning,
+  accepted: styles.badgeBlue,
   preparing: styles.badgeBlue,
-  ready:     styles.badgePurple,
+  ready: styles.badgePurple,
+  "ready for pickup": styles.badgePurple,
+  collected: styles.badgeGreen,
   delivered: styles.badgeGreen,
   completed: styles.badgeGreen,
   confirmed: styles.badgeGreen,
-  active:    styles.badgeGreen,
-  paused:    styles.badgeWarning,
+  active: styles.badgeGreen,
+  paused: styles.badgeWarning,
   cancelled: styles.badgeGrey,
-  rejected:  styles.badgeGrey,
+  rejected: styles.badgeGrey,
 };
 
 // colours calendar orders by type
@@ -88,7 +91,9 @@ function formatWeekday(value) {
 function matchesStatus(status, selectedStatus) {
   if (selectedStatus === 'all') return true;
   if (selectedStatus === 'cancelled') return ['cancelled', 'rejected'].includes(status);
-  if (selectedStatus === 'delivered') return ['delivered', 'completed'].includes(status);
+  if (selectedStatus === "delivered") {
+    return ["delivered", "completed", "collected"].includes(status);
+  }
   return status === selectedStatus;
 }
 
@@ -196,11 +201,67 @@ function getRecurringScheduleMeta(row) {
 }
 
 function isCompleteStatus(status) {
-  return ['completed', 'delivered'].includes(status);
+  return ["completed", "delivered", "collected"].includes(status);
 }
 
 function isCancelledStatus(status) {
   return ['cancelled', 'rejected'].includes(status);
+}
+
+function getStatusEventMap(order) {
+  const events = order.status_timeline ?? [];
+
+  return events.reduce((map, event) => {
+    if (!event.new_status) return map;
+
+    map[event.new_status] = event;
+    return map;
+  }, {});
+}
+
+function formatTimelineTitle(value) {
+  return value
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function buildStatusTimeline(order, actorName = "Producer") {
+  const status = (order.status || "pending").toLowerCase();
+  const eventMap = getStatusEventMap(order);
+
+  const flow =
+    status === "rejected"
+      ? ["pending", "rejected"]
+      : status === "cancelled"
+      ? ["pending", "accepted", "cancelled"]
+      : order.fulfilment_method === "pickup"
+      ? ["pending", "accepted", "preparing", "ready for pickup", "collected"]
+      : ["pending", "accepted", "preparing", "ready", "delivered"];
+
+  const currentIndex = flow.includes(status) ? flow.indexOf(status) : 0;
+
+  return flow.map((step, index) => {
+    const event = eventMap[step];
+
+    // If there is no backend event for pending, use the order creation date.
+    const fallbackPendingDate =
+      step === "pending"
+        ? order.created_at
+        : null;
+
+    const reached = index <= currentIndex;
+    const eventDate = event?.created_at || fallbackPendingDate;
+
+    return {
+      id: `${order.id}-${step}`,
+      status: step,
+      reached,
+      title: formatTimelineTitle(step),
+      created_at: reached ? eventDate : null,
+      actor: event?.changed_by_name || (step === "pending" ? "Customer" : actorName),
+      note: event?.note || "",
+    };
+  });
 }
 
 // gets hours between order and delivery
@@ -212,14 +273,18 @@ function getLeadTimeHours(createdAt, deliveryDate) {
   return Math.round(diffMs / (1000 * 60 * 60));
 }
 
-/** Returns the valid next statuses for the dropdown */
-function getNextStatuses(status) {
+/* Returns the valid next statuses for the dropdown */
+function getNextStatuses(status, fulfilmentMethod = "delivery") {
   switch (status) {
-    case 'pending':   return ['accepted', 'rejected'];
-    case 'accepted':  return ['preparing', 'cancelled'];
-    case 'preparing': return ['ready', 'cancelled'];
-    case 'ready':     return ['delivered', 'cancelled'];
-    default:          return [];
+    case "pending": return ["accepted", "rejected"];
+    case "accepted": return ["preparing", "cancelled"];
+    case "preparing":
+      return fulfilmentMethod === "pickup"
+        ? ["ready for pickup", "cancelled"]
+        : ["ready", "cancelled"];
+    case "ready": return ["delivered", "cancelled"];
+    case "ready for pickup": return ["collected", "cancelled"];
+    default: return [];
   }
 }
 
@@ -359,7 +424,7 @@ export default function ProducerOrders({ producerId, producerName, onPendingCoun
 
   /* Open status-change modal */
   function openStatusModal(order) {
-    const next = getNextStatuses(order.status);
+    const next = getNextStatuses(order.status, order.fulfilment_method)
     setStatusChoice(next[0] || '');
     setStatusOrder(order);
   }
@@ -1063,7 +1128,7 @@ export default function ProducerOrders({ producerId, producerName, onPendingCoun
                 </thead>
                 <tbody>
                   {displayedOrders.map(order => {
-                    const hasNext = getNextStatuses(order.status).length > 0;
+                    const hasNext = getNextStatuses(order.status, order.fulfilment_method).length > 0;
 
                     return (
                       <tr
@@ -1191,7 +1256,9 @@ export default function ProducerOrders({ producerId, producerName, onPendingCoun
 
               {/* Delivery address */}
               <div className={styles.detailCard}>
-                <h4 className={styles.detailCardTitle}><FiMapPin size={15} /> Delivery Address</h4>
+                <h4 className={styles.detailCardTitle}>
+                  <FiMapPin size={15} /> {selectedOrder.fulfilment_method === "pickup" ? "Pickup" : "Delivery Address"}
+                </h4>
                 {selectedOrder.delivery_address ? (
                   <>
                     <p className={styles.addressLine}>{selectedOrder.delivery_address.address_line_1}</p>
@@ -1212,6 +1279,15 @@ export default function ProducerOrders({ producerId, producerName, onPendingCoun
                 <div className={styles.detailRow}>
                   <span className={styles.detailLabel}>Order Date</span>
                   <span>{new Date(selectedOrder.created_at).toLocaleDateString('en-GB')}</span>
+                </div>
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Fulfilment</span>
+                  <span>{selectedOrder.fulfilment_method === "pickup" ? "Pickup" : "Delivery"}</span>
+                </div>
+
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Delivery Fee</span>
+                  <span>£{Number(selectedOrder.delivery_fee || 0).toFixed(2)}</span>
                 </div>
                 <div className={styles.detailRow}>
                   <span className={styles.detailLabel}>Delivery Date</span>
@@ -1247,6 +1323,128 @@ export default function ProducerOrders({ producerId, producerName, onPendingCoun
             <div className={styles.specialInstructions}>
               <h4 className={styles.detailCardTitle}><FiFileText size={15} /> Order Instructions</h4>
               <p>{selectedOrder.special_instructions || <span className={styles.muted}>No instructions provided</span>}</p>
+            </div>
+
+            {/* Order Timeline */}
+            <div className={styles.orderTimeline}>
+              <div className={styles.timelineHeader}>
+                <h4 className={styles.detailCardTitle}>
+                  <FiClock size={15} /> Fulfilment timeline
+                </h4>
+              </div>
+
+              <div className={styles.horizontalTimeline}>
+                {(() => {
+                  const timeline = buildStatusTimeline(selectedOrder, producerName || "Producer");
+                  const lastReachedIndex = timeline.reduce(
+                    (last, event, index) => (event.reached ? index : last),
+                    -1
+                  );
+
+                  return timeline.map((event, index, arr) => {
+                  const isLast = index === arr.length - 1;
+
+                  return (
+                    <div
+                      key={event.id}
+                      className={`${styles.timelineStage} ${
+                        event.reached ? styles.timelineStageDone : styles.timelineStageWaiting
+                      }`}
+                    >
+                      <div className={styles.timelineStageTop}>
+                        <motion.div
+                          className={styles.timelineNode}
+                          initial={{ scale: 0.72, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{
+                            delay: event.reached ? index * 0.42 : lastReachedIndex * 0.42 + 0.25,
+                            type: "spring",
+                            stiffness: 520,
+                            damping: 20,
+                          }}
+                        >
+                          {event.reached ? (
+                            <motion.span
+                              className={styles.timelineCheckWrap}
+                              initial={{ scale: 0, rotate: -45, opacity: 0 }}
+                              animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                              transition={{
+                                delay: index * 0.42 + 0.22,
+                                type: "spring",
+                                stiffness: 650,
+                                damping: 18,
+                              }}
+                            >
+                              <FiCheck size={15} />
+                            </motion.span>
+                          ) : (
+                            <motion.span
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ delay: lastReachedIndex * 0.42 + 0.35 }}
+                            >
+                              {index + 1}
+                            </motion.span>
+                          )}
+                        </motion.div>
+
+                        {!isLast && (
+                          <motion.div
+                            className={styles.timelineConnector}
+                            initial={{ scaleX: 0 }}
+                            animate={{
+                              scaleX: index < lastReachedIndex ? 1 : 0.35,
+                            }}
+                            transition={{
+                              delay: index < lastReachedIndex ? index * 0.42 + 0.25 : 0,
+                              duration: index < lastReachedIndex ? 0.42 : 0.2,
+                              ease: "easeInOut",
+                            }}
+                          />
+                        )}
+                      </div>
+
+                      <div className={styles.timelineStageLabel}>
+                        <strong>{event.title}</strong>
+                        <span>{event.reached ? "Complete" : "Pending"}</span>
+                      </div>
+
+                     <div className={styles.timelineTooltip}>
+                        <strong>{event.title}</strong>
+
+                        {event.created_at ? (
+                        <>
+                          <small>
+                            {new Date(event.created_at).toLocaleString("en-GB", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </small>
+
+                          {event.actor && (
+                            <small className={styles.timelineTooltipMuted}>
+                              Updated by {event.actor}
+                            </small>
+                          )}
+
+                          {event.note && (
+                            <small className={styles.timelineTooltipMuted}>
+                              {event.note}
+                            </small>
+                          )}
+                        </>
+                      ) : (
+                        <small>Not reached yet</small>
+                      )}
+                      </div>
+                    </div>
+                  );
+                    });
+                })()}
+              </div>
             </div>
 
             {/* Itemised product list */}
@@ -1377,7 +1575,10 @@ export default function ProducerOrders({ producerId, producerName, onPendingCoun
 
       {/* Status-change modal */}
       {statusOrder && (() => {
-        const nextStatuses = getNextStatuses(statusOrder.status);
+        const nextStatuses = getNextStatuses(
+          statusOrder.status,
+          statusOrder.fulfilment_method
+        );
         return (
           <div
             className={`${styles.modalOverlay} ${statusClosing ? styles.modalOverlayClosing : ''}`}
