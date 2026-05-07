@@ -116,6 +116,13 @@ class ProductRecallViewSet(ModelViewSet):
             raise PermissionDenied("You can only recall your own products.")
 
         recall = serializer.save(created_by=self.request.user)
+        producer_account = product.producer.account
+        producer_email = producer_account.email
+        producer_phone = ""
+
+        producer_customer_profile = getattr(producer_account, "customer_profile", None)
+        if producer_customer_profile:
+            producer_phone = producer_customer_profile.phone_number or ""
 
         affected_accounts = (
             OrderItem.objects
@@ -128,11 +135,22 @@ class ProductRecallViewSet(ModelViewSet):
             .distinct()
         )
 
+        contact_lines = [
+            "",
+            "Producer contact information:",
+            f"Email: {producer_email}",
+        ]
+
+        if producer_phone:
+            contact_lines.append(f"Phone: {producer_phone}")
+
+        notification_body = description + "\n\n" + "\n".join(contact_lines)
+
         notifications = [
             Notification(
                 account_id=account_id,
                 title=f"Product recall: {product.name}",
-                body=description,
+                body=notification_body,
                 link="/dashboard/notifications",
             )
             for account_id in affected_accounts
