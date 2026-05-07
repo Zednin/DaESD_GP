@@ -21,6 +21,7 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
   const [city, setCity] = useState("");
@@ -81,6 +82,7 @@ export default function Signup() {
     if (!email.trim()) return "Email is required";
     if (!firstName.trim()) return "First name is required";
     if (!lastName.trim()) return "Last name is required";
+    if (!isProducer && !phoneNumber.trim()) return "Phone number is required";
     if (!addressLine1.trim()) return "Address line 1 is required";
     if (!city.trim()) return "City is required";
     if (!postcode.trim()) return "Postcode is required";
@@ -146,6 +148,7 @@ export default function Signup() {
           password,
           first_name: firstName.trim(),
           last_name: lastName.trim(),
+          phone_number: phoneNumber.trim(),
           default_delivery_address: addressPayload,
           ...(org ? { organisation_type: org } : {}),
           ...(organisationName.trim()
@@ -252,6 +255,17 @@ export default function Signup() {
                   />
                 </Field>
               </div>
+
+              {!isProducer && (
+                <Field label="Phone number">
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="e.g. 07123 456789"
+                  />
+                </Field>
+              )}
             </FormSection>
 
             <FormSection title={isProducer ? "Business address" : "Delivery address"}>

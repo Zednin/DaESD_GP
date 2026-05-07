@@ -129,7 +129,7 @@ class AccountSettingsSerializer(serializers.ModelSerializer):
 
         # Update phone number
         if phone_number is not None:
-            customer.phone_number = phone_number
+            customer.phone_number = phone_number.strip()
             customer.save()
 
         # Update/create address
@@ -229,6 +229,12 @@ class BaseRegisterSerializer(serializers.ModelSerializer):
 
 
 class CustomerRegisterSerializer(BaseRegisterSerializer):
+    phone_number = serializers.CharField(
+        max_length=15,
+        required=True,
+        allow_blank=False,
+    )
+    
     organisation_type = serializers.ChoiceField(
         choices=Organisation.ORGANISATION_TYPE_CHOICES,
         required=False,
@@ -243,6 +249,7 @@ class CustomerRegisterSerializer(BaseRegisterSerializer):
 
     class Meta(BaseRegisterSerializer.Meta):
         fields = BaseRegisterSerializer.Meta.fields + [
+            "phone_number",
             "organisation_type",
             "organisation_name",
             "default_delivery_address",
@@ -266,6 +273,7 @@ class CustomerRegisterSerializer(BaseRegisterSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        phone_number = validated_data.pop("phone_number").strip()
         organisation_type = validated_data.pop("organisation_type", "").strip()
         organisation_name = validated_data.pop("organisation_name", "").strip()
         address_data = validated_data.pop("default_delivery_address")
@@ -290,6 +298,7 @@ class CustomerRegisterSerializer(BaseRegisterSerializer):
         )
 
         customer = Customer.objects.create(
+            phone_number=phone_number,
             account=account,
             default_delivery_address=address,
         )
