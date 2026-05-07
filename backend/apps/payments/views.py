@@ -188,6 +188,81 @@ def get_bulk_min_delivery_date(cart_items):
     lead_time_hours = get_cart_lead_time_hours(cart_items)
     return (timezone.now() + timedelta(hours=lead_time_hours)).date()
 
+def validate_requested_delivery_date(cart_items, requested_delivery_date, fulfilment_method):
+    if requested_delivery_date is None:
+        label = "pickup" if fulfilment_method == "pickup" else "delivery"
+        raise ValidationError({"detail": f"Choose a {label} date for this order."})
+
+    min_delivery_date = get_bulk_min_delivery_date(cart_items)
+    if requested_delivery_date < min_delivery_date:
+        formatted_date = min_delivery_date.strftime("%d %b %Y")
+        label = "Pickup" if fulfilment_method == "pickup" else "Delivery"
+        raise ValidationError({"detail": f"{label} must be on or after {formatted_date}."})
+
+def clean_requested_delivery_dates(data):
+    value = data.get("requested_delivery_dates")
+
+    if not isinstance(value, dict):
+        raise ValidationError({"detail": "Choose a date for each producer."})
+
+    cleaned = {}
+
+    for producer_id, date_value in value.items():
+        requested_date = parse_date(str(date_value))
+
+        if requested_date is None:
+            raise ValidationError({"detail": "Choose valid dates for each producer."})
+
+        cleaned[str(producer_id)] = requested_date
+
+    return cleaned
+
+
+def validate_requested_delivery_dates(cart_items, requested_delivery_dates, fulfilment_method):
+    label = "pickup" if fulfilment_method == "pickup" else "delivery"
+
+    producer_items = {}
+    for item in cart_items:
+        producer_id = str(item.product.producer_id)
+        producer_items.setdefault(producer_id, []).append(item)
+
+    for producer_id, items in producer_items.items():
+        requested_date = requested_delivery_dates.get(producer_id)
+
+        if requested_date is None:
+            producer_name = items[0].product.producer.company_name
+            raise ValidationError({"detail": f"Choose a {label} date for {producer_name}."})
+
+        min_date = get_bulk_min_delivery_date(items)
+        if requested_date < min_date:
+            producer_name = items[0].product.producer.company_name
+            formatted_date = min_date.strftime("%d %b %Y")
+            raise ValidationError({
+                "detail": f"{producer_name} must be on or after {formatted_date}."
+            })
+
+
+def serialise_requested_delivery_dates(requested_delivery_dates):
+    return json.dumps({
+        str(producer_id): delivery_date.isoformat()
+        for producer_id, delivery_date in requested_delivery_dates.items()
+    })
+
+
+def parse_requested_delivery_dates_metadata(metadata):
+    try:
+        raw = json.loads(metadata.get("requested_delivery_dates", "{}"))
+    except (TypeError, json.JSONDecodeError):
+        return {}
+
+    parsed = {}
+    for producer_id, date_value in raw.items():
+        parsed_date = parse_date(str(date_value))
+        if parsed_date:
+            parsed[str(producer_id)] = parsed_date
+
+    return parsed
+
 def validate_bulk_delivery_date(cart_items, requested_delivery_date):
     if requested_delivery_date is None:
         raise ValidationError({"detail": "Choose a delivery date for this bulk order."})
@@ -485,20 +560,25 @@ class CreateCheckoutSessionView(APIView):
         if recurring_payload:
             recurring_delivery_date = get_recurring_payload_schedule(recurring_payload)[1]
 
-        requested_delivery_date = None
-
-        if bulk_order and recurring_delivery_date:
-            requested_delivery_date = recurring_delivery_date
-        elif bulk_order:
-            requested_delivery_date = clean_requested_delivery_date(request.data)
-
-        if bulk_order and not recurring_delivery_date:
-            validate_bulk_delivery_date(cart_items, requested_delivery_date)
+        requested_delivery_dates = {}
+        if recurring_delivery_date:
+            requested_delivery_dates = {
+                str(item.product.producer_id): recurring_delivery_date
+                for item in cart_items
+            }
+        else:
+            requested_delivery_dates = clean_requested_delivery_dates(request.data)
 
         checkout_rows = get_cart_checkout_rows(cart_items)
         items_total = get_checkout_total_from_rows(checkout_rows)
         fulfilment_method = clean_fulfilment_method(request.data)
         special_instructions = clean_special_instructions(request.data)
+        if not recurring_payload:
+            validate_requested_delivery_dates(
+                cart_items,
+                requested_delivery_dates,
+                fulfilment_method,
+            )
 
         delivery_fee = get_delivery_fee(items_total, cart_items, fulfilment_method)
         checkout_total = money(items_total + delivery_fee)
@@ -530,8 +610,11 @@ class CreateCheckoutSessionView(APIView):
 
         if bulk_order:
             metadata["bulk_order"] = "true"
-            if requested_delivery_date:
-                metadata["requested_delivery_date"] = requested_delivery_date.isoformat()
+
+        if requested_delivery_dates:
+            metadata["requested_delivery_dates"] = serialise_requested_delivery_dates(
+                requested_delivery_dates
+            )
 
         if recurring_payload:
             metadata["recurring_order"] = json.dumps(recurring_payload)
@@ -643,7 +726,7 @@ def handle_checkout_session_completed(session):
     # checks metadata
     bulk_order = metadata.get("bulk_order") == "true" and has_bulk_items(cart_items)
     special_instructions = metadata.get("special_instructions", "")
-    requested_delivery_date = parse_date(metadata.get("requested_delivery_date", "")) if bulk_order else None
+    requested_delivery_dates = parse_requested_delivery_dates_metadata(metadata)
 
     fulfilment_method = metadata.get("fulfilment_method", "delivery")
     if fulfilment_method not in {"delivery", "pickup"}:
@@ -761,8 +844,9 @@ def handle_checkout_session_completed(session):
             ).date()
             if recurring_delivery_date:
                 delivery_date = recurring_delivery_date
-            if bulk_order and requested_delivery_date:
-                delivery_date = requested_delivery_date
+            producer_requested_date = requested_delivery_dates.get(str(producer_id))
+            if producer_requested_date:
+                delivery_date = producer_requested_date
 
             producer_order = ProducerOrder.objects.create(
                 order=order,
