@@ -33,7 +33,7 @@ from apps.community.views import ReviewViewSet
 
 from apps.traceability.views import AllergenViewSet
 from apps.payments.views import CreateCheckoutSessionView, stripe_webhook
-from apps.communications.views import AnnouncementViewSet, NotificationViewSet
+from apps.communications.views import AnnouncementViewSet, NotificationViewSet, ProductRecallViewSet
 
 
 
@@ -55,6 +55,7 @@ router.register(r'allergens', AllergenViewSet, basename='allergen')
 router.register(r'categories', CategoryViewSet, basename='category')
 router.register(r'announcements', AnnouncementViewSet, basename='announcement')
 router.register(r"notifications", NotificationViewSet, basename="notifications")
+router.register(r"product-recalls", ProductRecallViewSet, basename="product-recalls")
 router.register(r'reviews', ReviewViewSet, basename='review')
 
 urlpatterns = [
