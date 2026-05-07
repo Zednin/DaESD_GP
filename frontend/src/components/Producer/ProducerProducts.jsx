@@ -474,6 +474,135 @@ function DeleteModal({ product, onClose, onDeleted }) {
 const STOCK_FILTERS = ['all', 'inStock', 'lowStock', 'outOfStock'];
 const STOCK_FILTER_LABELS = { all: 'All', inStock: 'In Stock', lowStock: 'Low Stock', outOfStock: 'Out of Stock' };
 
+function ProductRecallModal({ product, onClose }) {
+  const [form, setForm] = useState({
+    order_start: '',
+    order_end: '',
+    description: '',
+  });
+  const [saving, setSaving] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
+
+  function handleChange(e) {
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value }));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+
+    try {
+      await apiClient.post('/product-recalls/', {
+        product: product.id,
+        order_start: form.order_start,
+        order_end: form.order_end,
+        description: form.description,
+      });
+
+      setSent(true);
+
+      setTimeout(() => {
+        onClose();
+      }, 2800);
+    } catch (err) {
+      setError(
+        err.response?.data?.detail ||
+        err.response?.data?.non_field_errors?.[0] ||
+        'Failed to send product recall.'
+      );
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className={`${styles.recallOverlay} ${sent ? styles.recallOverlayClosing : ''}`}>
+      <div className={`${styles.recallModal} ${sent ? styles.recallModalSent : ''}`}>
+        {sent ? (
+          <div className={styles.recallSentState}>
+            <div className={styles.recallSentIcon}>✓</div>
+            <h3>Product Recall Sent</h3>
+            <p>Affected customers have been notified.</p>
+          </div>
+        ) : (
+          <>
+            <div className={styles.recallHeader}>
+              <div>
+                <span className={styles.recallEyebrow}>Customer Safety Notice</span>
+                <h3>Product Recall</h3>
+                <p>
+                  Notify customers who ordered <strong>{product.name}</strong> during a selected time frame.
+                </p>
+              </div>
+
+              <button className={styles.recallCloseBtn} onClick={onClose} aria-label="Close">
+                ✕
+              </button>
+            </div>
+
+            {error && <p className={styles.errorBanner}>{error}</p>}
+
+            <form onSubmit={handleSubmit} className={styles.recallForm}>
+              <div className={styles.recallProductCard}>
+                <span>Related product</span>
+                <strong>{product.name}</strong>
+              </div>
+
+              <div className={styles.formRow}>
+                <div className={styles.field}>
+                  <label>Orders From *</label>
+                  <input
+                    type="datetime-local"
+                    name="order_start"
+                    value={form.order_start}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+
+                <div className={styles.field}>
+                  <label>Orders Until *</label>
+                  <input
+                    type="datetime-local"
+                    name="order_end"
+                    value={form.order_end}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className={styles.field}>
+                <label>Recall Description *</label>
+                <textarea
+                  name="description"
+                  rows={5}
+                  value={form.description}
+                  onChange={handleChange}
+                  placeholder="Explain the issue, what customers should do, and who to contact."
+                  required
+                />
+              </div>
+
+              <div className={styles.recallActions}>
+                <button type="button" className={styles.cancelBtn} onClick={onClose} disabled={saving}>
+                  Cancel
+                </button>
+
+                <button type="submit" className={styles.recallSendBtn} disabled={saving}>
+                  {saving ? 'Sending…' : 'Send Product Recall'}
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ProducerProducts({ producerId, producerName }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -482,6 +611,7 @@ export default function ProducerProducts({ producerId, producerName }) {
 
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [recallTarget, setRecallTarget] = useState(null);
 
   useEffect(() => {
     if (!producerId) {
@@ -690,6 +820,13 @@ export default function ProducerProducts({ producerId, producerName }) {
                         Edit
                       </button>
                       <button
+                        className={styles.editBtn}
+                        onClick={() => setRecallTarget(p)}
+                        aria-label={`Recall ${p.name}`}
+                      >
+                        Recall
+                      </button>
+                      <button
                         className={styles.deleteRowBtn}
                         onClick={() => setDeleteTarget(p)}
                         aria-label={`Delete ${p.name}`}
@@ -721,6 +858,17 @@ export default function ProducerProducts({ producerId, producerName }) {
           onDeleted={handleDeleted}
         />
       )}
+
+      {recallTarget !== null && (
+        <ProductRecallModal
+          product={recallTarget}
+          onClose={() => setRecallTarget(null)}
+        />
+      )}
     </section>
   );
 }
+
+
+
+

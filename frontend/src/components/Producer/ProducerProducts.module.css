@@ -18,3 +18,776 @@
   line-height: 1.2;
   white-space: nowrap;
 }
+
+.section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
+}
+
+.sectionHeader {
+  margin-bottom: 1rem;
+}
+
+.sectionTitle {
+  font-size: clamp(1.5rem, 2.4vw, 2.1rem);
+  color: var(--text);
+}
+
+.subtitle {
+  margin-top: 0.2rem;
+  color: var(--muted);
+}
+
+.addBtn {
+  border: 1px solid var(--primary-border);
+  border-radius: 12px;
+  padding: 0.65rem 0.95rem;
+  background: var(--primary);
+  color: var(--primary-contrast, #fff);
+  font-weight: 700;
+}
+
+.addBtn:hover {
+  background: color-mix(in srgb, var(--primary) 88%, white);
+}
+
+.filterTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.filterTab {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.45rem 0.7rem;
+  background: var(--control-bg);
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.filterTab:hover {
+  background: var(--control-bg-hover);
+  border-color: var(--primary-border);
+}
+
+.filterTabActive {
+  background: var(--primary-muted);
+  border-color: var(--primary-border);
+  color: var(--primary);
+}
+
+.filterTabCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 0.4rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.75rem;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table thead {
+  background: var(--surface-2);
+}
+
+.table th {
+  padding: 0.65rem 0.75rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.65rem 0.75rem;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.table tbody tr:hover {
+  background: var(--hover-overlay);
+}
+
+.nameCell {
+  min-width: 180px;
+}
+
+.productName {
+  display: block;
+  color: var(--text);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.productDesc {
+  display: block;
+  max-width: 260px;
+  margin-top: 0.15rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.22rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.badgeGreen {
+  background: var(--success-muted);
+  color: var(--success);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.badgeGrey {
+  background: var(--neutral-badge-bg);
+  color: var(--neutral-badge);
+}
+
+.badgeWarning {
+  background: var(--warning-muted);
+  color: var(--warning);
+  border-color: var(--warning-border);
+}
+
+.badgeRed {
+  background: var(--error-muted);
+  color: var(--error);
+  border-color: var(--error-border);
+}
+
+.stockCell {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.stock,
+.stockLow,
+.stockZero {
+  font-weight: 800;
+}
+
+.stockLow {
+  color: var(--warning);
+}
+
+.stockZero {
+  color: var(--error);
+}
+
+.stockAlertMeta,
+.muted {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.actionsCol {
+  width: 250px;
+}
+
+.actionsCell {
+  min-width: 250px;
+}
+
+.actionsBtns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.editBtn,
+.recallRowBtn,
+.deleteRowBtn {
+  min-width: 0;
+  height: 34px;
+  border-radius: 9px;
+  padding: 0 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: center;
+  border: 1px solid var(--border);
+  background: var(--control-bg);
+  color: var(--text);
+}
+
+.editBtn:hover {
+  background: var(--primary-muted);
+  border-color: var(--primary-border);
+  color: var(--primary);
+}
+
+.recallRowBtn {
+  background: var(--warning-muted);
+  border-color: var(--warning-border);
+}
+
+.recallRowBtn:hover {
+  background: var(--primary-muted);
+  border-color: var(--primary-border);
+  color: var(--primary);
+}
+
+.deleteRowBtn:hover {
+  background: var(--error-muted);
+  border-color: var(--error-border);
+  color: var(--error);
+}
+
+.empty,
+.centred {
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface-2);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.spinner {
+  border-color: var(--border);
+  border-top-color: var(--primary);
+}
+
+@media (max-width: 900px) {
+  .actionsCol,
+  .actionsCell {
+    min-width: 220px;
+    width: 220px;
+  }
+
+  .actionsBtns {
+    grid-template-columns: repeat(3, minmax(64px, 1fr));
+  }
+}
+
+
+
+/*Add product modal styling*/ 
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(8px);
+}
+
+.modal {
+  width: min(760px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: calc(var(--radius) + 6px);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modalHeader h3 {
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  color: var(--text);
+}
+
+.closeBtn {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--control-bg);
+  color: var(--text);
+}
+
+.closeBtn:hover {
+  background: var(--error-muted);
+  border-color: var(--error-border);
+  color: var(--error);
+}
+
+.form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.field label {
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--control-bg);
+  color: var(--text);
+  padding: 0.68rem 0.75rem;
+  font: inherit;
+  outline: none;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  border-color: var(--primary);
+  box-shadow: var(--focus);
+  background: var(--surface);
+}
+
+.uploadBtn {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px dashed var(--primary-border);
+  border-radius: 12px;
+  background: var(--primary-muted);
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.uploadBtn:hover {
+  background: var(--primary-muted-hover);
+}
+
+.checkboxGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.5rem;
+}
+
+.checkboxChip {
+  min-height: 40px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--control-bg);
+  color: var(--text);
+  padding: 0.5rem 0.65rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.checkboxChip input {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  accent-color: var(--primary);
+}
+
+.checkboxChip:hover {
+  background: var(--control-bg-hover);
+  border-color: var(--primary-border);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.cancelBtn,
+.saveBtn {
+  min-width: 140px;
+  min-height: 40px;
+  border-radius: 10px;
+  padding: 0 1rem;
+  font-weight: 800;
+}
+
+.cancelBtn {
+  border: 1px solid var(--border);
+  background: var(--control-bg);
+  color: var(--text);
+}
+
+.cancelBtn:hover {
+  background: var(--control-bg-hover);
+}
+
+.saveBtn {
+  border: 1px solid var(--primary-border);
+  background: var(--primary);
+  color: var(--primary-contrast, #fff);
+}
+
+.saveBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--primary) 88%, white);
+}
+
+.saveBtn:disabled,
+.cancelBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.errorBanner {
+  border: 1px solid var(--error-border);
+  border-radius: 12px;
+  background: var(--error-muted);
+  color: var(--error);
+  padding: 0.75rem;
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+
+  .modal {
+    padding: 1rem;
+  }
+
+  .checkboxGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .modalActions {
+    flex-direction: column-reverse;
+  }
+
+  .modalActions button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .checkboxGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+
+
+
+
+
+/* Product recall modal styles */
+
+.recallOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(8px);
+  animation: recallFadeIn 180ms ease-out both;
+}
+
+.recallOverlayClosing {
+  animation: recallFadeOut 2800ms ease-in both;
+}
+
+.recallModal {
+  width: min(680px, 100%);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: calc(var(--radius) + 8px);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  animation: recallPopIn 240ms ease-out both;
+}
+
+.recallModalSent {
+  max-width: 460px;
+  animation: recallSuccessPop 520ms ease-out both;
+}
+
+.recallHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.recallHeader h3 {
+  font-size: 2rem;
+  color: var(--text);
+}
+
+.recallHeader p {
+  margin-top: 0.35rem;
+  color: var(--muted);
+}
+
+.recallHeader strong {
+  color: var(--primary);
+}
+
+.recallEyebrow {
+  display: inline-flex;
+  margin-bottom: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.recallCloseBtn {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--control-bg);
+  color: var(--text);
+}
+
+.recallCloseBtn:hover {
+  background: var(--control-bg-hover);
+}
+
+.recallForm {
+  display: grid;
+  gap: 1rem;
+}
+
+.recallProductCard {
+  display: grid;
+  gap: 0.15rem;
+  padding: 1rem;
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius);
+  background: var(--primary-muted);
+}
+
+.recallProductCard span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.recallProductCard strong {
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.recallForm input,
+.recallForm textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--control-bg);
+  color: var(--text);
+  padding: 0.8rem 0.9rem;
+  outline: none;
+}
+
+.recallForm textarea {
+  resize: vertical;
+  min-height: 130px;
+}
+
+.recallForm input:focus,
+.recallForm textarea:focus {
+  border-color: var(--primary);
+  box-shadow: var(--focus);
+}
+
+.recallActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.recallSendBtn {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.8rem 1.15rem;
+  background: var(--primary);
+  color: var(--primary-contrast, #fff);
+  font-weight: 700;
+  box-shadow: 0 10px 24px var(--primary-muted);
+}
+
+.recallSendBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 72%, white));
+  box-shadow:
+    0 14px 34px var(--primary-muted-hover),
+    0 0 0 4px var(--primary-muted);
+}
+
+.recallSendBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.recallSentState {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.recallSentIcon {
+  width: 74px;
+  height: 74px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1rem;
+  border-radius: 999px;
+  background: var(--success-muted);
+  color: var(--success);
+  font-size: 2.4rem;
+  font-weight: 800;
+  animation: recallCheckPop 420ms ease-out both;
+}
+
+.recallSentState h3 {
+  font-size: 2rem;
+  color: var(--text);
+}
+
+.recallSentState p {
+  margin-top: 0.35rem;
+  color: var(--muted);
+}
+
+@keyframes recallFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes recallFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes recallPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes recallSuccessPop {
+  0% {
+    transform: scale(0.96);
+  }
+  55% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes recallCheckPop {
+  from {
+    opacity: 0;
+    transform: scale(0.4) rotate(-14deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .recallModal {
+    padding: 1rem;
+  }
+
+  .recallHeader h3,
+  .recallSentState h3 {
+    font-size: 1.5rem;
+  }
+
+  .recallActions {
+    flex-direction: column-reverse;
+  }
+
+  .recallActions button {
+    width: 100%;
+  }
+}
+

@@ -37,3 +37,27 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.account} - {self.title}"
+    
+    
+class ProductRecall(models.Model):
+    product = models.ForeignKey(
+        "catalog.Product",
+        on_delete=models.CASCADE,
+        related_name="recalls",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="product_recalls",
+    )
+    description = models.TextField()
+    order_start = models.DateTimeField()
+    order_end = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Recall: {self.product}"
