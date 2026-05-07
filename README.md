@@ -20,6 +20,35 @@ The application simulates a sustainable regional food marketplace where producer
 | Josh Okanlawon | 23039392 | Joshua2.Okanlawon@live.uwe.ac.uk |
 | Sam Waxman | 23023667 | Samuel2.Waxman@live.uwe.ac.uk |
 
+# Table of Contents
+
+- [Project Overview](#project-overview)
+- [Group Members](#group-members)
+- [Screenshots](#screenshots)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Services](#services)
+- [Software Features](#software-features)
+- [Authentication and Security](#authentication-and-security)
+- [Payments](#payments)
+- [Media Storage](#media-storage)
+- [Requirements](#requirements)
+- [Running the Software](#running-the-software)
+  - [Environment Variables Setup](#environment-variables-setup)
+  - [Node Files](#node-files)
+  - [Stripe Listener](#stripe-listener-api-key-is-required-for-functionality)
+  - [Seed Dataset](#seed-dataset)
+  - [Building the Project](#building-the-project)
+- [Application URLs](#application-urls-by-default)
+- [Backend Setup](#backend-setup)
+- [Frontend Setup](#frontend-setup)
+- [Backend Apps](#backend-apps)
+- [AI Service](#ai-service)
+- [Database](#database)
+- [Useful Docker Commands](#useful-docker-commands)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
 
 # Screenshots
 <p align="center">
@@ -295,6 +324,32 @@ Configure Cloudinary credentials in the [.env](.env) file before running the pro
 # Running the Software
 ## Environment Variables Setup
 Create a copy of [.env.example](.env.example) and frontend/[.env.local.example](.env.local.example) and fill in relevant information. Then remove the .example ending.
+
+## Node Files
+To create node modules from package.json run the following commands:
+```bash
+npm install
+cd frontend
+npm install
+```
+
+## Stripe Listener (API key is required for functionality)
+Run the following command to begin the stripe payment listener:
+```bash
+stripe listen --forward-to localhost:8000/api/stripe/webhook/
+```
+
+## Seed dataset
+Run the following command to seed the dataset:
+```bash
+docker compose exec web python manage.py seed
+```
+
+To flush the dataset run the following command:
+```bash
+docker compose exec web python manage.py seed --flush
+```
+
 ## Building the Project
 ### Build and start all services:
 ```bash
