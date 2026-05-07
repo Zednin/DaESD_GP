@@ -321,9 +321,35 @@ class InventoryAdjustment(models.Model):
     changed_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
+        from apps.communications.models import Notification
+
+        # Prevent double-applying stock if this adjustment is ever saved again
+        if self.pk:
+            super().save(*args, **kwargs)
+            return
+
+        product = self.product
+        previous_alert_level = product.stock_alert_level
+
         # Update the product stock by the delta_quantity
-        self.product.stock += self.delta_quantity
-        self.product.save()
+        product.stock += self.delta_quantity
+        product.save()
+
+        new_alert_level = product.stock_alert_level
+
+        if previous_alert_level != new_alert_level and new_alert_level in ["low", "out"]:
+            Notification.objects.create(
+                account=product.producer.account,
+                title=f"Stock alert: {product.name}",
+                body=(
+                    f"{product.name} is now "
+                    f"{'out of stock' if new_alert_level == 'out' else 'low in stock'}. "
+                    f"Current stock: {product.stock}. "
+                    f"Low stock threshold: {product.low_stock_threshold}."
+                ),
+                link="/producer/dashboard",
+            )
+
         super().save(*args, **kwargs)
 
     def __str__(self):
