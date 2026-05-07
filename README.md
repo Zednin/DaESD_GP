@@ -248,7 +248,36 @@ PostgreSQL     AI Service
 
 
 # Software Features
-*Pending*
+
+The platform offers a comprehensive suite of features designed to facilitate sustainable food commerce between producers, consumers, and community organizations. Key functionalities include:
+
+### For Consumers
+- **Product Browsing and Filtering**: Browse a catalog of regional food products with advanced filters (e.g., by category, price, sustainability metrics, and location).
+- **Shopping Cart and Checkout**: Add items to a cart, manage quantities, and complete secure purchases via integrated payment processing.
+- **AI-Powered Recommendations**: Receive personalized product suggestions based on user preferences, purchase history, and AI-driven analysis of product features.
+- **Order Tracking and History**: View real-time order status, delivery updates, and past purchases.
+- **Sustainability Tools**: Calculate and compare food miles for products to promote environmentally friendly choices.
+- **Reviews and Community Engagement**: Leave product reviews, participate in community forums, and receive notifications for updates or promotions.
+- **Surplus Deals**: Access discounted surplus products to reduce food waste.
+
+### For Producers
+- **Dashboard Management**: Manage product listings, inventory, orders, and financial reports.
+- **Surplus Management**: List surplus items for quick sales and track sustainability metrics.
+- **Order Fulfillment**: Process incoming orders, update statuses, and handle payments.
+- **Analytics and Reporting**: Generate finance reports and insights on sales performance.
+
+### For Administrators
+- **System Oversight**: Monitor users, producers, orders, and platform settings via a dedicated admin dashboard.
+- **Commission Management**: Set and track platform commissions on transactions.
+- **User and Producer Management**: Approve accounts, manage permissions, and oversee community content.
+- **Sustainability Monitoring**: Track overall platform sustainability metrics, including surplus utilization and food miles.
+
+### Additional Platform-Wide Features
+- **Authentication and Security**: Secure user registration, login, and role-based access control (consumers, producers, admins).
+- **Media Management**: Upload and store product images via cloud-based storage.
+- **Notifications**: Real-time alerts for order updates, promotions, and community interactions.
+- **Traceability**: Track product origins and supply chains for transparency.
+- **Responsive Design**: Mobile-friendly interface with dark mode support.
 
 # Authentication and Security
 
@@ -374,7 +403,7 @@ docker compose down -v
 # Application URLs by default
 ### Frontend:
 http://localhost:5173 
-### Backend API:
+### Backend API:S
 http://localhost:8000
 ### AI Service:
 http://localhost:5001
@@ -484,8 +513,29 @@ docker compose exec ai sh
 
 # Troubleshooting
 
-*Pending*
+If you encounter issues while setting up or running the application, refer to the solutions below. Ensure all environment variables are correctly configured and Docker is running.
 
+### General Setup Issues
+- **Docker Compose Fails to Build**: Ensure Docker and Docker Compose are installed and up to date. Run `docker --version` and `docker compose version` to verify. If ports (e.g., 5173, 8000, 5001, 5433) are in use, stop conflicting services or change ports in `docker-compose.yml`.
+- **Environment Variables Not Loaded**: Copy `.env.example` to `.env` and fill in all required values (e.g., database credentials, Stripe keys, Cloudinary settings). Missing variables may cause services to fail silently—check logs with `docker compose logs <service>`.
+- **Node Modules Installation Fails**: Run `npm install` in the root and `frontend/` directories. If issues persist, clear npm cache with `npm cache clean --force` and retry.
+
+### Runtime Issues
+- **Frontend Not Loading (Port 5173)**: Check if the frontend container is running with `docker compose ps`. If the page shows errors, verify Vite config and environment variables. Try rebuilding with `docker compose up --build frontend`.
+- **Backend API Errors (Port 8000)**: Run migrations with `docker compose exec web python manage.py migrate`. Check for database connection issues in logs. Ensure PostgreSQL container is healthy.
+- **AI Service Unavailable (Port 5001)**: Verify the AI container is running. Test the health endpoint at `http://localhost:5001/health`. If models fail to load, ensure `artifacts/` files are present and Python dependencies are installed.
+- **Database Connection Problems**: Confirm PostgreSQL credentials in `.env`. If data is corrupted, flush and reseed with `docker compose exec web python manage.py seed --flush` followed by `docker compose exec web python manage.py seed`.
+- **Payment Processing Not Working**: Ensure Stripe API keys are set in `.env` and the webhook listener is running (`stripe listen --forward-to localhost:8000/api/stripe/webhook/`). Test with Stripe's test mode.
+- **Authentication Issues**: Clear browser cookies and try logging in again. Check CSRF token handling in frontend requests. For production, ensure `SESSION_COOKIE_SECURE` and `CSRF_COOKIE_SECURE` are set to `True`.
+- **Slow Performance or Crashes**: Monitor resource usage with `docker stats`. Increase Docker memory limits if needed. For AI features, ensure sufficient RAM for model loading.
+
+### Logs and Debugging
+- View all logs: `docker compose logs`
+- Specific service logs: `docker compose logs <web|frontend|ai|db>`
+- Access container shells: `docker compose exec <service> sh` (e.g., for backend: `docker compose exec web sh`)
+- If issues persist, check the [GitHub Issues](https://github.com/your-repo/issues) or contact the development team.
+
+For advanced debugging, refer to Docker documentation or Django/React troubleshooting guides.
 
 
 
