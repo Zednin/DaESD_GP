@@ -662,7 +662,7 @@ For advanced debugging, refer to Docker documentation or Django/React troublesho
 <br>
 
 <p align="center">
-  <img src="screenshots/Sprint_logs.png">
+  <img src="screenshots/Sprint_Logs.png">
 </p>
 
 </details>
