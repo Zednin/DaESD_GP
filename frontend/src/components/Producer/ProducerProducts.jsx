@@ -550,7 +550,7 @@ function ProductRecallModal({ product, onClose }) {
                 <strong>{product.name}</strong>
               </div>
 
-              <div className={styles.formRow}>
+              <div className={styles.recallDateRow}>
                 <div className={styles.field}>
                   <label>Orders From *</label>
                   <input
