@@ -41,6 +41,10 @@ import FarmStories from "./components/Marketplace/FarmStories";
 
 // Admin pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
+import {
+  applyColourblindMode,
+  loadColourblindMode,
+} from "./utils/accessibilityPreferences";
 
 export default function App() {
   const [termsOpen, setTermsOpen] = useState(false);
@@ -60,6 +64,9 @@ export default function App() {
   }, []);
   //////////////////////////////////
 
+  useEffect(() => {
+    applyColourblindMode(loadColourblindMode());
+  }, []);
 
 
   return (
