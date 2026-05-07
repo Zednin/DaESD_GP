@@ -9,6 +9,7 @@ from .models import (
     WeeklySettlement,
     SettlementLine,
     CommissionLedger,
+    ProducerOrderStatusEvent,
 )
 
 
@@ -55,3 +56,23 @@ class SettlementLineAdmin(admin.ModelAdmin):
 @admin.register(CommissionLedger)
 class CommissionLedgerAdmin(admin.ModelAdmin):
     list_display = [field.name for field in CommissionLedger._meta.fields]
+    
+@admin.register(ProducerOrderStatusEvent)
+class ProducerOrderStatusEventAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "producer_order",
+        "previous_status",
+        "new_status",
+        "changed_by",
+        "created_at",
+    )
+
+    list_filter = (
+        "new_status",
+        "created_at",
+    )
+
+    search_fields = (
+        "producer_order__id",
+    )

@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
-from .models import Order, ProducerOrder, OrderItem, RecurringOrder, RecurringOrderItem
+from .models import Order, ProducerOrder, ProducerOrderStatusEvent, OrderItem, RecurringOrder, RecurringOrderItem
 
 # funcctions for recurring events
 from .recurring_services import (
@@ -316,6 +316,28 @@ class OrderSerializer(serializers.ModelSerializer):
         if self.get_is_bulk_order(obj):
             tags.append("bulk")
         return tags
+    
+class ProducerOrderStatusEventSerializer(serializers.ModelSerializer):
+    changed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProducerOrderStatusEvent
+        fields = [
+            "id",
+            "previous_status",
+            "new_status",
+            "changed_by_name",
+            "note",
+            "created_at",
+        ]
+
+    def get_changed_by_name(self, obj):
+        user = obj.changed_by
+        if not user:
+            return "System"
+
+        full_name = f"{user.first_name} {user.last_name}".strip()
+        return full_name or user.username or "User"
 
 class ProducerOrderSerializer(serializers.ModelSerializer):
     subtotal = serializers.DecimalField(
@@ -337,6 +359,7 @@ class ProducerOrderSerializer(serializers.ModelSerializer):
     recurring_order_id = serializers.SerializerMethodField()
     recurring_event_id = serializers.SerializerMethodField()
     recurring_name = serializers.SerializerMethodField()
+    status_timeline = ProducerOrderStatusEventSerializer(source="status_events", many=True, read_only=True)
 
     class Meta:
         model = ProducerOrder
@@ -365,6 +388,7 @@ class ProducerOrderSerializer(serializers.ModelSerializer):
             "recurring_name",
             "created_at",
             "updated_at",
+            "status_timeline",
         ]
 
     def get_stripe_ref(self, obj):

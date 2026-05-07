@@ -97,6 +97,33 @@ class ProducerOrder(models.Model):
 
     def __str__(self):
         return f"ProducerOrder {self.id} (Order {self.order_id})"
+    
+class ProducerOrderStatusEvent(models.Model):
+    producer_order = models.ForeignKey(
+        ProducerOrder,
+        on_delete=models.CASCADE,
+        related_name="status_events",
+    )
+
+    previous_status = models.CharField(max_length=20, blank=True, default="")
+    new_status = models.CharField(max_length=20)
+
+    changed_by = models.ForeignKey(
+        Account,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="producer_order_status_events",
+    )
+
+    note = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"ProducerOrder {self.producer_order_id}: {self.previous_status} → {self.new_status}"
 
 
 class OrderItem(models.Model):
