@@ -39,8 +39,15 @@ import ProducerMyAccount from "./pages/Producer/ProducerMyAccount";
 // Explore pages
 import FarmStories from "./components/Marketplace/FarmStories";
 
+// 404
+import NotFound from "./pages/NotFound";
+
 // Admin pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
+import {
+  applyColourblindMode,
+  loadColourblindMode,
+} from "./utils/accessibilityPreferences";
 
 export default function App() {
   const [termsOpen, setTermsOpen] = useState(false);
@@ -60,6 +67,9 @@ export default function App() {
   }, []);
   //////////////////////////////////
 
+  useEffect(() => {
+    applyColourblindMode(loadColourblindMode());
+  }, []);
 
 
   return (
@@ -164,6 +174,8 @@ export default function App() {
             </RequireAdmin>
           }
         />
+
+        <Route path="*" element={<NotFound />} />
       </Routes>
 
       <Footer onOpenTerms={() => setTermsOpen(true)} />

@@ -20,12 +20,30 @@ class Order(models.Model):
         ("ready for collection", "Ready for Collection"),
         ("completed", "Completed"),
     ]
+    
+    FULFILMENT_CHOICES = [
+        ("delivery", "Delivery"),
+        ("pickup", "Pickup"),
+    ]
+
 
     account = models.ForeignKey(Account, on_delete=models.PROTECT, related_name="orders")
     delivery_address = models.ForeignKey(
         Address, on_delete=models.PROTECT, related_name="delivery_orders")
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+
+    fulfilment_method = models.CharField(
+        max_length=20,
+        choices=FULFILMENT_CHOICES,
+        default="delivery",
+    )
+
+    delivery_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+    )
 
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     commission_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -63,6 +81,8 @@ class ProducerOrder(models.Model):
         ("rejected", "Rejected"),
         ("preparing", "Preparing"),
         ("ready", "Ready"),
+        ("ready for pickup", "Ready for Pickup"),
+        ("collected", "Collected"),
         ("delivered", "Delivered"),
         ("cancelled", "Cancelled"),
     ]
@@ -75,6 +95,12 @@ class ProducerOrder(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     delivery_date = models.DateField(blank=True, null=True)
+    
+    delivery_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -88,6 +114,8 @@ class ProducerOrder(models.Model):
                     "rejected",
                     "preparing",
                     "ready",
+                    "ready for pickup",
+                    "collected",
                     "delivered",
                     "cancelled",
                 ]),
@@ -97,6 +125,33 @@ class ProducerOrder(models.Model):
 
     def __str__(self):
         return f"ProducerOrder {self.id} (Order {self.order_id})"
+    
+class ProducerOrderStatusEvent(models.Model):
+    producer_order = models.ForeignKey(
+        ProducerOrder,
+        on_delete=models.CASCADE,
+        related_name="status_events",
+    )
+
+    previous_status = models.CharField(max_length=20, blank=True, default="")
+    new_status = models.CharField(max_length=20)
+
+    changed_by = models.ForeignKey(
+        Account,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="producer_order_status_events",
+    )
+
+    note = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"ProducerOrder {self.producer_order_id}: {self.previous_status} → {self.new_status}"
 
 
 class OrderItem(models.Model):

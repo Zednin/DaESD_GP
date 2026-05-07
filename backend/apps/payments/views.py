@@ -52,9 +52,58 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 
 COMMISSION_RATE = Decimal("0.05")
 MIN_STRIPE_PAYMENT_AMOUNT = Decimal("0.30")
+DELIVERY_FEE_PER_PRODUCER = Decimal("3.99")
+FREE_DELIVERY_THRESHOLD = Decimal("40.00")
 
 # special instruction text limit
 metadata_text_limit = 450
+
+def get_customer_default_delivery_address(user):
+    customer = getattr(user, "customer_profile", None)
+
+    if customer and customer.default_delivery_address:
+        return customer.default_delivery_address
+
+    return (
+        Address.objects
+        .filter(
+            account=user,
+            address_type=Address.AddressType.DELIVERY,
+            is_default=True,
+        )
+        .first()
+    )
+
+
+def get_customer_name(user):
+    full_name = f"{user.first_name} {user.last_name}".strip()
+    return full_name or user.username or user.email
+
+
+def create_checkout_customer(user, address=None):
+    customer_data = {
+        "email": user.email or None,
+        "name": get_customer_name(user),
+    }
+
+    customer_profile = getattr(user, "customer_profile", None)
+    if customer_profile and customer_profile.phone_number:
+        customer_data["phone"] = customer_profile.phone_number
+
+    if address:
+        customer_data["shipping"] = {
+            "name": get_customer_name(user),
+            "phone": customer_profile.phone_number if customer_profile and customer_profile.phone_number else None,
+            "address": {
+                "line1": address.address_line_1,
+                "line2": address.address_line_2 or "",
+                "city": address.city,
+                "postal_code": address.postcode,
+                "country": "GB",
+            },
+        }
+
+    return stripe.Customer.create(**customer_data)
 
 def clean_special_instructions(data):
     instructions = str(data.get("special_instructions") or "").strip()
@@ -248,6 +297,23 @@ def get_cart_stock_error(cart_items):
 
     return None
 
+def clean_fulfilment_method(data):
+    value = str(data.get("fulfilment_method") or "delivery").strip()
+    if value not in {"delivery", "pickup"}:
+        raise ValidationError({"detail": "Choose delivery or pickup."})
+    return value
+
+
+def get_producer_count(cart_items):
+    return len({item.product.producer_id for item in cart_items})
+
+
+def get_delivery_fee(total_amount, cart_items, fulfilment_method):
+    if fulfilment_method != "delivery":
+        return Decimal("0.00")
+    if money(total_amount) >= FREE_DELIVERY_THRESHOLD:
+        return Decimal("0.00")
+    return money(DELIVERY_FEE_PER_PRODUCER * get_producer_count(cart_items))
 
 def safe_send_customer_email(order):
     try:
@@ -338,13 +404,22 @@ def create_recurring_checkout_session(user, event, item_payloads=None):
     }
     if bulk_order:
         metadata["bulk_order"] = "true"
+        
+    default_address = get_customer_default_delivery_address(user)
+    stripe_customer = create_checkout_customer(user, default_address)
 
     session = stripe.checkout.Session.create(
         mode="payment",
         line_items=line_items,
         success_url=f"{frontend_url}/checkout/success?session_id={{CHECKOUT_SESSION_ID}}",
         cancel_url=f"{frontend_url}/my-account",
-        customer_email=user.email or None,
+        customer=stripe_customer.id,
+        shipping_address_collection={
+            "allowed_countries": ["GB"],
+        },
+        customer_update={
+            "shipping": "auto",
+        },
         metadata=metadata,
     )
     return session
@@ -410,7 +485,6 @@ class CreateCheckoutSessionView(APIView):
         if recurring_payload:
             recurring_delivery_date = get_recurring_payload_schedule(recurring_payload)[1]
 
-        special_instructions = clean_special_instructions(request.data) if bulk_order else ""
         requested_delivery_date = None
 
         if bulk_order and recurring_delivery_date:
@@ -422,7 +496,14 @@ class CreateCheckoutSessionView(APIView):
             validate_bulk_delivery_date(cart_items, requested_delivery_date)
 
         checkout_rows = get_cart_checkout_rows(cart_items)
-        validate_stripe_minimum_amount(get_checkout_total_from_rows(checkout_rows))
+        items_total = get_checkout_total_from_rows(checkout_rows)
+        fulfilment_method = clean_fulfilment_method(request.data)
+        special_instructions = clean_special_instructions(request.data)
+
+        delivery_fee = get_delivery_fee(items_total, cart_items, fulfilment_method)
+        checkout_total = money(items_total + delivery_fee)
+
+        validate_stripe_minimum_amount(checkout_total)
 
         line_items = []
         for checkout_row in checkout_rows:
@@ -443,25 +524,47 @@ class CreateCheckoutSessionView(APIView):
         metadata = {
             "user_id": str(request.user.id),
             "cart_id": str(cart.id),
+            "fulfilment_method": fulfilment_method,
+            "delivery_fee": str(delivery_fee),
         }
 
         if bulk_order:
             metadata["bulk_order"] = "true"
-            metadata["requested_delivery_date"] = requested_delivery_date.isoformat()
-            if special_instructions:
-                metadata["special_instructions"] = special_instructions
+            if requested_delivery_date:
+                metadata["requested_delivery_date"] = requested_delivery_date.isoformat()
 
         if recurring_payload:
             metadata["recurring_order"] = json.dumps(recurring_payload)
+            
+        if delivery_fee > 0:
+            line_items.append({
+                "price_data": {
+                    "currency": "gbp",
+                    "product_data": {
+                        "name": "Delivery fee",
+                    },
+                    "unit_amount": int(delivery_fee * 100),
+                },
+                "quantity": 1,
+            })
+            
+        if special_instructions:
+            metadata["special_instructions"] = special_instructions
+
+        default_address = get_customer_default_delivery_address(request.user)
+        stripe_customer = create_checkout_customer(request.user, default_address)
 
         session = stripe.checkout.Session.create(
             mode="payment",
             line_items=line_items,
             success_url=f"{frontend_url}/checkout/success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{frontend_url}/cart",
-            customer_email=request.user.email or None,
+            customer=stripe_customer.id,
             shipping_address_collection={
                 "allowed_countries": ["GB"],
+            },
+            customer_update={
+                "shipping": "auto",
             },
             metadata=metadata,
         )
@@ -539,8 +642,17 @@ def handle_checkout_session_completed(session):
 
     # checks metadata
     bulk_order = metadata.get("bulk_order") == "true" and has_bulk_items(cart_items)
-    special_instructions = metadata.get("special_instructions", "") if bulk_order else ""
+    special_instructions = metadata.get("special_instructions", "")
     requested_delivery_date = parse_date(metadata.get("requested_delivery_date", "")) if bulk_order else None
+
+    fulfilment_method = metadata.get("fulfilment_method", "delivery")
+    if fulfilment_method not in {"delivery", "pickup"}:
+        fulfilment_method = "delivery"
+
+    try:
+        delivery_fee = money(Decimal(metadata.get("delivery_fee", "0.00")))
+    except Exception:
+        delivery_fee = Decimal("0.00")
 
     # saves discounted total for bulk, normal price for standard
     total_amount = money(sum(
@@ -551,6 +663,7 @@ def handle_checkout_session_completed(session):
         ) * item.quantity
         for item in cart_items
     ))
+    order_total_amount = money(total_amount + delivery_fee)
 
     shipping = session.get("shipping_details") or {}
     customer_details = session.get("customer_details") or {}
@@ -601,7 +714,9 @@ def handle_checkout_session_completed(session):
             account_id=user_id,
             delivery_address=delivery_address,
             status="pending",
-            total_amount=total_amount,
+            total_amount=order_total_amount,
+            fulfilment_method=fulfilment_method,
+            delivery_fee=delivery_fee,
             commission_amount=Decimal("0.00"),
             special_instructions=special_instructions,
             stripe_session_id=session["id"],
@@ -610,7 +725,7 @@ def handle_checkout_session_completed(session):
         Payment.objects.create(
             order=order,
             provider="stripe",
-            amount=total_amount,
+            amount=order_total_amount,
             currency="GBP",
             status="paid",
         )
@@ -636,6 +751,10 @@ def handle_checkout_session_completed(session):
             payout_amount = money(subtotal - commission)
             total_commission += commission
 
+            producer_delivery_fee = Decimal("0.00")
+            if fulfilment_method == "delivery" and delivery_fee > 0:
+                producer_delivery_fee = DELIVERY_FEE_PER_PRODUCER
+
             producer = producer_items[0].product.producer
             delivery_date = (
                 timezone.now() + timedelta(hours=producer.lead_time_hours)
@@ -650,6 +769,7 @@ def handle_checkout_session_completed(session):
                 producer_id=producer_id,
                 status="pending",
                 total_amount=subtotal,
+                delivery_fee=producer_delivery_fee,
                 delivery_date=delivery_date,
             )
 
@@ -728,6 +848,15 @@ def handle_recurring_checkout_session_completed(session):
     metadata = session.get("metadata", {})
     event_id = metadata.get("recurring_event_id")
     user_id = metadata.get("user_id")
+    fulfilment_method = metadata.get("fulfilment_method", "delivery")
+    if fulfilment_method not in {"delivery", "pickup"}:
+        fulfilment_method = "delivery"
+
+    try:
+        delivery_fee = money(Decimal(metadata.get("delivery_fee", "0.00")))
+    except Exception:
+        delivery_fee = Decimal("0.00")
+    special_instructions = metadata.get("special_instructions", "")
 
     if not event_id or not user_id:
         return
@@ -781,6 +910,7 @@ def handle_recurring_checkout_session_completed(session):
         ),
         Decimal("0.00"),
     ))
+    order_total_amount = money(total_amount + delivery_fee)
     delivery_date = get_delivery_date(recurring_order, event.scheduled_for)
 
     with transaction.atomic():
@@ -788,7 +918,10 @@ def handle_recurring_checkout_session_completed(session):
             account=account,
             delivery_address=recurring_order.delivery_address,
             status="pending",
-            total_amount=total_amount,
+            total_amount=order_total_amount,
+            fulfilment_method=fulfilment_method,
+            delivery_fee=delivery_fee,
+            special_instructions=special_instructions,
             commission_amount=Decimal("0.00"),
             stripe_session_id=session["id"],
         )
@@ -796,7 +929,7 @@ def handle_recurring_checkout_session_completed(session):
         Payment.objects.create(
             order=order,
             provider="stripe",
-            amount=total_amount,
+            amount=order_total_amount,
             currency="GBP",
             status="paid",
         )
@@ -823,14 +956,20 @@ def handle_recurring_checkout_session_completed(session):
             commission = money(subtotal * COMMISSION_RATE)
             payout_amount = money(subtotal - commission)
             total_commission += commission
+            
+            producer_delivery_fee = Decimal("0.00")
+            if fulfilment_method == "delivery" and delivery_fee > 0:
+                producer_delivery_fee = DELIVERY_FEE_PER_PRODUCER
 
             producer_order = ProducerOrder.objects.create(
                 order=order,
                 producer_id=producer_id,
                 status="pending",
                 total_amount=subtotal,
+                delivery_fee=producer_delivery_fee,
                 delivery_date=delivery_date,
             )
+            
 
             for item in producer_items:
                 product = item["product"]

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { LuStar, LuX } from "react-icons/lu";
+import { FaStar } from "react-icons/fa";
+import { LuX } from "react-icons/lu";
 import { fetchMe } from "../../utils/auth";
 import {
   createReview,
@@ -23,7 +24,7 @@ function RatingStars({ rating, size = 16 }) {
   return (
     <div className={styles.ratingStars} aria-label={`${rating} out of 5`}>
       {[1, 2, 3, 4, 5].map((n) => (
-        <LuStar
+        <FaStar
           key={n}
           size={size}
           className={n <= rating ? styles.starFilled : styles.starEmpty}

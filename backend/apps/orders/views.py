@@ -5,7 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db import transaction
-from .models import Order, ProducerOrder, OrderItem, RecurringOrder
+from .models import Order, ProducerOrder, ProducerOrderStatusEvent, OrderItem, RecurringOrder
 from .serializers import (
     OrderSerializer,
     ProducerOrderSerializer,
@@ -39,13 +39,16 @@ def get_order_status_from_producer_statuses(statuses):
         return "pending"
 
     # status that determin if order has ended
-    final_statuses = {"delivered", "cancelled", "rejected"}
+    final_statuses = {"delivered", "collected", "cancelled", "rejected"}
 
     if all(status == "delivered" for status in statuses):
         return "completed"
 
     if all(status in ["cancelled", "rejected"] for status in statuses):
         return "cancelled"
+    
+    if all(status in ["delivered", "collected"] for status in statuses):
+        return "completed"
 
     # if at least one producer delivered and all other producer orders are final, mark as completed
     if any(status == "delivered" for status in statuses) and all(
@@ -53,7 +56,7 @@ def get_order_status_from_producer_statuses(statuses):
     ):
         return "completed"
 
-    if any(status in ["accepted", "preparing", "ready", "delivered"] for status in statuses):
+    if any(status in ["accepted", "preparing", "ready", "ready for pickup", "delivered", "collected"] for status in statuses):
         return "confirmed"
 
     return "pending"
@@ -150,7 +153,7 @@ class ProducerOrderViewSet(ModelViewSet):
                 "order__recurring_order_event__recurring_order",
                 "producer__account",
             )
-            .prefetch_related("items__product")
+            .prefetch_related("items__product", "status_events__changed_by")
             .order_by("delivery_date", "-created_at")
         )
 
@@ -203,6 +206,14 @@ class ProducerOrderViewSet(ModelViewSet):
             self.perform_update(serializer)
 
             status_changed = previous_status != new_status
+            
+            if status_changed:
+                ProducerOrderStatusEvent.objects.create(
+                    producer_order=instance,
+                    previous_status=previous_status,
+                    new_status=new_status,
+                    changed_by=request.user,
+                )
 
             if status_changed:
                 Notification.objects.create(

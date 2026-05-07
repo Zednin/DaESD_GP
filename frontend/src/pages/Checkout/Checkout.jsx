@@ -30,6 +30,10 @@ const WEEKDAYS = [
   "Saturday",
   "Sunday",
 ];
+
+const DELIVERY_FEE_PER_PRODUCER = 3.99;
+const FREE_DELIVERY_THRESHOLD = 40;
+
 // formats date for date input
 function formatDateInput(date) {
   const year = date.getFullYear();
@@ -77,6 +81,8 @@ export default function Checkout() {
   const [recurringPrefs, setRecurringPrefs] = useState(null);
   const [bulkInstructions, setBulkInstructions] = useState("");
   const [bulkDeliveryDate, setBulkDeliveryDate] = useState("");
+  const [specialInstructions, setSpecialInstructions] = useState("");
+  const [fulfilmentMethod, setFulfilmentMethod] = useState("delivery");
 
   const canCreateRecurring = canUseRecurringOrders;
   const canCreateBulk = canUseBulkOrders;
@@ -120,6 +126,20 @@ export default function Checkout() {
   );
   const eligibleBulkCheckout = isBulkCheckout && canCreateBulk;
   const bulkOrderBlocked = isBulkCheckout && !canCreateBulk;
+
+  const producerCount = useMemo(() => {
+    return new Set(
+      checkoutItems.map((item) => item.producer_id).filter(Boolean)
+    ).size;
+  }, [checkoutItems]);
+
+  const deliveryFee = useMemo(() => {
+    if (fulfilmentMethod !== "delivery") return 0;
+    if (subtotal >= FREE_DELIVERY_THRESHOLD) return 0;
+    return producerCount * DELIVERY_FEE_PER_PRODUCER;
+  }, [fulfilmentMethod, producerCount, subtotal]);
+
+  const checkoutTotal = subtotal + deliveryFee;
 
   const producerLeadTimeGroups = useMemo(
     () => getProducerLeadTimeGroups(checkoutItems),
@@ -235,6 +255,8 @@ export default function Checkout() {
         allergen_acknowledged: requiresAllergenAcknowledgement
           ? allergenAcknowledged
           : true,
+        fulfilment_method: fulfilmentMethod,
+        special_instructions: specialInstructions.trim(),
       };
       if (recurringPrefs) {
         payload.recurring = recurringPrefs;
@@ -469,6 +491,54 @@ export default function Checkout() {
             </section>
           )}
 
+          <section className={styles.checkoutOptions}>
+            <h3>Fulfilment</h3>
+
+            <div className={styles.fulfilmentChoices}>
+              <label className={styles.fulfilmentChoice}>
+                <input
+                  type="radio"
+                  name="fulfilment"
+                  value="delivery"
+                  checked={fulfilmentMethod === "delivery"}
+                  onChange={() => setFulfilmentMethod("delivery")}
+                />
+                <span>
+                  <strong>Delivery</strong>
+                  <small>
+                    Free over £40, otherwise £3.99 per producer.
+                  </small>
+                </span>
+              </label>
+
+              <label className={styles.fulfilmentChoice}>
+                <input
+                  type="radio"
+                  name="fulfilment"
+                  value="pickup"
+                  checked={fulfilmentMethod === "pickup"}
+                  onChange={() => setFulfilmentMethod("pickup")}
+                />
+                <span>
+                  <strong>Pickup</strong>
+                  <small>Collect directly from each producer.</small>
+                </span>
+              </label>
+            </div>
+
+            <label className={styles.instructionsField}>
+              <span>Special instructions</span>
+              <textarea
+                rows={4}
+                maxLength={450}
+                placeholder="Delivery notes, pickup notes, allergies, access details, preferred timing..."
+                value={specialInstructions}
+                onChange={(event) => setSpecialInstructions(event.target.value)}
+              />
+              <small>{specialInstructions.length}/450</small>
+            </label>
+          </section>
+
           <button
             onClick={handleSubmit}
             className={styles.payBtn}
@@ -516,9 +586,14 @@ export default function Checkout() {
             <span>{bulkDiscount > 0 ? `-${formatCurrency(bulkDiscount)}` : formatCurrency(0)}</span>
           </div>
 
+          <div className={styles.totalRow}>
+            <span>Delivery</span>
+            <span>{deliveryFee > 0 ? formatCurrency(deliveryFee) : "Free"}</span>
+          </div>
+
           <div className={`${styles.totalRow} ${styles.summaryTotal}`}>
             <span>Subtotal</span>
-            <strong>{formatCurrency(subtotal)}</strong>
+            <strong>{formatCurrency(checkoutTotal)}</strong>
           </div>
         </aside>
       </div>

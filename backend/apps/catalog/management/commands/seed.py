@@ -52,7 +52,7 @@ from apps.addresses.models import Address
 from apps.producers.models import Producer
 from apps.catalog.models import Category, Product, RecommendationInteraction
 from apps.orders.models import (
-    Order, ProducerOrder, OrderItem,
+    Order, ProducerOrder, ProducerOrderStatusEvent, OrderItem,
     RecurringOrder, RecurringOrderItem,
     WeeklySettlement, SettlementLine, CommissionLedger,
 )
@@ -2210,6 +2210,10 @@ RECURRING_ORDERS = [
 # Command
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# Command
+# ═══════════════════════════════════════════════════════════════════════════════
+
 class Command(BaseCommand):
     help = "Seed the database with comprehensive Bristol-area demo data."
 
@@ -2253,6 +2257,7 @@ class Command(BaseCommand):
         SettlementLine.objects.all().delete()
         WeeklySettlement.objects.all().delete()
         Payment.objects.all().delete()
+        ProducerOrderStatusEvent.objects.all().delete()
         OrderItem.objects.all().delete()
         ProducerOrder.objects.all().delete()
         Order.objects.all().delete()          # cascades DistanceRecord
@@ -2556,6 +2561,7 @@ class Command(BaseCommand):
         }
 
         completed_producer_orders = []
+        created_status_event_count = 0
 
         for cust_user, prod_user, items, po_status, days_ago, del_days in SEED_ORDERS:
             cust_account, _, cust_addr = customer_map[cust_user]
@@ -2586,6 +2592,11 @@ class Command(BaseCommand):
                 delivery_date=delivery_date,
             )
             ProducerOrder.objects.filter(pk=po.pk).update(created_at=created_at)
+            created_status_event_count += self._seed_producer_order_status_history(
+                producer_order=po,
+                customer_account=cust_account,
+                created_at=created_at,
+            )
 
             for pname, qty in items:
                 product = product_map[pname]
@@ -2622,7 +2633,153 @@ class Command(BaseCommand):
                 f"  [+] Order #{order.id}: {cust_user} → {prod_user} ({po_status}, £{subtotal})"
             )
 
+        self.stdout.write(f"  [+] {created_status_event_count} order update audit records created.")
         self._seed_settlements(completed_producer_orders, producer_map, now)
+
+    def _seed_producer_order_status_history(self, producer_order, customer_account, created_at):
+        if producer_order.status_events.exists():
+            return 0
+
+        final_status = producer_order.status
+        producer_account = getattr(producer_order.producer, "account", None)
+
+        accepted_hours = 4 + (producer_order.pk % 9)     # 4-12 hours
+        prep_hours = 20 + (producer_order.pk % 9)        # roughly 1 day
+        ready_hours = 24 + (producer_order.pk % 25)      # 1-2 days
+        cancel_hours = 6 + (producer_order.pk % 13)      # 6-18 hours
+
+        accepted_at = created_at + timedelta(hours=accepted_hours)
+        preparing_at = accepted_at + timedelta(hours=prep_hours)
+        ready_at = preparing_at + timedelta(hours=ready_hours)
+
+        events = [
+            {
+                "previous_status": "",
+                "new_status": "pending",
+                "changed_by": customer_account,
+                "note": "Order received and awaiting producer confirmation.",
+                "created_at": created_at,
+            }
+        ]
+
+        if final_status == "accepted":
+            events.append({
+                "previous_status": "pending",
+                "new_status": "accepted",
+                "changed_by": producer_account,
+                "note": "Order accepted by producer.",
+                "created_at": accepted_at,
+            })
+        elif final_status == "preparing":
+            events.extend([
+                {
+                    "previous_status": "pending",
+                    "new_status": "accepted",
+                    "changed_by": producer_account,
+                    "note": "Order accepted by producer.",
+                    "created_at": accepted_at,
+                },
+                {
+                    "previous_status": "accepted",
+                    "new_status": "preparing",
+                    "changed_by": producer_account,
+                    "note": "Producer has started preparing the order.",
+                    "created_at": preparing_at,
+                },
+            ])
+        elif final_status == "ready":
+            events.extend([
+                {
+                    "previous_status": "pending",
+                    "new_status": "accepted",
+                    "changed_by": producer_account,
+                    "note": "Order accepted by producer.",
+                    "created_at": accepted_at,
+                },
+                {
+                    "previous_status": "accepted",
+                    "new_status": "preparing",
+                    "changed_by": producer_account,
+                    "note": "Producer has started preparing the order.",
+                    "created_at": preparing_at,
+                },
+                {
+                    "previous_status": "preparing",
+                    "new_status": "ready",
+                    "changed_by": producer_account,
+                    "note": "Order is ready for collection or delivery.",
+                    "created_at": ready_at,
+                },
+            ])
+        elif final_status == "delivered":
+            delivered_at = ready_at + timedelta(hours=2 + (producer_order.pk % 5))
+            if producer_order.delivery_date:
+                on_date_midday = (created_at + timedelta(
+                    days=(producer_order.delivery_date - created_at.date()).days
+                )).replace(hour=12, minute=0, second=0, microsecond=0)
+                if on_date_midday > ready_at:
+                    delivered_at = on_date_midday
+
+            events.extend([
+                {
+                    "previous_status": "pending",
+                    "new_status": "accepted",
+                    "changed_by": producer_account,
+                    "note": "Order accepted by producer.",
+                    "created_at": accepted_at,
+                },
+                {
+                    "previous_status": "accepted",
+                    "new_status": "preparing",
+                    "changed_by": producer_account,
+                    "note": "Producer has started preparing the order.",
+                    "created_at": preparing_at,
+                },
+                {
+                    "previous_status": "preparing",
+                    "new_status": "ready",
+                    "changed_by": producer_account,
+                    "note": "Order is ready for collection or delivery.",
+                    "created_at": ready_at,
+                },
+                {
+                    "previous_status": "ready",
+                    "new_status": "delivered",
+                    "changed_by": producer_account,
+                    "note": "Order marked as delivered.",
+                    "created_at": delivered_at,
+                },
+            ])
+        elif final_status == "cancelled":
+            events.append({
+                "previous_status": "pending",
+                "new_status": "cancelled",
+                "changed_by": producer_account,
+                "note": "Order cancelled before fulfilment.",
+                "created_at": created_at + timedelta(hours=cancel_hours),
+            })
+        elif final_status == "rejected":
+            events.append({
+                "previous_status": "pending",
+                "new_status": "rejected",
+                "changed_by": producer_account,
+                "note": "Order rejected by producer due to availability.",
+                "created_at": created_at + timedelta(hours=cancel_hours),
+            })
+
+        created_count = 0
+        for evt in events:
+            created = ProducerOrderStatusEvent.objects.create(
+                producer_order=producer_order,
+                previous_status=evt["previous_status"],
+                new_status=evt["new_status"],
+                changed_by=evt["changed_by"],
+                note=evt["note"],
+            )
+            ProducerOrderStatusEvent.objects.filter(pk=created.pk).update(created_at=evt["created_at"])
+            created_count += 1
+
+        return created_count
 
     # ── Settlements ───────────────────────────────────────────────────────────
 
@@ -2684,29 +2841,363 @@ class Command(BaseCommand):
 
     # ── Reviews ───────────────────────────────────────────────────────────────
 
+    def _review_rating_from_seed(self, seed_value):
+        bucket = seed_value % 100
+        if bucket < 54:
+            return 5
+        if bucket < 84:
+            return 4
+        if bucket < 95:
+            return 3
+        if bucket < 98:
+            return 2
+        return 1
+
+    def _review_delivery_datetime(self, order_item):
+        producer_order = order_item.producer_order
+        created_at = producer_order.created_at
+
+        if producer_order.delivery_date:
+            delivery_days = max(0, (producer_order.delivery_date - created_at.date()).days)
+            return created_at + timedelta(days=delivery_days, hours=12)
+
+        return created_at + timedelta(days=2, hours=6)
+
+    def _review_title_and_text(self, product, rating, seed_value):
+        category = (product.category.name if product.category else "").lower()
+
+        category_bases = {
+            "vegetables": [
+                "Excellent seasonal veg",
+                "Fresh produce with great flavour",
+                "Lovely local vegetables",
+            ],
+            "fruit": [
+                "Beautifully fresh fruit",
+                "Ripe and full of flavour",
+                "Great quality seasonal fruit",
+            ],
+            "bakery": [
+                "Brilliant bake quality",
+                "Freshly baked and delicious",
+                "Great local bakery quality",
+            ],
+            "dairy": [
+                "Creamy and very fresh",
+                "Excellent dairy quality",
+                "Great local dairy products",
+            ],
+            "honey & preserves": [
+                "Rich flavour and lovely texture",
+                "Quality preserves from a local producer",
+                "Fantastic local honey",
+            ],
+            "meat": [
+                "Great quality and well prepared",
+                "Fresh, tasty and reliable",
+                "Excellent local meat quality",
+            ],
+            "drinks": [
+                "Refreshing and well balanced",
+                "Great flavour and quality",
+                "Brilliant local drinks",
+            ],
+        }
+        positive_closers = [
+            "Will definitely order again.",
+            "Really pleased with this purchase.",
+            "Great value for locally sourced food.",
+            "A reliable favourite in our weekly order.",
+        ]
+        neutral_closers = [
+            "Overall a good product and we would buy again.",
+            "Solid quality and still better than supermarket alternatives.",
+            "Happy overall, with just a couple of minor points.",
+        ]
+        low_closers = [
+            "I appreciate the local approach and would try again.",
+            "Hope the next batch is better because we love buying local.",
+        ]
+        review_cues = [
+            "The freshness stood out straight away and everything kept well through the week.",
+            "You can taste the local quality, and the lower food miles matter to us.",
+            "Delivery was smooth and arrived in good condition.",
+            "Great flavour and far better than the equivalent supermarket version.",
+            "Lovely to support a producer with strong sustainability values.",
+            "Packaging was practical and reduced unnecessary waste.",
+        ]
+
+        base_titles = category_bases.get(
+            category,
+            ["Great local product", "Quality produce from local growers", "Fresh and reliable quality"],
+        )
+
+        if rating >= 5:
+            title = base_titles[seed_value % len(base_titles)]
+        elif rating == 4:
+            title = f"{base_titles[seed_value % len(base_titles)]} overall"
+        elif rating == 3:
+            title = f"Good quality with minor issues"
+        elif rating == 2:
+            title = f"Not as good as expected this time"
+        else:
+            title = f"Disappointing batch this time"
+
+        cue_a = review_cues[seed_value % len(review_cues)]
+        cue_b = review_cues[(seed_value + 2) % len(review_cues)]
+
+        if rating >= 4:
+            closing = positive_closers[seed_value % len(positive_closers)]
+            text = f"{product.name} was exactly what we hoped for. {cue_a} {cue_b} {closing}"
+        elif rating == 3:
+            closing = neutral_closers[seed_value % len(neutral_closers)]
+            text = (
+                f"{product.name} was generally good and tasted fresh. "
+                f"{cue_a} There was slight variation in this batch. {closing}"
+            )
+        elif rating == 2:
+            closing = low_closers[seed_value % len(low_closers)]
+            text = (
+                f"{product.name} was below our usual expectations on this order. "
+                f"Flavour and consistency were a bit uneven, though delivery was still prompt. {closing}"
+            )
+        else:
+            closing = low_closers[seed_value % len(low_closers)]
+            text = (
+                f"This batch of {product.name} did not meet expectations. "
+                f"It seemed less fresh than usual, but we appreciate the producer's local focus. {closing}"
+            )
+
+        return title, text
+
+    def _review_response_text(self, product, rating):
+        if rating >= 4:
+            return (
+                f"Thank you for your kind feedback on our {product.name}. "
+                "We're really glad you enjoyed it, and we appreciate your support for local Bristol producers."
+            )
+        if rating == 3:
+            return (
+                f"Thanks for taking the time to review our {product.name}. "
+                "We appreciate the balanced feedback and will keep refining each batch."
+            )
+        return (
+            f"Thank you for your honest feedback on the {product.name}, and sorry this order fell short. "
+            "We've shared this with the team and will work to improve consistency on upcoming deliveries."
+        )
+
     def _seed_reviews(self, product_map, customer_map, now):
-        for cust_user, prod_name, rating, title, text, anon, days_ago, producer_response in REVIEWS:
-            if prod_name not in product_map:
+        delivered_items = list(
+            OrderItem.objects.select_related(
+                "product",
+                "product__category",
+                "producer_order__producer",
+                "producer_order__order",
+                "producer_order__order__account",
+            )
+            .filter(
+                product__isnull=False,
+                producer_order__status="delivered",
+                producer_order__order__status="completed",
+            )
+            .order_by("-producer_order__created_at", "-created_at", "-id")
+        )
+
+        if not delivered_items:
+            self.stdout.write("  [+] 0 reviews created.")
+            return
+
+        existing_pairs = set(Review.objects.values_list("account_id", "product_id"))
+        latest_item_by_pair = {}
+        purchase_count_by_product = {}
+        for item in delivered_items:
+            account_id = item.producer_order.order.account_id
+            key = (account_id, item.product_id)
+            if key not in latest_item_by_pair:
+                latest_item_by_pair[key] = item
+            purchase_count_by_product[item.product_id] = purchase_count_by_product.get(item.product_id, 0) + 1
+
+        created_count = 0
+
+        # 1) Seed curated reviews first (backwards-compatible with 8-field tuples).
+        # Optional tuple item 9: edited_days_after_creation (int).
+        for entry in REVIEWS:
+            if len(entry) < 8:
                 continue
-            product = product_map[prod_name]
+
+            cust_user, prod_name, rating, title, text, anon, days_ago, producer_response = entry[:8]
+            edited_days_after_creation = entry[8] if len(entry) >= 9 else None
+
+            if cust_user not in customer_map or prod_name not in product_map:
+                continue
+
             account = customer_map[cust_user][0]
-            created_at = now - timedelta(days=days_ago)
+            product = product_map[prod_name]
+            key = (account.id, product.id)
+            if key in existing_pairs:
+                continue
+
+            order_item = latest_item_by_pair.get(key)
+            if not order_item:
+                continue
+
+            delivered_at = self._review_delivery_datetime(order_item)
+            review_created_at = now - timedelta(days=days_ago)
+            if review_created_at <= delivered_at:
+                review_created_at = delivered_at + timedelta(hours=6 + (order_item.id % 12))
+            if review_created_at > now:
+                review_created_at = now - timedelta(hours=2 + (order_item.id % 24))
+
+            responded_at = None
+            if producer_response:
+                responded_at = review_created_at + timedelta(
+                    days=1 + (order_item.id % 5),
+                    hours=2 + (order_item.id % 6),
+                )
+                if responded_at > now:
+                    responded_at = now - timedelta(hours=1)
+                if responded_at <= review_created_at:
+                    responded_at = review_created_at + timedelta(hours=12)
+
+            review_updated_at = review_created_at
+            if edited_days_after_creation is not None:
+                try:
+                    edit_days = int(edited_days_after_creation)
+                except (TypeError, ValueError):
+                    edit_days = 0
+                if edit_days > 0:
+                    edit_days = max(2, min(20, edit_days))
+                    review_updated_at = review_created_at + timedelta(
+                        days=edit_days,
+                        hours=1 + (order_item.id % 5),
+                    )
+                    if review_updated_at > now:
+                        review_updated_at = now - timedelta(hours=1)
+                    if review_updated_at <= review_created_at:
+                        review_updated_at = review_created_at + timedelta(hours=12)
 
             review, created = Review.objects.get_or_create(
                 product=product,
                 account=account,
                 defaults={
+                    "order_item": order_item,
                     "rating": rating,
                     "review_title": title,
                     "review_text": text,
                     "is_anonymous": anon,
-                    "producer_response": producer_response,
-                    "responded_at": now - timedelta(days=days_ago - 2) if producer_response else None,
+                    "producer_response": producer_response or "",
+                    "responded_at": responded_at,
                 },
             )
-            if created:
-                Review.objects.filter(pk=review.pk).update(created_at=created_at)
-                self.stdout.write(f"  [+] Review: {cust_user} → {prod_name} ({rating}★)")
+            if not created:
+                continue
+
+            Review.objects.filter(pk=review.pk).update(
+                created_at=review_created_at,
+                updated_at=review_updated_at,
+                responded_at=responded_at,
+            )
+            created_count += 1
+            existing_pairs.add(key)
+
+            self.stdout.write(f"  [+] Review: {cust_user} → {prod_name} ({rating}★)")
+
+        # 2) Auto-generate additional realistic reviews from delivered purchases
+        # to improve coverage and density on product pages.
+        candidate_items = [
+            item
+            for key, item in latest_item_by_pair.items()
+            if key not in existing_pairs
+        ]
+
+        candidate_items.sort(
+            key=lambda item: (
+                purchase_count_by_product.get(item.product_id, 0),
+                getattr(item.product, "stock", 0),
+                item.product_id,
+                item.id,
+            ),
+            reverse=True,
+        )
+
+        for item in candidate_items:
+            account = item.producer_order.order.account
+            product = item.product
+            key = (account.id, product.id)
+            if key in existing_pairs:
+                continue
+
+            seed_value = (account.id * 37) + (product.id * 13) + (item.id * 7)
+            rating = self._review_rating_from_seed(seed_value)
+            title, text = self._review_title_and_text(product, rating, seed_value)
+
+            delivered_at = self._review_delivery_datetime(item)
+            review_created_at = delivered_at + timedelta(
+                days=2 + (seed_value % 26),
+                hours=8 + (seed_value % 9),
+            )
+            if review_created_at <= delivered_at:
+                review_created_at = delivered_at + timedelta(hours=6)
+            if review_created_at > now:
+                review_created_at = now - timedelta(hours=2 + (seed_value % 36))
+
+            is_anonymous = (seed_value % 7) == 0
+            include_response = (seed_value % 4) == 0 or (rating <= 3 and (seed_value % 2) == 0)
+            producer_response = self._review_response_text(product, rating) if include_response else ""
+
+            responded_at = None
+            if include_response:
+                responded_at = review_created_at + timedelta(
+                    days=1 + (seed_value % 5),
+                    hours=2 + (seed_value % 6),
+                )
+                if responded_at > now:
+                    responded_at = now - timedelta(hours=1)
+                if responded_at <= review_created_at:
+                    responded_at = review_created_at + timedelta(hours=12)
+
+            # Keep most reviews unedited; a small subset looks naturally edited.
+            is_edited = (seed_value % 11) == 0
+            review_updated_at = review_created_at
+            if is_edited:
+                review_updated_at = review_created_at + timedelta(
+                    days=2 + (seed_value % 19),
+                    hours=1 + (seed_value % 4),
+                )
+                if review_updated_at > now:
+                    review_updated_at = now - timedelta(hours=1)
+                if review_updated_at <= review_created_at:
+                    review_updated_at = review_created_at + timedelta(hours=12)
+
+            review, created = Review.objects.get_or_create(
+                product=product,
+                account=account,
+                defaults={
+                    "order_item": item,
+                    "rating": rating,
+                    "review_title": title,
+                    "review_text": text,
+                    "is_anonymous": is_anonymous,
+                    "producer_response": producer_response,
+                    "responded_at": responded_at,
+                },
+            )
+            if not created:
+                continue
+
+            Review.objects.filter(pk=review.pk).update(
+                created_at=review_created_at,
+                updated_at=review_updated_at,
+                responded_at=responded_at,
+            )
+            created_count += 1
+            existing_pairs.add(key)
+
+            self.stdout.write(
+                f"  [+] Review: {account.username} → {product.name} ({rating}★)"
+            )
+
+        self.stdout.write(f"  [+] {created_count} reviews created.")
 
     # ── Announcements ────────────────────────────────────────────────────────
 
