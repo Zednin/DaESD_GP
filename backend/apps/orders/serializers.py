@@ -360,6 +360,9 @@ class ProducerOrderSerializer(serializers.ModelSerializer):
     recurring_event_id = serializers.SerializerMethodField()
     recurring_name = serializers.SerializerMethodField()
     status_timeline = ProducerOrderStatusEventSerializer(source="status_events", many=True, read_only=True)
+    fulfilment_method = serializers.CharField(source="order.fulfilment_method", read_only=True)
+    order_delivery_fee = serializers.DecimalField(source="order.delivery_fee", max_digits=10, decimal_places=2, read_only=True)
+    producer_delivery_fee = serializers.DecimalField(source="delivery_fee", max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
         model = ProducerOrder
@@ -389,6 +392,9 @@ class ProducerOrderSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "status_timeline",
+            "fulfilment_method",
+            "order_delivery_fee",
+            "producer_delivery_fee",
         ]
 
     def get_stripe_ref(self, obj):
@@ -431,9 +437,14 @@ class ProducerOrderSerializer(serializers.ModelSerializer):
         return profile.phone_number if profile else ""
 
     def get_delivery_address(self, obj):
-        addr = obj.order.delivery_address
+        if obj.order.fulfilment_method == "pickup":
+            addr = getattr(obj.producer, "business_address", None)
+        else:
+            addr = obj.order.delivery_address
+
         if not addr:
             return None
+
         return {
             "address_line_1": addr.address_line_1,
             "address_line_2": addr.address_line_2 or "",

@@ -39,13 +39,16 @@ def get_order_status_from_producer_statuses(statuses):
         return "pending"
 
     # status that determin if order has ended
-    final_statuses = {"delivered", "cancelled", "rejected"}
+    final_statuses = {"delivered", "collected", "cancelled", "rejected"}
 
     if all(status == "delivered" for status in statuses):
         return "completed"
 
     if all(status in ["cancelled", "rejected"] for status in statuses):
         return "cancelled"
+    
+    if all(status in ["delivered", "collected"] for status in statuses):
+        return "completed"
 
     # if at least one producer delivered and all other producer orders are final, mark as completed
     if any(status == "delivered" for status in statuses) and all(
@@ -53,7 +56,7 @@ def get_order_status_from_producer_statuses(statuses):
     ):
         return "completed"
 
-    if any(status in ["accepted", "preparing", "ready", "delivered"] for status in statuses):
+    if any(status in ["accepted", "preparing", "ready", "ready for pickup", "delivered", "collected"] for status in statuses):
         return "confirmed"
 
     return "pending"
@@ -208,16 +211,6 @@ class ProducerOrderViewSet(ModelViewSet):
 
         return Response(serializer.data)
 
-    @action(detail=True, methods=["post"], url_path="contact-customer")
-    def contact_customer(self, request, pk=None):
-        producer_order = self.get_object()
-        message = (request.data.get("message") or "").strip()
-
-        if not message:
-            return Response(
-                {"detail": "Message cannot be empty."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
     @action(detail=True, methods=["post"], url_path="contact-customer")
     def contact_customer(self, request, pk=None):
         producer_order = self.get_object()

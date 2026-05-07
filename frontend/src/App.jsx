@@ -39,6 +39,9 @@ import ProducerMyAccount from "./pages/Producer/ProducerMyAccount";
 // Explore pages
 import FarmStories from "./components/Marketplace/FarmStories";
 
+// 404
+import NotFound from "./pages/NotFound";
+
 // Admin pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import {
@@ -171,6 +174,8 @@ export default function App() {
             </RequireAdmin>
           }
         />
+
+        <Route path="*" element={<NotFound />} />
       </Routes>
 
       <Footer onOpenTerms={() => setTermsOpen(true)} />
