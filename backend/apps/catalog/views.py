@@ -13,6 +13,7 @@ from .serializers import ProductSerializer, CategorySerializer
 from .filters import ProductFilter
 from .services.recommendations import RecommenderError, get_recommended_products
 from apps.api.cloudinary_utils import upload_file_to_cloudinary
+from apps.communications.models import Notification
 
 
 class CategoryViewSet(ModelViewSet):
@@ -49,7 +50,24 @@ class ProductViewSet(ModelViewSet):
         if product.producer != user.producer_profile:
             raise PermissionDenied("You can only update your own products.")
 
-        serializer.save()
+        previous_alert_level = product.stock_alert_level
+
+        updated_product = serializer.save()
+
+        new_alert_level = updated_product.stock_alert_level
+
+        if previous_alert_level == "ok" and new_alert_level in ["low", "out"]:
+            Notification.objects.create(
+                account=updated_product.producer.account,
+                title=f"Stock alert: {updated_product.name}",
+                body=(
+                    f"{updated_product.name} is now "
+                    f"{'out of stock' if new_alert_level == 'out' else 'low in stock'}. "
+                    f"Current stock: {updated_product.stock}. "
+                    f"Low stock threshold: {updated_product.low_stock_threshold}."
+                ),
+                link="/producer/dashboard",
+            )
         
     def perform_destroy(self, instance):
         user = self.request.user
