@@ -80,7 +80,6 @@ export default function Checkout() {
   const [showRecurring, setShowRecurring] = useState(false);
   const [recurringPrefs, setRecurringPrefs] = useState(null);
   const [bulkInstructions, setBulkInstructions] = useState("");
-  const [bulkDeliveryDate, setBulkDeliveryDate] = useState("");
   const [specialInstructions, setSpecialInstructions] = useState("");
   const [fulfilmentMethod, setFulfilmentMethod] = useState("delivery");
   const [requestedDeliveryDates, setRequestedDeliveryDates] = useState({});
@@ -228,12 +227,6 @@ export default function Checkout() {
     }
   }, [belowMinimumCheckoutAmount, navigate]);
 
-  useEffect(() => {
-    if (bulkDeliveryDate && bulkDeliveryDate < minBulkDeliveryDate) {
-      setBulkDeliveryDate("");
-    }
-  }, [bulkDeliveryDate, minBulkDeliveryDate]);
-
   const productIdsKey = useMemo(() => {
     return [...new Set(items.map((item) => item.productId).filter(Boolean))]
       .sort()
@@ -300,17 +293,7 @@ export default function Checkout() {
 
       if (belowMinimumCheckoutAmount) {
         throw new Error(MIN_CHECKOUT_MESSAGE);
-      }
-
-      // normal bulk needs a requested delivery date
-      if (eligibleBulkCheckout && !recurringPrefs && !bulkDeliveryDate) {
-        throw new Error("Choose a delivery date for this bulk order.");
-      }
-
-      // stop normal bulk dates before the lead time
-      if (eligibleBulkCheckout && !recurringPrefs && bulkDeliveryDate < minBulkDeliveryDate) {
-        throw new Error("Choose a delivery date that respects producer lead time.");
-      }
+      } 
 
       for (const producer of producerDateRows) {
         const selectedDate = requestedDeliveryDates[producer.producerId];
@@ -336,10 +319,6 @@ export default function Checkout() {
         payload.recurring = recurringPrefs;
       }
       if (eligibleBulkCheckout) {
-        // send bulk notes, and date only for normal bulk
-        if (!recurringPrefs) {
-          payload.requested_delivery_date = bulkDeliveryDate;
-        }
         payload.special_instructions = bulkInstructions.trim();
       }
 
@@ -522,33 +501,17 @@ export default function Checkout() {
               </div>
 
               <div className={styles.bulkFields}>
-                {recurringPrefs ? (
-                  <div className={styles.bulkScheduleNote}>
-                    <span><FiCalendar aria-hidden="true" /> Recurring delivery</span>
-                    <strong>{new Date(`${recurringBulkDeliveryDate}T00:00:00`).toLocaleDateString("en-GB")}</strong>
-                  </div>
-                ) : (
-                  <div className={styles.bulkField}>
-                    <label className={styles.bulkDateLabel} htmlFor="bulk-delivery-date">
-                      <span><FiTruck aria-hidden="true" /> Delivery date</span>
-                    </label>
-                    <input
-                      id="bulk-delivery-date"
-                      type="date"
-                      min={minBulkDeliveryDate}
-                      value={bulkDeliveryDate}
-                      onChange={(event) => setBulkDeliveryDate(event.target.value)}
-                      required
-                    />
+                {recurringPrefs && (
+                  <>
+                    <div className={styles.bulkScheduleNote}>
+                      <span><FiCalendar aria-hidden="true" /> Recurring delivery</span>
+                      <strong>
+                        {new Date(`${recurringBulkDeliveryDate}T00:00:00`).toLocaleDateString("en-GB")}
+                      </strong>
+                    </div>
                     <ProducerLeadTimeTags groups={producerLeadTimeGroups} />
-                    <small>
-                      Earliest date: {new Date(`${minBulkDeliveryDate}T00:00:00`).toLocaleDateString("en-GB")}
-                      {` based on the longest producer lead time of ${bulkLeadTimeHours} hours`}
-                    </small>
-                  </div>
+                  </>
                 )}
-
-                {recurringPrefs && <ProducerLeadTimeTags groups={producerLeadTimeGroups} />}
 
                 <label className={styles.bulkField}>
                   <span><FiFileText aria-hidden="true" /> Additional notes</span>
