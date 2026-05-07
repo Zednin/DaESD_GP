@@ -81,6 +81,7 @@ export async function signupCustomer({
   password,
   first_name = "",
   last_name = "",
+  phone_number = "",
   organisation_type = "",
   organisation_name = "",
   default_delivery_address,
@@ -94,6 +95,7 @@ export async function signupCustomer({
       password,
       first_name,
       last_name,
+      phone_number,
       default_delivery_address,
     };
 
