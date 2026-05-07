@@ -47,6 +47,7 @@ The application simulates a sustainable regional food marketplace where producer
 - [Database](#database)
 - [Useful Docker Commands](#useful-docker-commands)
 - [Troubleshooting](#troubleshooting)
+- [Project Management](#project-management)
 - [License](#license)
 
 
@@ -538,6 +539,133 @@ If you encounter issues while setting up or running the application, refer to th
 For advanced debugging, refer to Docker documentation or Django/React troubleshooting guides.
 
 
+
+# Project Management
+
+<details>
+<summary>Jira issue list</summary>
+
+<br>
+
+| Key | Type | Summary | Status | Assignee |
+| --- | --- | --- | --- | --- |
+| BRFN-6 | Task | Connect Everyone to teams, Jira and Github Repo | Done | Harrison Mann |
+| BRFN-7 | Subtask | Setup Jira | Done |  |
+| BRFN-8 | Subtask | Setup github | Done |  |
+| BRFN-9 | Subtask | setup teams | Done |  |
+| BRFN-11 | Epic | Account Management | Done | Harrison Mann |
+| BRFN-10 | Story | Producer registration | Done | Harrison Mann |
+| BRFN-12 | Story | Customer Registration | Done | Harrison Mann |
+| BRFN-20 | Story | Secure authentication & authorisation (RBAC, sessions, password security) | Done | Harrison Mann |
+| BRFN-13 | Epic | Product Browsing, Search & Filtering | Done | Sam Waxman |
+| BRFN-21 | Story | Browse by category | Done | Sam Waxman |
+| BRFN-22 | Story | Search products | Done | Dylan Jones |
+| BRFN-23 | Story | Filter by organic certification | Done | Sam Waxman |
+| BRFN-24 | Story | View allergen warnings | Done | Sam Waxman |
+| BRFN-25 | Story | View food miles | Done | Sam Waxman |
+| BRFN-14 | Epic | Product Listing & Inventory Management | Done | Matt N |
+| BRFN-26 | Story | Create product listings | Done | Matt N |
+| BRFN-27 | Story | Update inventory & availability | Done | Sam Waxman |
+| BRFN-28 | Story | Seasonal availability | Done | Matt N |
+| BRFN-29 | Story | Surplus produce & discounts | Done | Sam Waxman |
+| BRFN-30 | Story | Low stock notifications | Done | Matt N |
+| BRFN-15 | Epic | Shopping Cart Management | Done | Joshua Okanlawon |
+| BRFN-31 | Story | Add items to cart, update quantities, remove items | Done | Joshua Okanlawon |
+| BRFN-122 | Bug | Small bug fixe | Done | Dylan Jones |
+| BRFN-16 | Epic | Order Placement & Checkout | Done | Dylan Jones |
+| BRFN-32 | Story | Single-producer checkout | Done | Dylan Jones |
+| BRFN-33 | Story | Multi-producer checkout | Done | Dylan Jones |
+| BRFN-34 | Story | Bulk orders (community groups) | Done | Matt N |
+| BRFN-35 | Story | Recurring orders (restaurants) | Done | Matt N |
+| BRFN-17 | Epic | Order Management | Done |  |
+| BRFN-36 | Story | Producer views for incoming orders | Done | Sam Waxman |
+| BRFN-37 | Story | Producer updates order status | Done | Joshua Okanlawon |
+| BRFN-38 | Story | Customer order history & reorder | Done | Harrison Mann |
+| BRFN-18 | Epic | Payments, Settlements & Commission | Done |  |
+| BRFN-39 | Story | Weekly producer settlements | Done |  |
+| BRFN-40 | Story | Network commission monitoring & reports | Done |  |
+| BRFN-19 | Epic | Community Engagement & Content | Done |  |
+| BRFN-41 | Story | Recipies & farm stories | Done | Dylan Jones |
+| BRFN-42 | Story | Product ratings & reviews | Done | Joshua Okanlawon |
+| BRFN-43 | Task | Test GitHub | Done | Joshua Okanlawon |
+| BRFN-44 | Epic | DRF + REACT Framework Setup | Done | Harrison Mann |
+| BRFN-45 | Task | Folder setup (Backend + Frontend) folders | Done | Harrison Mann |
+| BRFN-46 | Task | Basic Home Page to test setup | Done | Sam Waxman |
+| BRFN-47 | Epic | BPMN Final Design | Done | Dylan Jones |
+| BRFN-48 | Epic | Database Django Models | Done | Matt N |
+| BRFN-52 | Epic | REST API with DRF Setup | Done | Dylan Jones |
+| BRFN-53 | Task | Routers/ URL path Setup | Done | Dylan Jones |
+| BRFN-54 | Epic | JSX Webpages | Done | Sam Waxman |
+| BRFN-55 | Epic | Frontend Design | Done | Joshua Okanlawon |
+| BRFN-56 | Task | Page flow design/diagram | Done | Sam Waxman |
+| BRFN-57 | Task | Page(s) layout design | Done | Sam Waxman |
+| BRFN-58 | Task | Create template JSX very based on designs (Links to BRFN-54) | Done | Sam Waxman |
+| BRFN-60 | Task | Finish Homepage, implement basic shopping basket & checkout | Done | Joshua Okanlawon |
+| BRFN-61 | Task | Create simple components and files for every page | Done | Sam Waxman |
+| BRFN-62 | Task | Create producer dashboard | Done | Sam Waxman |
+| BRFN-63 | Task | Product filtering and sorting | Done | Dylan Jones |
+| BRFN-59 | Bug | Docker Build Issue on viewset_serializers_routers branch - Potentially others | Done | Harrison Mann |
+| BRFN-64 | Epic | External Cloud storage | Done | Joshua Okanlawon |
+| BRFN-66 | Task | Create checkout page | Done | Dylan Jones |
+| BRFN-67 | Epic | Producer Dashboard | Done | Sam Waxman |
+| BRFN-68 | Task | Add categories, allergens and image link to form for adding products | Done |  |
+| BRFN-71 | Task | Link allergens into product filters | Done |  |
+| BRFN-72 | Task | Create dashboard overview | Done |  |
+| BRFN-73 | Task | Create dashboard orders tab | Done |  |
+| BRFN-74 | Task | Create producer payments tab | Done |  |
+| BRFN-75 | Task | Create product surplus tab | Done |  |
+| BRFN-76 | Task | Create producer profile tab | Done |  |
+| BRFN-88 | Task | Notifications icon | Done |  |
+| BRFN-89 | Bug | Fix availability field entries for adding and editing products | Done |  |
+| BRFN-90 | Task | Switch product image upload link field to upload button | Done |  |
+| BRFN-91 | Task | Split CSS into more modules so the producer css isnt massive | Done |  |
+| BRFN-69 | Epic | Authentication & Authorisation | Done |  |
+| BRFN-70 | Task | Implement Google OAuth | Done |  |
+| BRFN-78 | Epic | AI products suggestion | Done | Sam Waxman |
+| BRFN-79 | Task | Add front end visual top of page | Done |  |
+| BRFN-80 | Task | Add notifcation for main page | Done |  |
+| BRFN-81 | Task | Link through the model | Done |  |
+| BRFN-82 | Bug | Sprint Review Changes | Done |  |
+| BRFN-83 | Subtask | CSRF token and cookies issue | Done | Joshua Okanlawon |
+| BRFN-84 | Subtask | Manage requests betterin react - dont use fetch in auth.js - axios | Done | Sam Waxman |
+| BRFN-85 | Subtask | Move filtering to backend | Done | Sam Waxman |
+| BRFN-86 | Bug | Product price does not increase when quantity increases | Done | Sam Waxman |
+| BRFN-87 | Story | Split orders by producer | Done | Dylan Jones |
+| BRFN-99 | Story | establish regular weekly orders | Done | Dylan Jones |
+| BRFN-100 | Epic | Administrator Dashboard | Done | Sam Waxman |
+| BRFN-101 | Task | Financial reports | Done |  |
+| BRFN-102 | Task | Main dashboard pages | Done |  |
+| BRFN-103 | Task | Annoucements and email features | Done |  |
+| BRFN-104 | Task | Add model upload section for AI models | Done |  |
+| BRFN-105 | Task | TC-03 - Calendar styling and remove future dates | Done | Dylan Jones |
+| BRFN-106 | Story | TC01 - Adjust input fields | Done | Harrison Mann |
+| BRFN-107 | Story | TC02 - add address + TC | Done | Harrison Mann |
+| BRFN-108 | Story | TC08 - Track Shipping | Cancelled | Joshua Okanlawon |
+| BRFN-109 | Story | TC10 - receives notifs | Done | Joshua Okanlawon |
+| BRFN-110 | Story | TC11 - Show OOS | Done | Sam Waxman |
+| BRFN-111 | Story | TC18 - Bulk order lead times | Done | Matt N |
+| BRFN-113 | Story | TC21 ReOrder Button | Done | Joshua Okanlawon |
+| BRFN-114 | Story | TC19 Analytics | Done | Dylan Jones |
+| BRFN-115 | Story | Splash once | Done | Dylan Jones |
+| BRFN-116 | Bug | Stock Validation | Done | Dylan Jones |
+| BRFN-117 | Bug | Split orders frontend customer | Done | Dylan Jones |
+| BRFN-118 | Bug | General big fixes + Small fixes | Done | Dylan Jones |
+| BRFN-119 | Task | Visual Basket Addition | Done | Dylan Jones |
+| BRFN-120 | Story | Improve explore page | Done | Dylan Jones |
+| BRFN-121 | Bug | Error handling | Done | Dylan Jones |
+
+</details>
+
+<details>
+<summary>Sprint logs</summary>
+
+<br>
+
+<p align="center">
+  <img src="screenshots/Sprint_logs.png" width="890">
+</p>
+
+</details>
 
 
 
